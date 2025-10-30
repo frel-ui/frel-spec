@@ -12,13 +12,13 @@ order and contain one or more **viewports**.
 |-------------|---------------------------------------------------|-----------------|----------------------------------------|
 | **main**    | Primary application content.                      | ✅ Yes           | Base of the scene.                     |
 | **modal**   | Dialogs or sheets that suspend interaction below. | ✅ Yes           | Above main; blocks lower channels.     |
-| **snack**   | Non-blocking feedback (toasts, banners).          | ❌               | Above modal; temporary feedback layer. |
+| **toast**   | Non-blocking feedback (toasts, banners).          | ❌               | Above modal; temporary feedback layer. |
 | **tooltip** | Hover hints, popovers, contextual info.           | ❌               | Always on top; most transient.         |
 
 Render and event order (bottom → top):
 
 ```
-main < modal < snack < tooltip
+main < modal < toast < tooltip
 ```
 
 Channels do not clip or scroll on their own. Each channel is a logical container for **viewports** that 
@@ -63,7 +63,7 @@ The global paint and hit-test order is computed as:
 
 Where:
 
-* `channel_rank`: global z-order (main=0, modal=1, snack=2, tooltip=3)
+* `channel_rank`: global z-order (main=0, modal=1, toast=2, tooltip=3)
 * `viewport_rank`: document order within the channel
 * `layer_rank`: base < overlay
 * `local_order`: element order within layer
@@ -99,10 +99,10 @@ scene {
         }
     }
 
-    channel snack {
+    channel toast {
         viewport {
             layer base {
-                snackbar { text { "Saved successfully" } }
+                toast { text { "Saved successfully" } }
             }
         }
     }

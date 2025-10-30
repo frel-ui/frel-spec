@@ -145,12 +145,3 @@ when user.is_some() && !notifications.is_empty() {
   show_notifications()
 }
 ```
-
-## Event Handler Scope
-
-Certain DSL macros are only available within event handlers:
-
-- `dialog! { }` - Create modal dialogs
-- `snack! { }` - Create temporary notifications
-
-See [Detached UI](50_detached_ui.md) for details.

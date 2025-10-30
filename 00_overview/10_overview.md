@@ -1,8 +1,18 @@
 # Goals
 
-**Main objective:** Build a modern, reactive, truly platform-independent UI library in Rust 
-that emphasizes clarity and expressiveness — a concise DSL where code reads like intent rather 
+**Main objective:** Build a modern, reactive, truly platform-independent UI library that
+emphasizes clarity and expressiveness — a concise DSL where code reads like intent rather 
 than syntax.
+
+**Agonistic**: The library aims to be programming language-agnostic and platform-agnostic.
+This is not 100% possible at the moment, but everything should be designed so that the
+languge and/or platform specific parts are clearly separated and easy to implement.
+
+>
+> [!NOTE]
+> First implementation language will be Rust with WebAssembly target. Examples in the
+> specification use Rust.
+>
 
 1. **Declarative Composition:**
     Enable developers to define application structure and behavior through a concise, clean, 
