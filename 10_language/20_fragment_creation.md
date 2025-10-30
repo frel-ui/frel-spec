@@ -61,7 +61,7 @@ Notes:
 ### 2. Template Parameters (Default Slot & Named Slots)
 
 * A plain block `{ ... }` provides a template for the **default slot**.
-* A slot block `{ at slot1: ..., atslot2: ... }` provides templates for **named slots**.
+* A slot block `{ at slot1: ..., at slot2: ... }` provides templates for **named slots**.
 * Templates may be given inline (`{ ... }`) or by reference (`TemplateName`).
 * If a fragment has only a default slot, the short form `{ ... }` is preferred.
 * For explicitness, named passing is allowed:

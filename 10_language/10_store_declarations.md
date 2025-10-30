@@ -10,7 +10,7 @@ notification propagation. Each store kind specifies ownership, mutability, and r
 - **Kind:** subscribes to all stores used in `<expr>`, const if no other stores are used.
 - **Writes:** not assignable.
 - **Updates:** recomputed when any dep changes (glitch-free; one recompute per drain).
-- **Guards:** graphs must be acyclic; cycles are a runtime time error (drain notifications cycle limit).
+- **Guards:** graphs must be acyclic; cycles are a runtime error (drain notifications cycle limit).
 
 > [!NOTE]
 >
