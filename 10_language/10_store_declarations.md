@@ -84,7 +84,7 @@ Lifecycle:
 
 ## Syntax examples
 
-```dsl
+```frel
 // decl — const and derived
 decl theme = "light"                          // const
 decl total = items.map(|i| i.price).sum()     // derived (reads `items`)

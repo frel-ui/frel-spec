@@ -15,13 +15,13 @@ and moves the basic fragment inside it.
 
 Example:
 
-```dsl
+```frel
 text { "Hello" } .. padding { 8 }
 ```
 
 is transformed into:
 
-```text
+```frel
 box {
     padding { 8 }
     text { "Hello" }

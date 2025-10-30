@@ -21,21 +21,21 @@ Unlike normal fragments that are children of their parent, detached UI elements:
 
 ## Modal
 
-```
-modal! {
-    ConfirmDelete(item: &TodoData) {
-        column { /* ... */ }
-    }
+```frel
+modal ConfirmDelete(item: &TodoData) {
+    column { /* ... */ }
 }
 
 // Usage from DSL
 button { "Delete" } .. on_click { 
-    ConfirmDelete::show(item)
+    show ConfirmDelete(item)
 }
+```
 
+```rust
 // Usage from native Rust
 fn show_delete_modal(rt: &RuntimeHandle, item: &TodoData) {
-    ConfirmDelete::show_rt(rt, item)
+    ConfirmDelete::show(rt, item)
 }  
 ```
 
@@ -67,11 +67,11 @@ Toast notifications are temporary messages that appear briefly to provide feedba
 
 For common notification types, use semantic macros that automatically apply appropriate styling:
 
-```dsl
-info! { "Processing complete" }
-success! { "Saved successfully!" }
-warning! { "Unsaved changes" }
-error! { "Connection failed" }
+```frel
+info { "Processing complete" }
+success { "Saved successfully!" }
+warning { "Unsaved changes" }
+error { "Connection failed" }
 ```
 
 **Behavior:**
@@ -84,26 +84,26 @@ error! { "Connection failed" }
 
 **Examples:**
 
-```dsl
+```frel
 // Simple messages
 button { "Save" } .. on_click {
     save_data()
-    success! { "Changes saved" }
+    success { "Changes saved" }
 }
 
 button { "Submit" } .. on_click {
     when validation_failed {
-        error! { "Please fill all required fields" }
+        error { "Please fill all required fields" }
     }
 }
 
 // With rich content
 info! {
-    markdown! { "See [documentation](https://...) for details" }
+    markdown { "See [documentation](https://...) for details" }
 }
 
 // Using template references
-warning! { UnsavedChangesMessage }
+warning { UnsavedChangesMessage }
 ```
 
 **From native Rust:**
@@ -122,65 +122,61 @@ pub fn notify_error(rt: &Runtime, message: String) {
 
 For custom-styled toast notifications that don't fit the semantic types, use the `toast!` macro to define reusable templates:
 
-`toast! { <name>(<params>) { <body> } }`
+`toast <name>(<params>) { <body> }`
 
 **Definition (top-level only):**
 
-```dsl
-toast! {
-    Achievement(text: String) {
-        row {
-            padding { 12 }
-            gap { 8 }
+```frel
+toast Achievement(text: String) {
+    row {
+        padding { 12 }
+        gap { 8 }
+        background { color: Purple }
+        corner_radius { 4 }
+        shadow { color: rgba(0, 0, 0, 128) offset_y: 2 blur: 4 }
 
-            icon { "star" } .. color { Gold }
-            text { text } .. font { color: White weight: 700 }
-        }
-
-        .. background { color: Purple }
-        .. corner_radius { 4 }
-        .. shadow { color: rgba(0, 0, 0, 128) offset_y: 2 blur: 4 }
+        icon { "star" } .. color { Gold }
+        text { text } .. font { color: White weight: 700 }
     }
 }
 ```
 
 **Usage:**
 
-```dsl
+```frel
 // From DSL event handlers
 button { "Complete Level" } .. on_click {
-    Achievement::show(text: "Level 10 reached!")
+    show Achievement(text: "Level 10 reached!")
 }
+```
 
+```rust
 // From native Rust
 pub fn show_achievement(rt: &Runtime, text: String) {
-    Achievement::show_rt(rt, text)
+    Achievement::show(rt, text)
 }
 ```
 
 ### Custom Toast with Dismiss Button
 
-```dsl
-toast! {
-    ProcessingNotification(message: String) {
-        row {
-            padding { 12 }
-            gap { 8 }
+```frel
+toast ProcessingNotification(message: String) {
+    row {
+        padding { 12 }
+        gap { 8 }
+        background { color: Blue }
+        corner_radius { 4 }
 
-            text { message }
-            button { "×" } .. on_click {
-                dismiss()  // Explicit dismissal
-            }
+        text { message }
+        button { "×" } .. on_click {
+            dismiss()  // Explicit dismissal
         }
-
-        .. background { color: Blue }
-        .. corner_radius { 4 }
     }
 }
 
 button { "Start Process" } .. on_click {
     start_long_process()
-    ProcessingNotification::show(message: "Processing...")
+    show ProcessingNotification(message: "Processing...")
 }
 ```
 
@@ -188,11 +184,11 @@ button { "Start Process" } .. on_click {
 
 Multiple toasts stack vertically and queue if too many are shown:
 
-```dsl
+```frel
 button { "Multiple Notifications" } .. on_click {
-    info! { "First" }
-    info! { "Second" }
-    info! { "Third" }
+    info { "First" }
+    info { "Second" }
+    info { "Third" }
 
     // All three will be shown, stacked vertically
     // Each auto-dismisses after 3 seconds
@@ -203,16 +199,14 @@ button { "Multiple Notifications" } .. on_click {
 
 **Note**: These instructions are planned but not yet implemented. For POC, use defaults.
 
-```dsl
+```frel
 // Planned for future versions:
 
-toast! {
-    ImportantMessage(text: String) {
-        text { text }
+toast ImportantMessage(text: String) {
+    text { text }
 
-        .. duration { 5000 }              // Custom timeout
-        .. position { top }               // Top of viewport instead of bottom
-    }
+    .. duration { 5000 }              // Custom timeout
+    .. position { top }               // Top of viewport instead of bottom
 }
 ```
 
@@ -242,7 +236,7 @@ the renderer automatically adjusts the position to keep it visible.
 
 ### Syntax
 
-```dsl
+```frel
 <fragment> {
     <content>
     at tooltip: { <tooltip-body> }

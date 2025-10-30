@@ -14,7 +14,7 @@ with the reactive store system, ensuring that the UI automatically reacts to sta
 
 **Syntax:**
 
-```dsl
+```frel
 when <bool-expr> <statement>
 [else <statement>]
 ```
@@ -35,7 +35,7 @@ when <bool-expr> <statement>
 
 **Syntax:**
 
-```dsl
+```frel
 repeat on <iterable> [as <item>] [by <key-expr>] <statement>
 ```
 
@@ -78,7 +78,7 @@ Each iteration provides read-only locals for convenience:
 
 ### Example
 
-```dsl
+```frel
 repeat on users by user.id as user {
   row {
     text { "#${_index + 1} ${user.name}" }
@@ -96,7 +96,7 @@ repeat on users by user.id as user {
 
 **Syntax (boolean guards):**
 
-```dsl
+```frel
 select {
   <bool-expr> => <statement>
   [<bool-expr> => <statement>]*
@@ -106,7 +106,7 @@ select {
 
 **Syntax (enum-based sugar):**
 
-```dsl
+```frel
 select on <enum-expr> {
   VariantA(x) => { ... }
   VariantB { id, .. } => { ... }
@@ -140,7 +140,7 @@ select on <enum-expr> {
 
 **Example:**
 
-```dsl
+```frel
 when user.is_some() && !notifications.is_empty() {
   show_notifications()
 }

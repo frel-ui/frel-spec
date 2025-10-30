@@ -16,7 +16,7 @@
 
 **Examples:**
 
-```dsl
+```frel
 background { color: 0xFF0000 }           // Red (opaque)
 background { color: 0xFF0000FF }         // Red (opaque, explicit alpha)
 background { color: rgb(255, 0, 0) }     // Red
@@ -242,7 +242,7 @@ Fills the background of the fragment's content box and padding area.
 
 **Examples:**
 
-```dsl
+```frel
 box { } .. background { color: White }
 box { } .. background { color: Red opacity: 0.5 }
 box { } .. background { gradient: linear(Red, Blue) }
@@ -283,7 +283,7 @@ All parameters are optional.
 
 **Examples:**
 
-```dsl
+```frel
 box { } .. corner_radius { 8 }                               // All corners 8 DIP
 box { } .. corner_radius { top_left: 8 bottom_right: 4 }     // Individual corners
 box { } .. corner_radius { right: 8 }                        // Top right and bottom right
@@ -309,7 +309,7 @@ Adds a drop shadow to the fragment.
 
 **Examples:**
 
-```dsl
+```frel
 box { } .. shadow { color: rgba(0, 0, 0, 128) offset_x: 0 offset_y: 2 blur: 4 }
 box { } .. shadow { color: 0x00000080 offset_x: 4 offset_y: 4 blur: 8 }
 ```
@@ -339,7 +339,7 @@ Sets the mouse cursor appearance when hovering over the fragment.
 
 **Example:**
 
-```dsl
+```frel
 button { } .. cursor { pointer }
 text_input { } .. cursor { text }
 ```
@@ -436,17 +436,15 @@ Stereotypes add semantic behavior to fragments.
   - current focus has `save` stereotype -> `on_save`
   - current focus has `cancel` stereotype -> `on_cancel`
 
-```rust
-fragment! { 
-    Confirm(text: &str) {
-        DefaultModal {
-      
-            text { "Are you sure?" }
-            button { "No" } .. stereotype { cancel }
-            button { "Yes" } .. stereotype { save }
-            
-            on_save { /* ... */ } 
-        }
+```frel
+fragment Confirm(text: &str) {
+    DefaultModal {
+  
+        text { "Are you sure?" }
+        button { "No" } .. stereotype { cancel }
+        button { "Yes" } .. stereotype { save }
+        
+        on_save { /* ... */ } 
     }
 }
 ```
@@ -665,7 +663,7 @@ All parameters are optional.
 
 **Examples:**
 
-```dsl
+```frel
 text { "Hello" } .. font { name: "Arial" size: 16 weight: 400 color: Black }
 text { "Title" } .. font { size: 24 weight: 700 }
 text { "Body" } .. font { name: "system-ui" }
@@ -693,7 +691,7 @@ Sets the vertical spacing between lines of text.
 
 **Examples:**
 
-```dsl
+```frel
 text { "..." } .. line_height { 20 }     // Fixed 20 DIP
 text { "..." } .. line_height { 24 }     // More spacious
 ```
@@ -712,7 +710,7 @@ Prevents text from being selectable by the user.
 
 **Example:**
 
-```dsl
+```frel
 text { "Button Label" } .. no_select
 ```
 
@@ -733,7 +731,7 @@ Controls how text handles overflow.
 
 **Examples:**
 
-```dsl
+```frel
 text { "Short" } .. text_wrap { none }
 text { "Long paragraph..." } .. text_wrap { wrap }
 ```
@@ -756,7 +754,7 @@ Controls how overflowing text is displayed (only applies to single-line text).
 
 **Example:**
 
-```dsl
+```frel
 text { "Very long text..." } .. text_wrap { none } .. text_overflow { ellipsis }
 ```
 
@@ -772,7 +770,7 @@ Adds an underline to the text.
 
 **Example:**
 
-```dsl
+```frel
 text { "Link" } .. underline .. font { color: Blue }
 ```
 
@@ -788,7 +786,7 @@ Renders lowercase letters as smaller capitals.
 
 **Example:**
 
-```dsl
+```frel
 text { "Title" } .. small_caps
 ```
 
@@ -808,7 +806,7 @@ Adjusts spacing between characters.
 
 **Examples:**
 
-```dsl
+```frel
 text { "Spaced" } .. letter_spacing { 2.0 }     // Wider spacing
 text { "Tight" } .. letter_spacing { -0.5 }     // Tighter spacing
 text { "Normal" } .. letter_spacing { 0.0 }     // Default

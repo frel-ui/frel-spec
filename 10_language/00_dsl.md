@@ -17,6 +17,9 @@ and a body of DSL statements that construct layout, state, and logic.
 > behind this is to avoid confusion and unambiguity.
 >
 
+## 
+
+
 ## Syntax
 
 The templates are defined using the `fragment!` macro and use the DSL syntax specified below.
@@ -82,22 +85,20 @@ Parameters supply inputs and wiring for reactivity from parents into the fragmen
 
 ## Example
 
-```rust
-fragment! {
-   Counter(label : String) {
-      decl count = 0
+```frel
+fragment Counter(label : String) {
+    decl count = 0
 
-      column {
-         padding { 16 } .. border { Red, 1 }
-         
-         button {
-            on_click { count = count + 1 }
-            text { "Click me" }
-         }
-   
-         text { "${label}: ${count}" } .. text_small
-      }
-   }
+    column {
+       padding { 16 } .. border { Red, 1 }
+       
+       button {
+          on_click { count = count + 1 }
+          text { "Click me" }
+       }
+ 
+       text { "${label}: ${count}" } .. text_small
+    }
 }
 ```
 
@@ -105,4 +106,5 @@ fragment! {
 
 - [**Box Model**](box_model.md)
 - [**Standard Templates**](standard_templates.md)
-- [**Resources**](resources.md)
+- [**Resources**](60_resources.md)
+- [**Themes**](70_themes.md)

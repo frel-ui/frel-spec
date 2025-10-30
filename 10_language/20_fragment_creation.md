@@ -6,7 +6,7 @@ Blocks may bind to the **default content slot** or to **named slots**.
 
 ## Surface Forms
 
-```dsl
+```frel
 // Basic leaf fragment with default-content block
 text { "stuff" }
 
@@ -71,14 +71,14 @@ Notes:
 
 Each inline block is desugared into a compiler-synthesized **anonymous template** and passed by name.
 
-```dsl
+```frel
 column { text { "A" } }
 ```
 
 becomes conceptually:
 
-```dsl
-template __anon_1() { text { "A" } }
+```frel
+fragment __anon_1() { text { "A" } }
 column { at content: __anon_1 }
 ```
 
@@ -109,7 +109,7 @@ Illegal combinations produce compile-time errors.
 
 ## Examples
 
-```dsl
+```frel
 // 1. Default slot only
 text { "Hello" }
 
@@ -136,7 +136,7 @@ button { text { "Click" } } .. padding { 8 } .. border { Red, 1 }
 
 All fragments support an optional `tooltip` slot for contextual help:
 
-```dsl
+```frel
 button {
     "Save"
     at tooltip: {
