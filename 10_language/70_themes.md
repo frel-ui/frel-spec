@@ -7,14 +7,19 @@ Themes are reusable styling configurations for UI components. They are defined u
 **Purpose:** Provide component-level styling that is:
 - **Declarative:** Define once, reuse everywhere
 - **Reactive:** Automatically adapt to environment changes (theme, locale, etc.)
-- **Composable:** Inherit from base themes, reference other resources
+- **Composable:** Reference other themes and resources
 - **Type-safe:** Compile-time validation of properties and variants
 
 **Key Concepts:**
-- **Properties:** Scalar values (numbers, colors, sizes)
-- **Instruction Groups:** Reusable bundles of styling instructions
-- **Variants:** Named configurations (e.g., `success`, `error`, `primary`, `secondary`)
+- **Properties:** Scalar values (numbers, colors, sizes) defined at theme level
+- **Instruction Groups:** Reusable bundles of styling instructions, shared across variants
+- **Variants:** Named property configurations (e.g., `success`, `error`, `primary`, `secondary`)
 - **Qualifiers:** Environment-based resolution (light/dark appearance)
+
+**Core Model:**
+- Instruction groups are defined at the theme level and shared by all variants
+- Variants provide property values that groups reference
+- Variants can only override base properties, not add new ones or change group structure
 
 ## Theme Definition
 
@@ -27,102 +32,108 @@ Themes are defined in `.theme` files using a declarative DSL:
 ```frel
 theme Badge {
     // Properties (scalar values)
-    height: 20
-    corner_radius: 4
-    icon_size: 14
+    prop height = 20
+    prop corner_radius = 4
+    prop icon_size = 14
 
-    // Instruction groups (reusable styling bundles)
-    outer_container: [
+    // Variant-specific properties (defined at base, overridden in variants)
+    prop border_color = 0x000000
+    prop background_color = 0xFFFFFF
+    prop text_color = 0x000000
+    prop icon_resource = Graphics.info
+    prop icon_color = 0x000000
+    prop icon_background = 0xFFFFFF
+
+    // Instruction groups (reusable styling bundles, shared by all variants)
+    group outer_container {
         height { height }
         corner_radius { corner_radius }
         background { color: background_color }
-    ]
+    }
 
-    icon_container: [
+    group icon_container {
         width { height }
         height { height }
         align_items_center
         background { color: icon_background }
         corner_radius { top_left: corner_radius bottom_left: corner_radius }
         border { color: border_color right: 0 }
-    ]
+    }
 
-    icon: [
+    group icon {
         width { icon_size }
         height { icon_size }
         fill { color: icon_color }
-    ]
+    }
 
-    text_base: [
+    group text_base {
         height { height }
         align_self_center
         padding { horizontal: 8 }
-    ]
+    }
 
-    text_standalone: [
+    group text_standalone {
         ..text_base
         border { color: border_color }
         corner_radius { corner_radius }
-    ]
+    }
 
-    text: [
+    group text {
         padding { top: 2 }
         align_self_center
         font { color: text_color }
-    ]
+    }
 
-    removable_container: [
+    group removable_container {
         width { height }
         height { height }
         align_items_center
         background { color: border_color }
         corner_radius { top_right: corner_radius bottom_right: corner_radius }
         border { color: border_color left: 0 }
-    ]
+    }
 
-    removable_icon: [
+    group removable_icon {
         width { icon_size - 2 }
         height { icon_size - 2 }
         fill { color: icon_color }
-    ]
+    }
 
-    // Variants (named configurations)
-    variants {
-        success {
-            border_color: 0x4CAF50
-            background_color: 0xFFFFFF
-            text_color: 0x000000
-            icon_resource: Graphics.success
-            icon_color: 0x2E7D32
-            icon_background: 0xE8F5E9
-        }
+    // Variants (named property configurations)
+    variant success {
+        border_color = 0x4CAF50
+        background_color = 0xFFFFFF
+        text_color = 0x000000
+        icon_resource = Graphics.success
+        icon_color = 0x2E7D32
+        icon_background = 0xE8F5E9
+    }
 
-        error {
-            border_color: 0xF44336
-            background_color: 0xFFFFFF
-            text_color: 0x000000
-            icon_resource: Graphics.error
-            icon_color: 0xC62828
-            icon_background: 0xFFEBEE
-        }
+    variant error {
+        border_color = 0xF44336
+        background_color = 0xFFFFFF
+        text_color = 0x000000
+        icon_resource = Graphics.error
+        icon_color = 0xC62828
+        icon_background = 0xFFEBEE
+    }
 
-        warning {
-            border_color: 0xFF9800
-            background_color: 0xFFFFFF
-            text_color: 0x000000
-            icon_resource: Graphics.warning
-            icon_color: 0xE65100
-            icon_background: 0xFFF3E0
-        }
+    variant warning {
+        border_color = 0xFF9800
+        background_color = 0xFFFFFF
+        text_color = 0x000000
+        icon_resource = Graphics.warning
+        icon_color = 0xE65100
+        icon_background = 0xFFF3E0
+    }
 
-        info {
-            border_color: 0x2196F3
-            background_color: 0xFFFFFF
-            text_color: 0x000000
-            icon_resource: Graphics.info
-            icon_color: 0x1565C0
-            icon_background: 0xE3F2FD
-        }
+    variant info {
+        border_color = 0x2196F3
+        background_color = 0xFFFFFF
+        text_color = 0x000000
+        icon_resource = Graphics.info
+        icon_color = 0x1565C0
+        icon_background = 0xE3F2FD
     }
 }
 ```
@@ -130,67 +141,66 @@ theme Badge {
 ### Syntax
 
 ```frel
-theme <Name> [: <BaseTheme>] {
+theme <Name> {
     // Properties (scalar values)
-    <property_name>: <value>
-    <property_name>: <value>
+    prop <property_name> = <value>
+    prop <property_name> = <value>
     ...
 
     // Instruction groups (styling bundles)
-    <group_name>: [
+    group <group_name> {
         <instruction>
         <instruction>
         ...
-    ]
+    }
 
-    // Variants (named configurations)
-    variants {
-        <variant_name> {
-            <property_name>: <value>
-            ...
-
-            <group_name>: [
-                <instruction>
-                ...
-            ]
-        }
-
-        <variant_name> {
-            ...
-        }
+    // Variants (named property configurations)
+    variant <variant_name> {
+        <property_name> = <value>
+        <property_name> = <value>
+        ...
     }
 }
 ```
 
 **Elements:**
 
-- **`<Name>`**: Theme identifier (PascalCase recommended)
-- **`: <BaseTheme>`**: Optional inheritance from another theme
-- **Properties**: Scalar values (numbers, colors, booleans, strings)
-- **Instruction groups**: Arrays of instructions using `[]` syntax
-- **Variants**: Named configurations with their own properties and instruction groups
+- **`theme <Name>`**: Theme identifier (PascalCase recommended)
+- **`prop`**: Property declaration keyword
+- **`group`**: Instruction group declaration keyword
+- **`variant`**: Variant declaration keyword
+- **Properties**: Scalar values (numbers, colors, booleans, strings, resource references)
+- **Instruction groups**: Blocks of instructions using `{ }` syntax, shared across all variants
+- **Variants**: Named property overrides only; cannot add new properties or override groups
+
+**Rules:**
+
+- All properties must be declared at theme level with default values
+- Variants can only override existing properties, not add new ones
+- Instruction groups are defined at theme level and shared by all variants
+- Groups reference properties which are resolved per-variant when accessed
 
 ### Properties
 
-Properties are scalar values that can be referenced in instruction groups:
+Properties are scalar values that can be referenced in instruction groups. All properties must be declared at the theme level.
 
 ```frel
 theme Button {
     // Dimensions
-    height: 32
-    min_width: 80
+    prop height = 32
+    prop min_width = 80
 
     // Colors
-    background_color: 0x2196F3
-    text_color: 0xFFFFFF
+    prop background_color = 0x2196F3
+    prop text_color = 0xFFFFFF
 
     // Spacing
-    padding_horizontal: 16
-    padding_vertical: 8
+    prop padding_horizontal = 16
+    prop padding_vertical = 8
 
     // Typography
-    font_size: 14
-    font_weight: 500
+    prop font_size = 14
+    prop font_weight = 500
 }
 ```
 
@@ -200,32 +210,39 @@ theme Button {
 - Strings: `"Arial"`, `"system-ui"`
 - Resource references: `Graphics.icon`, `Fonts.heading`
 
+**Property Resolution:**
+- Base theme defines all properties with default values
+- Variants override property values (cannot add new properties)
+- When accessing a group via a variant, property references resolve using that variant's values
+
 ### Instruction Groups
 
-Instruction groups are reusable bundles of styling instructions:
+Instruction groups are reusable bundles of styling instructions defined at the theme level and shared across all variants:
 
 ```frel
 theme Card {
-    corner_radius: 8
+    prop corner_radius = 8
+    prop background_color = 0xFFFFFF
+    prop border_color = 0xE0E0E0
 
-    container: [
+    group container {
         corner_radius { corner_radius }
-        background { color: 0xFFFFFF }
-        border { color: 0xE0E0E0 }
+        background { color: background_color }
+        border { color: border_color }
         padding { 16 }
         shadow { color: 0x00000020 offset_x: 0 offset_y: 2 blur: 4 }
-    ]
+    }
 
-    header: [
+    group header {
         padding { bottom: 12 }
-        border { color: 0xE0E0E0 bottom: 1 }
+        border { color: border_color bottom: 1 }
         font { size: 16 weight: 600 }
-    ]
+    }
 
-    body: [
+    group body {
         padding { vertical: 12 }
         font { size: 14 }
-    ]
+    }
 }
 ```
 
@@ -235,92 +252,85 @@ Use the spread operator `..` to include one group in another:
 
 ```frel
 theme Input {
-    base: [
-        height { 32 }
-        padding { horizontal: 12 }
-    ]
+    prop height = 32
+    prop padding_horizontal = 12
+    prop border_color = 0x2196F3
+    prop error_border_color = 0xF44336
 
-    focused: [
-        ..base
-        border { color: 0x2196F3 width: 2 }
-    ]
+    group base {
+        height { height }
+        padding { horizontal: padding_horizontal }
+    }
 
-    error: [
+    group focused {
         ..base
-        border { color: 0xF44336 width: 2 }
-    ]
+        border { color: border_color width: 2 }
+    }
+
+    group error {
+        ..base
+        border { color: error_border_color width: 2 }
+    }
 }
 ```
+
+**Key Points:**
+- Groups are defined once at theme level
+- All variants share the same group definitions
+- Groups reference properties which resolve based on the variant context
 
 ### Variants
 
-Variants provide named configurations within a theme:
+Variants provide named property configurations within a theme. Variants can only override existing properties—they cannot add new properties or define instruction groups.
 
 ```frel
 theme Button {
-    height: 32
+    // Base properties with defaults
+    prop height = 32
+    prop background_color = 0xE0E0E0
+    prop text_color = 0x000000
+    prop hover_background = 0xBDBDBD
+    prop font_weight = 400
 
-    variants {
-        primary {
-            background_color: 0x2196F3
-            text_color: 0xFFFFFF
-            hover_background: 0x1976D2
-
-            container: [
-                background { color: background_color }
-                height { height }
-            ]
-
-            text: [
-                font { color: text_color weight: 500 }
-            ]
-        }
-
-        secondary {
-            background_color: 0xE0E0E0
-            text_color: 0x000000
-            hover_background: 0xBDBDBD
-
-            container: [
-                background { color: background_color }
-                height { height }
-            ]
-
-            text: [
-                font { color: text_color weight: 400 }
-            ]
-        }
-    }
-}
-```
-
-**Variant Inheritance:**
-
-Variants inherit properties and instruction groups from the base theme and can override them:
-
-```frel
-theme Badge {
-    height: 20
-
-    base_container: [
+    // Shared instruction groups
+    group container {
+        background { color: background_color }
         height { height }
-        corner_radius { 4 }
-    ]
+    }
 
-    variants {
-        success {
-            // Inherits height and base_container
-            border_color: 0x4CAF50
+    group text {
+        font { color: text_color weight: font_weight }
+    }
 
-            // Override base_container
-            container: [
-                ..base_container
-                border { color: border_color }
-            ]
-        }
+    // Variants override properties only
+    variant primary {
+        background_color = 0x2196F3
+        text_color = 0xFFFFFF
+        hover_background = 0x1976D2
+        font_weight = 500
+    }
+
+    variant secondary {
+        background_color = 0xE0E0E0
+        text_color = 0x000000
+        hover_background = 0xBDBDBD
+        font_weight = 400
     }
 }
 ```
+
+**How Variants Work:**
+
+When you access `Themes.Button.primary.container`:
+1. The `container` group definition comes from the theme level
+2. Property references within the group (like `background_color`) resolve using the `primary` variant's values
+3. The result is the same group structure with variant-specific property values
+
+**Rules:**
+- All properties must be declared at the theme level with default values
+- Variants can only override existing properties (no new properties)
+- Variants cannot define or override instruction groups
+- All variants share the same group definitions from the theme level
 
 ## Theme Access
 
@@ -359,18 +369,16 @@ fragment StatusBadge(status: Status, text: String) {
 ### Direct Property Access
 
 ```frel
-fragment
-    CustomButton() {
-        button {
-            // Access theme properties directly
-            height { Themes.Button.primary.height }
+fragment CustomButton() {
+    button {
+        // Access theme properties directly
+        height { Themes.Button.primary.height }
 
-            // Apply instruction group
-            ..Themes.Button.primary.container
+        // Apply instruction group
+        ..Themes.Button.primary.container
 
-            text { "Click me" }
-                ..Themes.Button.primary.text
-        }
+        text { "Click me" }
+            ..Themes.Button.primary.text
     }
 }
 ```
@@ -378,17 +386,15 @@ fragment
 ### Dynamic Variant Lookup
 
 ```frel
-fragment
-    DynamicBadge(badge_type: String, text: String) {
-        // Dynamic lookup by variant name
-        decl badge_variant = Themes.Badge.variant(badge_type)
-            .unwrap_or(Themes.Badge.info)
+fragment DynamicBadge(badge_type: String, text: String) {
+    // Dynamic lookup by variant name
+    decl badge_variant = Themes.Badge.variant(badge_type)
+        .unwrap_or(Themes.Badge.info)
 
-        row {
-            ..badge_variant.outer_container
-            text { text }
-                ..badge_variant.text
-        }
+    row {
+        ..badge_variant.outer_container
+        text { text }
+            ..badge_variant.text
     }
 }
 ```
@@ -405,16 +411,22 @@ Define separate theme files with qualifiers:
 
 ```frel
 theme Button {
-    variants {
-        primary {
-            background_color: 0x2196F3
-            text_color: 0xFFFFFF
-            hover_background: 0x1976D2
+    prop background_color = 0x2196F3
+    prop text_color = 0xFFFFFF
+    prop hover_background = 0x1976D2
 
-            container: [
-                background { color: background_color }
-            ]
-        }
+    group container {
+        background { color: background_color }
+    }
+
+    group text {
+        font { color: text_color }
+    }
+
+    variant primary {
+        background_color = 0x2196F3
+        text_color = 0xFFFFFF
+        hover_background = 0x1976D2
     }
 }
 ```
@@ -423,16 +435,22 @@ theme Button {
 
 ```frel
 theme Button {
-    variants {
-        primary {
-            background_color: 0x90CAF9
-            text_color: 0x000000
-            hover_background: 0x64B5F6
+    prop background_color = 0x90CAF9
+    prop text_color = 0x000000
+    prop hover_background = 0x64B5F6
 
-            container: [
-                background { color: background_color }
-            ]
-        }
+    group container {
+        background { color: background_color }
+    }
+
+    group text {
+        font { color: text_color }
+    }
+
+    variant primary {
+        background_color = 0x90CAF9
+        text_color = 0x000000
+        hover_background = 0x64B5F6
     }
 }
 ```
@@ -442,44 +460,40 @@ theme Button {
 The appropriate theme is automatically selected based on the [environment](standard_sources.md#environment):
 
 ```frel
-fragment
-    ThemedButton(text: String) {
-        // Automatically resolves to light or dark variant
-        button {
-            ..Themes.Button.primary.container
-            text { text }
-                ..Themes.Button.primary.text
-        }
-
-        // When environment.appearance changes, the theme automatically updates
+fragment ThemedButton(text: String) {
+    // Automatically resolves to light or dark variant
+    button {
+        ..Themes.Button.primary.container
+        text { text }
+            ..Themes.Button.primary.text
     }
+
+    // When environment.appearance changes, the theme automatically updates
 }
 ```
 
 ### Reactive Theme Switching
 
 ```frel
-fragment
-    App() {
-        column {
-            button {
-                text { "Toggle Theme" }
-                on_click {
-                    Environment::update(|env| {
-                        env.appearance = match env.appearance {
-                            Appearance::Light => Appearance::Dark,
-                            Appearance::Dark => Appearance::Light,
-                        };
-                    });
-                    // All themed components automatically update
-                }
+fragment App() {
+    column {
+        button {
+            text { "Toggle Theme" }
+            on_click {
+                Environment::update(|env| {
+                    env.appearance = match env.appearance {
+                        Appearance::Light => Appearance::Dark,
+                        Appearance::Dark => Appearance::Light,
+                    };
+                });
+                // All themed components automatically update
             }
+        }
 
-            // Uses current theme automatically
-            box {
-                ..Themes.Card.default.container
-                text { "Themed content" }
-            }
+        // Uses current theme automatically
+        box {
+            ..Themes.Card.default.container
+            text { "Themed content" }
         }
     }
 }
@@ -492,40 +506,35 @@ Themes can reference other themes and resources for consistency.
 ### Referencing Other Themes
 
 ```frel
-theme InputBase {
-    height: 32
-    border_radius: 4
-    padding_horizontal: 12
-
-    variants {
-        default {
-            container: [
-                height { height }
-                corner_radius { border_radius }
-                padding { horizontal: padding_horizontal }
-            ]
-        }
-    }
+theme DesignSystem {
+    prop control_height = 32
+    prop border_radius = 4
+    prop spacing_unit = 8
 }
 
 theme TextInput {
-    // Reference base theme properties
-    base_height: Themes.InputBase.default.height
-    base_radius: Themes.InputBase.default.border_radius
+    // Reference properties from another theme
+    prop height = Themes.DesignSystem.control_height
+    prop corner_radius = Themes.DesignSystem.border_radius
+    prop padding_horizontal = Themes.DesignSystem.spacing_unit * 1.5
 
-    // Additional properties
-    font_size: 14
+    // Input-specific properties
+    prop font_size = 14
+    prop border_color = 0xE0E0E0
 
-    variants {
-        default {
-            container: [
-                // Include base theme instructions
-                ..Themes.InputBase.default.container
+    group container {
+        height { height }
+        corner_radius { corner_radius }
+        padding { horizontal: padding_horizontal }
+        border { color: border_color }
+    }
 
-                // Add additional styling
-                font { size: font_size }
-            ]
-        }
+    group text {
+        font { size: font_size }
+    }
+
+    variant default {
+        border_color = 0xE0E0E0
     }
 }
 ```
@@ -535,25 +544,24 @@ theme TextInput {
 ```frel
 theme Input {
     // Reference graphics
-    clear_icon: Graphics.close
-    search_icon: Graphics.search
+    prop clear_icon = Graphics.close
+    prop search_icon = Graphics.search
 
     // Reference colors (if you have a color resource system)
-    border_color: Colors.outline
-    focus_color: Colors.primary
+    prop border_color = Colors.outline
+    prop focus_color = Colors.primary
 
-    variants {
-        default {
-            container: [
-                border { color: border_color }
-            ]
+    group container {
+        border { color: border_color }
+    }
 
-            // Use referenced resources
-            prefix_icon: [
-                width { 16 }
-                height { 16 }
-            ]
-        }
+    group prefix_icon {
+        width { 16 }
+        height { 16 }
+    }
+
+    variant default {
+        border_color = Colors.outline
     }
 }
 ```
@@ -561,106 +569,15 @@ theme Input {
 ### Usage
 
 ```frel
-fragment
-    SearchInput(query: String) {
-        row {
-            ..Themes.Input.default.container
+fragment SearchInput(query: String) {
+    row {
+        ..Themes.Input.default.container
 
-            // Use theme's icon reference
-            icon { Themes.Input.search_icon }
-                ..Themes.Input.default.prefix_icon
+        // Use theme's icon reference
+        icon { Themes.Input.search_icon }
+            ..Themes.Input.default.prefix_icon
 
-            text_input(value: query) { }
-        }
-    }
-}
-```
-
-## Theme Inheritance
-
-Themes can inherit from base themes to share common properties and instruction groups.
-
-### Basic Inheritance
-
-```frel
-theme InputBase {
-    height: 32
-    border_radius: 4
-    padding_horizontal: 12
-
-    variants {
-        default {
-            container: [
-                height { height }
-                corner_radius { border_radius }
-                padding { horizontal: padding_horizontal }
-                border { color: 0xE0E0E0 }
-            ]
-        }
-    }
-}
-
-theme TextInput : InputBase {
-    // Inherits all properties from InputBase
-    // Can add new properties
-    font_size: 14
-
-    variants {
-        default {
-            // Inherits InputBase.default properties
-            // Can override or extend instruction groups
-            container: [
-                ..InputBase.default.container
-                font { size: font_size }
-            ]
-        }
-    }
-}
-
-theme NumberInput : InputBase {
-    // Inherits from InputBase
-    text_align: "right"
-
-    variants {
-        default {
-            container: [
-                ..InputBase.default.container
-                align_items_end
-            ]
-        }
-    }
-}
-```
-
-### Override Properties
-
-```frel
-theme ButtonBase {
-    height: 32
-    padding_horizontal: 16
-
-    variants {
-        default {
-            container: [
-                height { height }
-                padding { horizontal: padding_horizontal }
-            ]
-        }
-    }
-}
-
-theme LargeButton : ButtonBase {
-    // Override inherited property
-    height: 48
-    padding_horizontal: 24
-
-    variants {
-        default {
-            // Uses overridden height and padding
-            container: [
-                ..ButtonBase.default.container
-            ]
-        }
+        text_input(value: query) { }
     }
 }
 ```
@@ -678,24 +595,22 @@ Like all [resources](60_resources.md#resources-as-shared-sources), themes are **
 ### Explicit Source Handling
 
 ```frel
-fragment
-    ThemedComponent() {
-        // Access environment to react to theme changes
-        source env = environment()
+fragment ThemedComponent() {
+    // Access environment to react to theme changes
+    source env = environment()
 
-        decl current_appearance_name = env.latest()
-            .map(|e| match e.appearance {
-                Appearance::Light => "light",
-                Appearance::Dark => "dark",
-            })
-            .unwrap_or("light")
+    decl current_appearance_name = env.latest()
+        .map(|e| match e.appearance {
+            Appearance::Light => "light",
+            Appearance::Dark => "dark",
+        })
+        .unwrap_or("light")
 
-        // Automatically updates when environment.appearance changes
-        box {
-            ..Themes.Panel.default.container
+    // Automatically updates when environment.appearance changes
+    box {
+        ..Themes.Panel.default.container
 
-            text { "Current appearance: ${current_appearance_name}" }
-        }
+        text { "Current appearance: ${current_appearance_name}" }
     }
 }
 ```
@@ -703,19 +618,17 @@ fragment
 ### Status Checking
 
 ```frel
-fragment
-    SafeThemedComponent() {
-        // Check theme status
-        decl theme_status = Themes.Button.primary.status()
+fragment SafeThemedComponent() {
+    // Check theme status
+    decl theme_status = Themes.Button.primary.status()
 
-        select on theme_status {
-            Status::Loading => text { "Loading theme..." }
-            Status::Error(e) => text { "Failed to load theme" }
-            Status::Ready => {
-                button {
-                    ..Themes.Button.primary.container
-                    text { "Themed Button" }
-                }
+    select on theme_status {
+        Status::Loading => text { "Loading theme..." }
+        Status::Error(e) => text { "Failed to load theme" }
+        Status::Ready => {
+            button {
+                ..Themes.Button.primary.container
+                text { "Themed Button" }
             }
         }
     }
@@ -732,18 +645,17 @@ The theme compiler generates a type-safe API for each theme.
 
 ```frel
 theme Badge {
-    height: 20
-    corner_radius: 4
+    prop height = 20
+    prop corner_radius = 4
+    prop border_color = 0x000000
 
-    outer_container: [ ... ]
-    icon: [ ... ]
-    text: [ ... ]
+    group outer_container { ... }
+    group icon { ... }
+    group text { ... }
 
-    variants {
-        success { ... }
-        error { ... }
-        warning { ... }
-    }
+    variant success { ... }
+    variant error { ... }
+    variant warning { ... }
 }
 ```
 
@@ -754,38 +666,40 @@ theme Badge {
 ```rust
 // Top-level theme namespace
 pub mod Badge {
-    // Default variant (first variant or base)
-    pub fn default() -> &'static BadgeTheme {
+    // Default variant (first variant)
+    pub fn default() -> &'static BadgeThemeVariant {
         &success
     }
 
+    // Base theme properties (defaults)
+    pub const BASE_HEIGHT: DPixel = 20.dp;
+    pub const BASE_CORNER_RADIUS: DPixel = 4.dp;
+
     // Named variant accessors (static)
     pub mod success {
+        // Variant properties (resolved with defaults)
         pub const height: DPixel = 20.dp;
         pub const corner_radius: DPixel = 4.dp;
-        pub static outer_container: InstructionGroup = ...;
-        pub static icon: InstructionGroup = ...;
-        pub static text: InstructionGroup = ...;
+        pub const border_color: Color = 0x4CAF50;
+
+        // Instruction groups (evaluated with variant properties)
+        pub static outer_container: InstructionGroup = evaluate_with_props(...);
+        pub static icon: InstructionGroup = evaluate_with_props(...);
+        pub static text: InstructionGroup = evaluate_with_props(...);
     }
 
     pub mod error {
         pub const height: DPixel = 20.dp;
         pub const corner_radius: DPixel = 4.dp;
-        pub static outer_container: InstructionGroup = ...;
-        pub static icon: InstructionGroup = ...;
-        pub static text: InstructionGroup = ...;
-    }
+        pub const border_color: Color = 0xF44336;
 
-    pub mod warning {
-        pub const height: DPixel = 20.dp;
-        pub const corner_radius: DPixel = 4.dp;
-        pub static outer_container: InstructionGroup = ...;
-        pub static icon: InstructionGroup = ...;
-        pub static text: InstructionGroup = ...;
+        pub static outer_container: InstructionGroup = evaluate_with_props(...);
+        pub static icon: InstructionGroup = evaluate_with_props(...);
+        pub static text: InstructionGroup = evaluate_with_props(...);
     }
 
     // Dynamic variant lookup
-    pub fn variant(name: &str) -> Option<&'static BadgeTheme> {
+    pub fn variant(name: &str) -> Option<&'static BadgeThemeVariant> {
         match name {
             "success" => Some(&success),
             "error" => Some(&error),
@@ -795,7 +709,7 @@ pub mod Badge {
     }
 
     // Shared source implementation
-    impl Resource for BadgeTheme {
+    impl Resource for BadgeThemeVariant {
         fn status(&self) -> Status { Status::Ready }
         fn latest(&self) -> Option<&Self> { Some(self) }
     }
@@ -841,13 +755,13 @@ Keep instruction groups focused and well-named:
 ```frel
 theme Card {
     // Good: focused groups
-    container: [ ... ]
-    header: [ ... ]
-    body: [ ... ]
-    footer: [ ... ]
+    group container { ... }
+    group header { ... }
+    group body { ... }
+    group footer { ... }
 
     // Avoid: kitchen sink group
-    everything: [ /* too many unrelated instructions */ ]
+    group everything { /* too many unrelated instructions */ }
 }
 ```
 
@@ -855,38 +769,41 @@ theme Card {
 
 ```frel
 theme Alert {
-    variants {
-        // Good: semantic names
-        success { ... }
-        error { ... }
-        warning { ... }
-        info { ... }
+    prop background_color = 0xFFFFFF
+    prop border_color = 0x000000
+    prop icon = Graphics.info
 
-        // Good: hierarchy names
-        primary { ... }
-        secondary { ... }
-        tertiary { ... }
-    }
+    // Good: semantic names
+    variant success { ... }
+    variant error { ... }
+    variant warning { ... }
+    variant info { ... }
+
+    // Good: hierarchy names
+    variant primary { ... }
+    variant secondary { ... }
+    variant tertiary { ... }
 }
 ```
 
 ### 4. Compose and Reuse
 
 ```frel
-theme Base {
-    control_height: 32
-    border_radius: 4
+theme DesignSystem {
+    prop control_height = 32
+    prop border_radius = 4
 }
 
-theme Button : Base {
-    // Reuse Base.control_height
-    height: Base.control_height
+theme Button {
+    // Reuse DesignSystem properties
+    prop height = Themes.DesignSystem.control_height
+    prop corner_radius = Themes.DesignSystem.border_radius
 }
 
-theme Input : Base {
-    // Reuse Base.control_height and border_radius
-    height: Base.control_height
-    border_radius: Base.border_radius
+theme Input {
+    // Reuse DesignSystem properties
+    prop height = Themes.DesignSystem.control_height
+    prop corner_radius = Themes.DesignSystem.border_radius
 }
 ```
 
@@ -909,28 +826,54 @@ theme Input : Base {
 ```frel
 // Good: consistent property names across themes
 theme Button {
-    background_color: ...
-    text_color: ...
-    hover_background: ...
+    prop background_color = ...
+    prop text_color = ...
+    prop hover_background = ...
 }
 
 theme Input {
-    background_color: ...
-    text_color: ...
-    focus_background: ...
+    prop background_color = ...
+    prop text_color = ...
+    prop focus_background = ...
 }
 
 // Good: consistent instruction group names
 theme Card {
-    container: [ ... ]
-    header: [ ... ]
-    body: [ ... ]
+    group container { ... }
+    group header { ... }
+    group body { ... }
 }
 
 theme Modal {
-    container: [ ... ]
-    header: [ ... ]
-    body: [ ... ]
+    group container { ... }
+    group header { ... }
+    group body { ... }
+}
+```
+
+### 7. Declare All Properties at Theme Level
+
+```frel
+// Good: all properties declared at theme level
+theme Button {
+    prop height = 32
+    prop background_color = 0xE0E0E0
+    prop text_color = 0x000000
+
+    variant primary {
+        background_color = 0x2196F3  // override only
+        text_color = 0xFFFFFF        // override only
+    }
+}
+
+// Bad: variant tries to add new property
+theme Button {
+    prop height = 32
+
+    variant primary {
+        height = 32
+        new_prop = 123  // ERROR: not declared at theme level
+    }
 }
 ```
 
@@ -940,58 +883,57 @@ theme Modal {
 
 ```frel
 theme Input {
-    height: 32
-    border_radius: 4
-    padding_horizontal: 12
-    font_size: 14
+    // Dimensions
+    prop height = 32
+    prop border_radius = 4
+    prop padding_horizontal = 12
+    prop font_size = 14
 
-    background_color: 0xFFFFFF
-    border_color: 0xE0E0E0
-    text_color: 0x000000
-    placeholder_color: 0x9E9E9E
-    focus_border_color: 0x2196F3
-    error_border_color: 0xF44336
+    // Colors (base defaults)
+    prop background_color = 0xFFFFFF
+    prop border_color = 0xE0E0E0
+    prop text_color = 0x000000
+    prop placeholder_color = 0x9E9E9E
+    prop focus_border_color = 0x2196F3
+    prop error_border_color = 0xF44336
 
-    clear_icon: Graphics.close
+    // Resources
+    prop clear_icon = Graphics.close
 
-    variants {
-        default {
-            container: [
-                height { height }
-                corner_radius { border_radius }
-                padding { horizontal: padding_horizontal }
-                background { color: background_color }
-                border { color: border_color }
-            ]
+    // Instruction groups (shared by all variants)
+    group container {
+        height { height }
+        corner_radius { border_radius }
+        padding { horizontal: padding_horizontal }
+        background { color: background_color }
+        border { color: border_color }
+    }
 
-            text: [
-                font { size: font_size color: text_color }
-            ]
+    group text {
+        font { size: font_size color: text_color }
+    }
 
-            placeholder: [
-                font { size: font_size color: placeholder_color }
-            ]
+    group placeholder {
+        font { size: font_size color: placeholder_color }
+    }
 
-            clear_button: [
-                width { 16 }
-                height { 16 }
-                cursor { pointer }
-            ]
-        }
+    group clear_button {
+        width { 16 }
+        height { 16 }
+        cursor { pointer }
+    }
 
-        focused {
-            container: [
-                ..default.container
-                border { color: focus_border_color width: 2 }
-            ]
-        }
+    // Variants (property overrides only)
+    variant default {
+        border_color = 0xE0E0E0
+    }
 
-        error {
-            container: [
-                ..default.container
-                border { color: error_border_color width: 2 }
-            ]
-        }
+    variant focused {
+        border_color = 0x2196F3
+    }
+
+    variant error {
+        border_color = 0xF44336
     }
 }
 ```
@@ -999,41 +941,39 @@ theme Input {
 **Usage in fragment:**
 
 ```frel
-fragment
-    TextInput(value: String, error: Option<String>) {
-        source focused = focus()
+fragment TextInput(value: String, error: Option<String>) {
+    source focused = focus()
 
-        decl has_error = error.is_some()
-        decl is_focused = focused.latest().unwrap_or(false)
+    decl has_error = error.is_some()
+    decl is_focused = focused.latest().unwrap_or(false)
 
-        decl input_variant = when has_error {
-            Themes.Input.error
-        } else when is_focused {
-            Themes.Input.focused
-        } else {
-            Themes.Input.default
-        }
+    decl input_variant = when has_error {
+        Themes.Input.error
+    } else when is_focused {
+        Themes.Input.focused
+    } else {
+        Themes.Input.default
+    }
 
-        row {
-            ..input_variant.container
+    row {
+        ..input_variant.container
 
-            text_input(value: value) { }
-                ..input_variant.text
+        text_input(value: value) { }
+            ..input_variant.text
 
-            when !value.is_empty() {
-                button {
-                    icon { Themes.Input.clear_icon }
-                        ..Themes.Input.default.clear_button
+        when !value.is_empty() {
+            button {
+                icon { Themes.Input.clear_icon }
+                    ..Themes.Input.default.clear_button
 
-                    on_click { value = "" }
-                }
+                on_click { value = "" }
             }
         }
+    }
 
-        when has_error {
-            text { error.unwrap() }
-                ..Themes.Input.error.text
-        }
+    when has_error {
+        text { error.unwrap() }
+            ..Themes.Input.error.text
     }
 }
 ```

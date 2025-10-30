@@ -17,8 +17,15 @@ and a body of DSL statements that construct layout, state, and logic.
 > behind this is to avoid confusion and unambiguity.
 >
 
-## 
+## Hosts
 
+**Host Language:** The programming language that is used for expressions in the DSL, also the
+target language for the generated Fragment IR. Each host language needs a compile-time plugin
+that translates the DSL into Fragment IR.
+
+**Host Platform:** The **UI** platform that the host language runs on. This can be "browser",
+Android, iOS, GTK, skia etc. Each host platform needs a runtime adapter that provides
+the necessary integrations.
 
 ## Syntax
 
