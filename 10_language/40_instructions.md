@@ -1,5 +1,10 @@
 # Instructions
 
+Instructions configure layout, styling, and behavior for fragments. They can be written using either
+inner syntax (inside the fragment's content block) or postfix syntax (after the fragment with `..`).
+
+See [Fragment Creation - Instructions](20_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for detailed syntax rules and style guidelines.
+
 **DIP**: Device Independent Pixel (floating point)
 
 ## Color

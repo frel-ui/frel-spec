@@ -91,10 +91,79 @@ column { at content: __anon_1 }
 * Anonymous templates close over their lexical scope (capture visible stores reactively).
 * Each inline block produces a unique synthesized template.
 
-### 4. Postfix Instructions
+### 4. Instructions: Inner vs Postfix Syntax
 
-Postfix instructions (`.. padding { 8 }`) apply layout or styling to the fragment’s root node.
-Illegal combinations produce compile-time errors.
+Instructions (layout, styling, event handlers) can be written in two ways:
+
+1. **Inner Syntax** - Inside the fragment's content block: `box { width { 300 } }`
+2. **Postfix Syntax** - After the fragment using `..`: `box { } .. width { 300 }`
+
+Both forms are semantically identical and apply to the fragment's root node.
+
+**Precedence:**
+
+- All instructions are applied in the order they appear in the source code.
+- Postfix instructions are applied after inner instructions.
+- When the same instruction is applied multiple times, the last one wins.
+- For multi-parameter instructions parameters are **added**. For example:
+  - `padding { top : 16 } .. padding { bottom : 16 }` is equivalent to `padding { top : 16, bottom : 16 }`
+  - `padding { top : 16, bottom : 16 } .. padding { bottom : 32 }` is equivalent to `padding { top : 16, bottom : 32 }`
+
+**Instruction Chaining:**
+
+Multiple instructions can be chained using `..` regardless of syntax:
+
+```frel
+// Postfix chaining
+box { } .. width { 300 } .. height { 200 } .. padding { 16 }
+
+// Inner chaining
+box {
+    width { 300 } .. height { 200 }
+    padding { 16 }
+    
+    text { "Content" }
+}
+```
+
+**Style Guidelines:**
+
+Use **inner syntax**:
+- When the fragment has a content block with child fragments
+- **Convention:** Place instructions before child fragments for better readability
+
+```frel
+box {
+    width { 300 }
+    height { 200 }
+    padding { 16 }
+    
+    text { "Hello" }
+}
+
+// Or with chaining:
+box {
+    width { 300 } .. height { 200 } .. padding { 16 }
+    
+    text { "Hello" }
+}
+```
+
+Use **postfix syntax**:
+- For single-line declarations to keep code compact
+- When the fragment has no content block (empty `{ }`)
+- When adding instructions to a fragment reference (required)
+
+```frel
+text { "Title" } .. font { size: 30 }
+box { } .. width { 300 } .. height { 50 }
+CustomComponent() .. padding { 16 }
+```
+
+**General principles:**
+- Prefer inner syntax by default, use postfix for special cases and one-liners
+- Place instructions before children when using inner syntax (not mandatory, but improves readability)
+- Choose the style that maximizes readability for the specific context
 
 ### 5. Lifetime and Reactivity
 
@@ -141,8 +210,16 @@ multiSlot {
 // 6. Passing default content by name
 column { at content: TwoLabels }
 
-// 7. Postfix styling
-button { text { "Click" } } .. padding { 8 } .. border { Red, 1 }
+// 7. Postfix styling (for fragment with no content)
+text { "Click" } .. padding { 8 } .. border { Red, 1 }
+
+// 8. Inner styling (for fragment with content)
+button {
+    padding { 8 }
+    border { Red, 1 }
+
+    text { "Click" }
+}
 ```
 
 ## Built-in Slots
@@ -155,10 +232,9 @@ All fragments support an optional `tooltip` slot for contextual help:
 button {
     "Save"
     at tooltip: {
-        text { "Ctrl+S to save" }
-        .. padding { 6 }
-        .. background { color: Black }
-        .. font { color: White }
+        padding { 6 }
+        background { color: Black }
+        text { "Ctrl+S to save" } .. font { color: White }
     }
 }
 ```
