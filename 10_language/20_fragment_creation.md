@@ -35,7 +35,7 @@ Notes:
 ```text
 <creation>     ::= <name> [ "(" [ <arg-list> ] ")" ] <block-or-slots>? <postfix>*
 <arg-list>     ::= <arg> { "," <arg> }
-<arg>          ::= <param-name> "=" <expr>
+<arg>          ::= <expr> | <param-name> "=" <expr>
 
 <block-or-slots> ::= <default-block> | <slot-block>
 <default-block>  ::= "{" <body> "}"
@@ -54,8 +54,14 @@ Notes:
 ### 1. Value Parameters
 
 * Supplied only inside `(...)`.
-* Bound by **name**; missing or extra names are compile-time errors.
-* `<expr>` must be a pure Rust expression; side effects are rejected.
+* May be passed **positionally** or by **name**:
+  - Positional: `SomeFragment(12, "text")`
+  - Named: `SomeFragment(width = 12, label = "text")`
+  - Mixed: `SomeFragment(12, label = "text")` — positional arguments must come before named ones
+* Once a named argument is used, all subsequent arguments must also be named.
+* Missing required parameters or extra parameters are compile-time errors.
+* Named arguments may appear in any order (after positional ones).
+* `<expr>` must be a pure host language expression (no side effects).
 * Reactive dependencies from stores are tracked automatically.
 
 ### 2. Template Parameters (Default Slot & Named Slots)
@@ -97,15 +103,18 @@ Illegal combinations produce compile-time errors.
 
 ## Error Conditions
 
-| Condition                                     | Kind         | Description                  |
-|-----------------------------------------------|--------------|------------------------------|
-| Unknown fragment/template name                | Compile-time | Not found in scope.          |
-| Unknown or duplicate parameter                | Compile-time | Invalid or repeated name.    |
-| Type mismatch in parameter                    | Compile-time | Incompatible Rust type.      |
-| Impure expression                             | Compile-time | Expression has side effects. |
-| Block supplied but callee has no default slot | Compile-time | Use `at <slot>:` explicitly. |
-| Unknown slot name                             | Compile-time | Slot not declared by callee. |
-| Non-template value in slot                    | Compile-time | Slot expects a template.     |
+| Condition                                     | Kind         | Description                           |
+|-----------------------------------------------|--------------|---------------------------------------|
+| Unknown fragment/template name                | Compile-time | Not found in scope.                   |
+| Unknown or duplicate parameter                | Compile-time | Invalid or repeated name.             |
+| Type mismatch in parameter                    | Compile-time | Incompatible Rust type.               |
+| Impure expression                             | Compile-time | Expression has side effects.          |
+| Named argument before positional              | Compile-time | Positional args must come first.      |
+| Too many positional arguments                 | Compile-time | More positional args than parameters. |
+| Missing required parameter                    | Compile-time | Required parameter not supplied.      |
+| Block supplied but callee has no default slot | Compile-time | Use `at <slot>:` explicitly.          |
+| Unknown slot name                             | Compile-time | Slot not declared by callee.          |
+| Non-template value in slot                    | Compile-time | Slot expects a template.              |
 
 ## Examples
 
@@ -113,20 +122,26 @@ Illegal combinations produce compile-time errors.
 // 1. Default slot only
 text { "Hello" }
 
-// 2. Value parameters + default slot
+// 2. Value parameters (positional) + default slot
 higherOrder(12) { text { "Body" } }
 
-// 3. Multi-slot with inline and named templates
+// 3. Value parameters (named)
+higherOrder(width = 12, height = 24) { text { "Body" } }
+
+// 4. Value parameters (mixed: positional then named)
+higherOrder(12, height = 24, label = "Title") { text { "Body" } }
+
+// 5. Multi-slot with inline and named templates
 multiSlot {
   at header: { row { text { "Header" } } }
   at item:   ItemRowTemplate
   at footer: { row { text { "Footer" } } }
 }
 
-// 4. Passing default content by name
+// 6. Passing default content by name
 column { at content: TwoLabels }
 
-// 5. Postfix styling
+// 7. Postfix styling
 button { text { "Click" } } .. padding { 8 } .. border { Red, 1 }
 ```
 

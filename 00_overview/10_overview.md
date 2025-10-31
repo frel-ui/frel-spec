@@ -4,9 +4,9 @@
 emphasizes clarity and expressiveness — a concise DSL where code reads like intent rather 
 than syntax.
 
-**Agonistic**: The library aims to be programming language-agnostic and platform-agnostic.
+**Agnostic**: The library aims to be programming language-agnostic and platform-agnostic.
 This is not 100% possible at the moment, but everything should be designed so that the
-languge and/or platform specific parts are clearly separated and easy to implement.
+language- and/or platform-specific parts are clearly separated and easy to implement.
 
 >
 > [!NOTE]

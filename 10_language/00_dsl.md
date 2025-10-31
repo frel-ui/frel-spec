@@ -19,9 +19,20 @@ and a body of DSL statements that construct layout, state, and logic.
 
 ## Hosts
 
-**Host Language:** The programming language that is used for expressions in the DSL, also the
-target language for the generated Fragment IR. Each host language needs a compile-time plugin
-that translates the DSL into Fragment IR.
+**Host Language:** The programming language that is used for expressions and statements in the DSL,
+also the target language for the generated Fragment IR. Each host language needs a compile-time
+plugin that translates the DSL into Fragment IR.
+
+**Host Language Expression (HLE):** An expression that is written in the host language. These
+are used in the DSL to construct the fragment's logic. Expressions evaluate to a value.
+
+**Pure HLE (PHLE):** An expression that is written in the host language and does not have any
+side effects. Pure HLE expressions are allowed in the DSL body for store initializers, derived
+stores, fragment parameters, and control flow conditions.
+
+**Host Language Statement (HLS):** A statement that is written in the host language. Statements
+may have side effects (assignments, I/O, control flow, etc.). HLS are only allowed inside event
+handler bodies.
 
 **Host Platform:** The UI platform that the host language runs on. This can be "browser",
 Android, iOS, GTK, skia etc. Each host platform needs a runtime adapter that provides
@@ -29,7 +40,7 @@ the necessary integrations.
 
 ## Syntax
 
-The templates are defined using the `fragment!` macro and use the DSL syntax specified below.
+The templates are defined using the `fragment` keyword and use the DSL syntax specified below.
 
 A fragment template is composed of:
 
@@ -38,8 +49,8 @@ A fragment template is composed of:
 - body that contains zero or more statements
 
 ```text
-<fragment> ::= "fragment!" "{" <name> "(" [ <param-list> ] ")" "{" <body> "}" "}"
-<param-list> ::= <param> { "," <param> } 
+<fragment> ::= "fragment" <name> "(" [ <param-list> ] ")" "{" <body> "}"
+<param-list> ::= <param> { "," <param> }
 <param> ::= <param-name> ":" <param-type>
 <body> ::= { <statement> }
 ```
@@ -88,23 +99,24 @@ Parameters supply inputs and wiring for reactivity from parents into the fragmen
 - [**Fragment creation**](20_fragment_creation.md)
 - [**Control statements**](30_control_statements.md)
 - [**Instructions**](40_instructions.md)
+- [**Event handlers**](45_event_handlers.md)
 - [**Detached UI**](50_detached_ui.md)
 
 ## Example
 
 ```frel
-fragment Counter(label : String) {
+fragment Counter(label: String) {
     decl count = 0
 
     column {
-       padding { 16 } .. border { Red, 1 }
-       
-       button {
-          on_click { count = count + 1 }
-          text { "Click me" }
-       }
- 
-       text { "${label}: ${count}" } .. text_small
+        padding { 16 } .. border { Red, 1 }
+
+        button {
+            on_click { count = count + 1 }
+            text { "Click me" }
+        }
+
+        text { "${label}: ${count}" } .. text_small
     }
 }
 ```

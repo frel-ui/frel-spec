@@ -8,6 +8,7 @@ notification propagation. Each store kind specifies ownership, mutability, and r
 `decl <id> [:<type>]? = <expr>`
  
 - **Kind:** subscribes to all stores used in `<expr>`, const if no other stores are used.
+- **Initializer**: `<expr>` must be a PHLE.
 - **Writes:** not assignable.
 - **Updates:** recomputed when any dep changes (glitch-free; one recompute per drain).
 - **Guards:** graphs must be acyclic; cycles are a runtime error (drain notifications cycle limit).
@@ -30,8 +31,8 @@ notification propagation. Each store kind specifies ownership, mutability, and r
 `writable <id> [:<type>]? = <expr>`
 
 - **Kind:** writable state, no subscription to other stores.
-- **Initializer:** `<expr>` evaluated once (even if it mentions stores, there’s no subscription).
-- **Writes:** `<id> = <expr2>` allowed any time.
+- **Initializer:** `<expr>` evaluated once (even if it mentions stores, there’s no subscription), must be a PHLE.
+- **Writes:** `<id> = <expr2>` allowed in event handlers at any time, `<expr2>` must be a PHLE.
 - **Updates:** only by direct assignment.
 
 ## Multi-input
@@ -39,11 +40,11 @@ notification propagation. Each store kind specifies ownership, mutability, and r
 `fanin <id> [:<type>]? = <calc_expr> [with <reducer>]`
 
 - **Kind:** writable state subscribed to all stores read by `<calc_expr>`.
-- **Calculation:** `<calc_expr>` is re-evaluated when deps change to produce an input value.
+- **Calculation:** `<calc_expr>` is re-evaluated when deps change to produce an input value, must be a PHLE.
 - **Reducer:** combines current state and inputs into the next state.
 - **Default reducer:** replace(state, input) = input (i.e., mirror deps).
 - **Custom reducer:** user supplies a closure: |state, input| → state.
-- **Writes:** `<id> = <expr2>` is allowed and simply changes the current state; future dep changes keep applying the reducer on top of that.
+- **Writes:** `<id> = <expr2>` is allowed and simply changes the current state; future dep changes keep applying the reducer on top of that; must be a PHLE.
 - **Order/consistency:** per drain cycle, `<calc_expr>` is evaluated once after dependencies settle; reducer is applied once (no per-dep glitches).
 - **Side effects:** Reducers should be pure; side effects belong to event handlers or sources.
 - **Built-in reducers:**
