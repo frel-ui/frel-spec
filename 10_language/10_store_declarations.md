@@ -26,14 +26,87 @@ notification propagation. Each store kind specifies ownership, mutability, and r
 > I think adding a second keyword to explicitly differentiate is more confusing than helpful.
 >
 
-## Writable
+## Writable stores
 
-`writable <id> [:<type>]? = <expr>`
+`[<lifetime>] writable <id> [: <key_expr>]? [:<type>]? = <expr>`
 
-- **Kind:** writable state, no subscription to other stores.
-- **Initializer:** `<expr>` evaluated once (even if it mentions stores, there’s no subscription), must be a PHLE.
+- **Kind:** Writable stores hold mutable state with no automatic subscriptions to other stores.
+- **Initializer:** `<expr>` evaluated once at store creation (even if it mentions stores, there's no subscription), must be a PHLE.
 - **Writes:** `<id> = <expr2>` allowed in event handlers at any time, `<expr2>` must be a PHLE.
-- **Updates:** only by direct assignment.
+- **Updates:** only by direct assignment (no automatic recomputation).
+- **Reactivity:** dependent stores are notified when the value changes.
+- **Persistence:** persistence is implemented by the adapter of the host platform.
+
+`<lifetime>` is one of:
+- (omitted) — fragment-scoped (default)
+- `session` — survives fragment destruction, cleared on app restart
+- `persistent` — survives app restart
+
+`<key_expr>` (Key Expression) is:
+- Required for `session` and `persistent` stores
+- String expression (literal or interpolated) that uniquely identifies the store
+- Must be a PHLE, evaluated once at store creation time
+
+**Shorthands:**
+
+| Shorthand                             | Full form                                    |
+|---------------------------------------|----------------------------------------------|
+| `writable <id> = <expr>`              | `writable <id> = <expr>` (fragment-scoped)   |
+| `session <id>: <key> = <expr>`        | `session writable <id>: <key> = <expr>`      |
+| `persistent <id>: <key> = <expr>`     | `persistent writable <id>: <key> = <expr>`   |
+
+### Lifetime scopes
+
+| Lifetime     | Survives                   | Storage           | Key required |
+|--------------|----------------------------|-------------------|--------------|
+| (default)    | Fragment instance only     | Memory            | No           |
+| `session`    | Fragment destroy           | Session registry  | Yes          |
+| `persistent` | App restart                | Platform storage  | Yes          |
+
+### Key expressions
+
+**Requirements:**
+- Must be unique across all stores with the same lifetime in the app
+- For `persistent` stores, keys must be stable across app restarts
+- Use stable identifiers (user IDs, document IDs) not transient values (indices, positions)
+
+**Examples:**
+```frel
+session writable split_pos: "app.split" = 300
+session writable filter: "UserTable.${table_id}.filter" = ""
+persistent writable theme: "app.theme" = "dark"
+persistent writable settings: "user.${user_id}.settings" = default_settings()
+```
+
+### Type constraints
+
+- Default and `session` lifetime: any type
+- `persistent` lifetime: type must be serializable (implement appropriate traits for the host platform)
+
+### Reusable fragments pattern
+
+When the same fragment is instantiated multiple times, pass a scope parameter:
+
+```frel
+fragment UserTable(users: Vec<User>, scope: String) {
+    session writable filter: "${scope}.filter" = ""
+    session writable sort_column: "${scope}.sort" = "name"
+    // ...
+}
+
+fragment DocumentEditor(doc: Document, scope: String) {
+    persistent writable font_size: "${scope}.fontSize" = 14
+    persistent writable zoom: "${scope}.zoom" = 1.0
+    // ...
+}
+
+fragment App() {
+    column {
+        UserTable(active_users, scope: "active")
+        UserTable(archived_users, scope: "archived")
+    }
+}
+```
 
 ## Multi-input
 
@@ -90,9 +163,19 @@ Lifecycle:
 decl theme = "light"                          // const
 decl total = items.map(|i| i.price).sum()     // derived (reads `items`)
 
-// writable — manual state
+// writable — manual state (fragment-scoped)
 writable page = 0
 on_click { page = page + 1 }
+
+// session — survives fragment recreation (session-scoped)
+session split_pos: "app.split" = 300          // shorthand
+session sidebar_width: "app.sidebar" = 250     // shorthand
+on_drag { split_pos = new_position }
+
+// persistent — survives app restart (storage-backed)
+persistent user_theme: "app.theme" = "dark"    // shorthand
+persistent recent_files: "app.recent" = vec![] // shorthand
+on_select { user_theme = "light" }
 
 // fanin — mirror (default reducer = replace)
 fanin selection = external.selection           // mirrors external.selection
