@@ -69,13 +69,14 @@ the height and width of the node.
 
 **Shorthands**
 
-| Shorthand        | Full                                          |
-|------------------|-----------------------------------------------|
-| `fit_content`    | `width { content } .. height { content }`     |
-| `fill_width`     | `width { container }`                         |
-| `fill_height`    | `height { container }`                        |
-| `fill`           | `width { container } .. height { container }` |
-| `expand`         | `width { expand } .. height { expand }`       |
+| Shorthand      | Full                                          |
+|----------------|-----------------------------------------------|
+| `size { DIP }` | `width { DIP } .. height { DIP }`             |
+| `fit_content`  | `width { content } .. height { content }`     |
+| `fill_width`   | `width { container }`                         |
+| `fill_height`  | `height { container }`                        |
+| `fill`         | `width { container } .. height { container }` |
+| `expand`       | `width { expand } .. height { expand }`       |
 
 Note: percentages are not supported. For weight-based layouts use `grid` and
 define a template.
@@ -348,6 +349,31 @@ Sets the mouse cursor appearance when hovering over the fragment.
 button { } .. cursor { pointer }
 text_input { } .. cursor { text }
 ```
+
+### Tint
+
+`tint { <color> }`
+
+Applies a color tint to vector graphics (icons).
+
+**Parameters:**
+
+- `color` - Tint color (see [Color](#color) section)
+
+**Examples:**
+
+```frel
+icon { "close" } .. tint { Black }
+icon { "star" } .. tint { 0xFFD700 }  // Gold
+icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
+```
+
+**Notes:**
+
+- Only affects monochrome/symbolic icons and vector graphics
+- For multi-color icons, `tint` has no effect
+- Primarily used with the `icon` fragment (see [Standard Templates](12_standard_templates.md#icon))
+- Not applicable to raster images (use `image` fragment without tint for photos/bitmaps)
 
 ## Focus
 
