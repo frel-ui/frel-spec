@@ -1,20 +1,24 @@
-# Fragment DSL
+# Frel DSL
 
-This document is not a user guide but a specification of the Fragment DSL. Definitions
+This document is not a user guide but a specification of the Frel DSL. Definitions
 introduced in the other part of the documentation are simply referenced here.
 
-The **Fragment DSL** is a declarative language for describing **fragment templates**.
+**Frel DSL**: A declarative language for describing fragment templates, visual themes and resources.
 
-A fragment template declares a reusable component that compiles to Fragment IR and 
+**Fragment template**: Declaration of a reusable component that compiles to Fragment IR and 
 is instantiated at runtime as a fragment. Its surface breaks down into a name, parameters, 
 and a body of DSL statements that construct layout, state, and logic.
+
+**Theme**: A reusable styling configuration to be used with a fragment template.
+
+**Resource**: A reusable UI assed to be used with a fragment template.
 
 > [!NOTE] 
 >
 > While the main language of the library is Rust, the DSL is quite independent of the
-> main language. Only expressions are written in Rust, the general syntax and the 
-> control statements are intentionally different from the Rust syntax. The reason
-> behind this is to avoid confusion and unambiguity.
+> main language. Only calculations and event handlers are written in Rust, the general 
+> syntax and the control statements are intentionally different from the Rust syntax.
+> The reason behind this is to avoid confusion and unambiguity.
 >
 
 ## Hosts
@@ -95,7 +99,7 @@ Parameters supply inputs and wiring for reactivity from parents into the fragmen
 
 **Statements**
 
-- [**Store declarations**](10_store_declarations.md)
+- [**Store declarations**](20_reactive_state/10_store_basics.md)
 - [**Fragment creation**](20_fragment_creation.md)
 - [**Control statements**](30_control_statements.md)
 - [**Instructions**](40_instructions.md)

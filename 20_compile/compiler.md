@@ -1,6 +1,6 @@
 # Fragment Compiler
 
-The compiler is a Rust procedural macro that turns [fragment templates](../10_language/00_dsl.md) into [Fragment IR](fir.md).
+The compiler is a Rust procedural macro that turns [fragment templates](../10_language/00_overview.md) into [Fragment IR](fir.md).
 
 ## Surrounding Rewriter (Lowering Pass)
 

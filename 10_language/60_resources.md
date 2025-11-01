@@ -33,17 +33,17 @@ seamlessly with the reactive store system and support qualifiers for multi-envir
 2. **Resource Compiler:** Processes resources into registry during build
 3. **Resource Registry:** Backend-neutral catalog of available resources with metadata
 4. **Shared Sources:** Resources are global sources shared across all fragments
-5. **Qualifier Resolver:** Selects appropriate resource variant based on [environment context](standard_sources.md#environment)
+5. **Qualifier Resolver:** Selects appropriate resource variant based on [environment context](20_reactive_state/60_standard_sources.md#environment)
 
 ## Resources as Shared Sources
 
-Resources are implemented as **shared sources** (see [Store Declarations - Data source](10_store_declarations.md#data-source)):
+Resources are implemented as **shared sources** (see [Store Declarations - Data source](20_reactive_state/10_store_basics.md#data-source)):
 
 - **Global lifecycle:** Resources are created once during application initialization, not per-fragment
 - **Shared subscriptions:** All fragments accessing the same resource subscribe to the same underlying source
 - **Status tracking:** Resources have `Loading`, `Ready`, or `Error` status (accessible via `.status()`)
 - **Optional values:** Resources provide `.latest()` to access the current value
-- **Reactive updates:** When the [environment](standard_sources.md#environment) changes (e.g., appearance or locale), resources automatically re-resolve and notify subscribers
+- **Reactive updates:** When the [environment](20_reactive_state/60_standard_sources.md#environment) changes (e.g., appearance or locale), resources automatically re-resolve and notify subscribers
 - **Async loading:** Resources may load asynchronously (network fetch, file I/O) without blocking fragments
 
 **Usage as sources:**
@@ -208,7 +208,7 @@ Themes.<name>
 ```
 
 Each resource identifier (e.g., `Images.background`) is a **shared source** that:
-- Resolves to the appropriate qualified variant based on current [environment](standard_sources.md#environment)
+- Resolves to the appropriate qualified variant based on current [environment](20_reactive_state/60_standard_sources.md#environment)
 - Can be used directly in expressions (automatically uses `.latest().unwrap()`)
 - Can be explicitly checked for status via `.status()` and `.latest()`
 
@@ -355,9 +355,9 @@ resources/
 
 ### Qualifier Resolution
 
-Qualifier resolution is driven by the [environment source](standard_sources.md#environment):
+Qualifier resolution is driven by the [environment source](20_reactive_state/60_standard_sources.md#environment):
 
-1. The [environment](standard_sources.md#environment) provides **qualifier context** (language, theme, density, etc.)
+1. The [environment](20_reactive_state/60_standard_sources.md#environment) provides **qualifier context** (language, theme, density, etc.)
 2. Resource system selects the **best match** based on available resources and current environment
 3. If no qualified resource matches, the **default (unqualified) resource** is used
 4. If no default exists, a **compile-time error** is produced

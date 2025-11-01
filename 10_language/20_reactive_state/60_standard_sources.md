@@ -89,10 +89,10 @@ Environment::update(|env| {
 
 **Resource Integration:**
 
-The environment source drives [resource qualification](60_resources.md#qualifier-resolution). 
+The environment source drives [resource qualification](../60_resources.md#qualifier-resolution). 
 When the environment changes, all qualified resources are re-resolved automatically.
 
-## UI state-related
+## UI State-Related
 
 ### Focus
 
@@ -101,9 +101,43 @@ When the environment changes, all qualified resources are re-resolved automatica
 The `focus()` source produces a `bool` value that indicates whether the fragment or
 **any of its children** has the focus.
 
+**Lifecycle:** Created per-fragment, tracks focus state for that specific fragment instance.
+
+**Example:**
+
+```frel
+fragment Input() {
+    source focused = focus()
+    writable text = ""
+
+    decl border_color = if focused.latest().unwrap_or(false) { Blue } else { Gray }
+
+    text_input { text }
+        .. border { color: border_color }
+}
+```
+
 ### Hover
 
 `source hovered = hover()`
 
 The `hover()` source produces a `bool` value that indicates whether the fragment or
 **any of its children** is hovered.
+
+**Lifecycle:** Created per-fragment, tracks hover state for that specific fragment instance.
+
+**Example:**
+
+```frel
+fragment Button() {
+    source hovered = hover()
+
+    decl bg_color = if hovered.latest().unwrap_or(false) { LightGray } else { White }
+
+    box {
+        background { color: bg_color }
+        padding { 8 }
+        text { "Hover me" }
+    }
+}
+```

@@ -49,7 +49,7 @@ state (reactive)     transformation                             UI elements
   A backend-neutral state container exposing reactive notifications to fragments and other stores.
 
 * **Fragment Template**
-  A declarative definition authored in the Fragment DSL. Templates are compiled into Fragment IR.
+  A declarative definition authored in the Frel DSL. Templates are compiled into Fragment IR.
 
 * **Fragment**
   A runtime composition derived from a fragment template. It consists of a handle (lifetime), stores (data), 
@@ -88,18 +88,18 @@ DSL Source
 
 | Stage                  | Component                                | Responsibility                                                                                                                                           |
 |------------------------|------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Source Code**     | **Fragment DSL**                         | **Defines** declarative fragment templates written by the developer.                                                                                     |
+| **1. Source Code**     | **Frel DSL**                             | **Defines** declarative fragment templates written by the developer.                                                                                     |
 | **2. Compile Stage**   | **Fragment Compiler** (procedural macro) | **Transforms** the DSL into backend-neutral **Fragment IR (FIR)**; performs validation, symbol resolution, and metadata embedding.                       |
 | **3. Link Stage**      | **Fragment Linker** (runtime)            | **Instantiates and links** fragments (creates handles), stores, and handlers into a connected runtime tree.                                              |
 | **4. Execution Stage** | **Fragment Renderer** (runtime)          | **Applies** the linked runtime tree to the target backend. After the initial build, updates are propagated incrementally through reactive notifications. |
 
 ## Core Concepts
 
-* [**Fragment DSL**](../10_language/00_dsl.md)
+* [**Frel DSL**](../10_language/00_overview.md)
   A declarative language for describing fragment templates.
 
 * [**Fragment Compiler (FC)**](../20_compile/compiler.md)
-  The procedural macro that compiles the Fragment DSL into **Fragment IR (FIR)**.
+  The procedural macro that compiles the Frel DSL into **Fragment IR (FIR)**.
 
 * [**Fragment Intermediate Representation (FIR)**](../20_compile/fir.md)
   A backend-agnostic program that describes how a fragment should be built, connected, and parameterized for later linking and rendering.

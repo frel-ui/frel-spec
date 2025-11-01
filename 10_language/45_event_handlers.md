@@ -226,5 +226,5 @@ button { "Fetch" } .. on_click {
 ## See Also
 
 - [Instructions](40_instructions.md) - Event handler syntax and available events
-- [Store Declarations](10_store_declarations.md) - Store mutations in handlers
+- [Store Declarations](20_reactive_state/10_store_basics.md) - Store mutations in handlers
 - [Detached UI](50_detached_ui.md) - Using handlers with modals and toasts
