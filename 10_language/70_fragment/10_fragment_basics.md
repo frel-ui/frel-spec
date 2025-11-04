@@ -27,7 +27,7 @@ a runtime instance by itself.
 
 **Rules**
 
-- `<name>` must be a valid Rust identifier (case-sensitive, not a Rust keyword).
+- `<name>` must be a valid host language identifier (case-sensitive, not a host language keyword).
 
 ### Parameters
 
@@ -38,11 +38,9 @@ Parameters supply inputs and wiring for reactivity from parents into the fragmen
 
 **Rules**
 
-- `<param-name>` must be a valid Rust identifier.
-- `<param-type>` must be a valid Rust type (path/type expression).
-- Lifetimes are not supported in parameter types (e.g., `&'a str`, `Foo<'a>` are rejected), as
-  they do not translate cleanly to the reactive app-state model.
-- Generics: Generic types are allowed without lifetimes (e.g., Vec<String>, Option<u32>).
+- `<param-name>` must be a valid host language identifier.
+- `<param-type>` must be a valid Frel type (path/type expression).
+- optional (nullable) parameters are specified by appending `?` to the type.
 
 ### Body
 

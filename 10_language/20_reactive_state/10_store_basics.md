@@ -38,6 +38,13 @@ decl count: u32 = 0         // Explicit type annotation
 Type inference uses the host language's type system. If inference fails, the compiler
 will request an explicit annotation.
 
+Optional (nullable) types are specified by appending `?` to the type:
+
+```frel
+decl count: i32? = 0       // optional i32
+decl count: i32? = null    // Explicit null value
+```
+
 ### Dependency Tracking
 
 Stores automatically track dependencies by analyzing expressions:
@@ -62,72 +69,6 @@ decl c = a + b  // Recomputes once when 'a' changes, not twice
 
 button { "Update" } .. on_click { a = a + 1 }
 ```
-
-### Mutation Detection
-
-Writable and fan-in stores support both assignment and in-place mutation. The runtime
-automatically detects changes and notifies dependents only when values actually change.
-
-**How it works:**
-
-1. During event handler execution, the runtime tracks which writable/fan-in stores are accessed
-2. After the handler completes, the runtime compares each accessed store's current value with its previous value
-3. Only stores with changed values trigger notifications to dependents
-
-**Equality checking:**
-
-By default, the runtime uses **structural equality** (via the host language's `PartialEq` trait)
-to detect changes. This ensures accurate change detection even with in-place mutations:
-
-```frel
-writable items: Vec<String> = vec![]
-
-button { "Add Item" } .. on_click {
-    items.push("new".to_string())
-    // Runtime detects: vec!["new"] != vec![] → notifies dependents
-}
-
-button { "No-op" } .. on_click {
-    items.clear()
-    items.clear()  // Second clear is a no-op
-    // Runtime detects: vec![] == vec![] → no notification
-}
-
-button { "Multiple Changes" } .. on_click {
-    items.push("a".to_string())
-    items.push("b".to_string())
-    items.sort()
-    // Checked once after handler completes
-    // Single notification if final value differs from initial
-}
-```
-
-**Both assignment and mutation work:**
-
-```frel
-writable count = 0
-writable items: Vec<i32> = vec![]
-
-button { "Update" } .. on_click {
-    // Assignment style
-    count = count + 1
-    items = vec![1, 2, 3]
-
-    // Mutation style
-    count += 1
-    items.push(4)
-
-    // Both styles trigger change detection and notify dependents
-}
-```
-
-**Performance considerations:**
-
-Structural equality is accurate but can be expensive for large collections. For performance-critical
-scenarios, consider using optimized types (e.g., generational collections that track their own
-modification state) or design patterns that minimize comparison overhead.
-
-This applies to both **writable stores** and **fan-in stores**, as both support direct mutation.
 
 ### Cyclic Dependencies
 
