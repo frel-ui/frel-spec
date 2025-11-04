@@ -1,7 +1,7 @@
 # Fragment Creation
 
 Fragment creation statements instantiate child fragments within the body of a fragment.
-A **block** following a fragment name is an **inline template literal**, conceptually a small fragment template.
+A **block** following a fragment name is an **inline fragment**, conceptually a small anonymous fragment definition.
 Blocks may bind to the **default content slot** or to **named slots**.
 
 ## Surface Forms
@@ -26,25 +26,25 @@ multiSlot {
 Notes:
 
 * Parentheses `()` are **only** for value parameters.
-* The block `{ ... }` is always a **template literal**, not an instance.
-* In a multi-slot block, each `at <slot>:` binds a template (inline or named) to a slot parameter.
-* A plain block binds to the callee’s **default slot** (usually named `content`).
+* The block `{ ... }` is always an **inline fragment definition**, not an instance.
+* In a multi-slot block, each `at <slot>:` binds a fragment (inline or named) to a slot parameter.
+* A plain block binds to the callee's **default slot** (usually named `content`).
 
 ## Syntax (Informal)
 
 ```text
-<creation>     ::= <name> [ "(" [ <arg-list> ] ")" ] <block-or-slots>? <postfix>*
+<creation>     ::= <name> [ "(" <arg-list> ")" ] <block-or-slots>? <postfix>*
 <arg-list>     ::= <arg> { "," <arg> }
 <arg>          ::= <expr> | <param-name> "=" <expr>
 
 <block-or-slots> ::= <default-block> | <slot-block>
 <default-block>  ::= "{" <body> "}"
 <slot-block> ::= "{" <slot-binding> { <separator> <slot-binding> } "}"
-<slot-binding>   ::= "at" <slot-name> ":" <template-value>
+<slot-binding>   ::= "at" <slot-name> ":" <fragment-value>
 <separator>  ::= "," | newline
-<template-value> ::= <inline-template> | <template-ref>
-<inline-template> ::= "{" <body> "}"
-<template-ref>    ::= <name>
+<fragment-value> ::= <inline-fragment> | <fragment-ref>
+<inline-fragment> ::= "{" <body> "}"
+<fragment-ref>    ::= <name>
 
 <postfix>        ::= ".." <instruction>
 ```
@@ -54,6 +54,7 @@ Notes:
 ### 1. Value Parameters
 
 * Supplied only inside `(...)`.
+* Parentheses are **optional** when there are no parameters (e.g., `Counter { }` is equivalent to `Counter() { }`).
 * May be passed **positionally** or by **name**:
   - Positional: `SomeFragment(12, "text")`
   - Named: `SomeFragment(width = 12, label = "text")`
@@ -64,18 +65,18 @@ Notes:
 * `<expr>` must be a pure host language expression (no side effects).
 * Reactive dependencies from stores are tracked automatically.
 
-### 2. Template Parameters (Default Slot & Named Slots)
+### 2. Fragment Parameters (Default Slot & Named Slots)
 
-* A plain block `{ ... }` provides a template for the **default slot**.
-* A slot block `{ at slot1: ..., at slot2: ... }` provides templates for **named slots**.
-* Templates may be given inline (`{ ... }`) or by reference (`TemplateName`).
+* A plain block `{ ... }` provides a fragment for the **default slot**.
+* A slot block `{ at slot1: ..., at slot2: ... }` provides fragments for **named slots**.
+* Fragments may be given inline (`{ ... }`) or by reference (`FragmentName`).
 * If a fragment has only a default slot, the short form `{ ... }` is preferred.
 * For explicitness, named passing is allowed:
-  `higherOrder(12) { at content: TemplateName }`
+  `higherOrder(12) { at content: FragmentName }`
 
 ### 3. Desugaring
 
-Each inline block is desugared into a compiler-synthesized **anonymous template** and passed by name.
+Each inline block is desugared into a compiler-synthesized **anonymous fragment definition** and passed by name.
 
 ```frel
 column { text { "A" } }
@@ -88,8 +89,8 @@ fragment __anon_1() { text { "A" } }
 column { at content: __anon_1 }
 ```
 
-* Anonymous templates close over their lexical scope (capture visible stores reactively).
-* Each inline block produces a unique synthesized template.
+* Anonymous fragments close over their lexical scope (capture visible stores reactively).
+* Each inline block produces a unique synthesized fragment definition.
 
 ### 4. Instructions: Inner vs Postfix Syntax
 
@@ -167,14 +168,14 @@ CustomComponent() .. padding { 16 }
 
 ### 5. Lifetime and Reactivity
 
-* Child fragments subscribe to stores used in value parameters or captured by inline templates.
+* Child fragments subscribe to stores used in value parameters or captured by inline fragments.
 * All subscriptions are cleaned up automatically when the parent is destroyed.
 
 ## Error Conditions
 
 | Condition                                     | Kind         | Description                           |
 |-----------------------------------------------|--------------|---------------------------------------|
-| Unknown fragment/template name                | Compile-time | Not found in scope.                   |
+| Unknown fragment name                         | Compile-time | Not found in scope.                   |
 | Unknown or duplicate parameter                | Compile-time | Invalid or repeated name.             |
 | Type mismatch in parameter                    | Compile-time | Incompatible Rust type.               |
 | Impure expression                             | Compile-time | Expression has side effects.          |
@@ -183,7 +184,7 @@ CustomComponent() .. padding { 16 }
 | Missing required parameter                    | Compile-time | Required parameter not supplied.      |
 | Block supplied but callee has no default slot | Compile-time | Use `at <slot>:` explicitly.          |
 | Unknown slot name                             | Compile-time | Slot not declared by callee.          |
-| Non-template value in slot                    | Compile-time | Slot expects a template.              |
+| Non-fragment value in slot                    | Compile-time | Slot expects a fragment.              |
 
 ## Examples
 
@@ -200,10 +201,10 @@ higherOrder(width = 12, height = 24) { text { "Body" } }
 // 4. Value parameters (mixed: positional then named)
 higherOrder(12, height = 24, label = "Title") { text { "Body" } }
 
-// 5. Multi-slot with inline and named templates
+// 5. Multi-slot with inline and named fragments
 multiSlot {
   at header: { row { text { "Header" } } }
-  at item:   ItemRowTemplate
+  at item:   ItemRowFragment
   at footer: { row { text { "Footer" } } }
 }
 
@@ -245,4 +246,4 @@ The tooltip automatically:
 - Hides when pointer leaves
 - Positions relative to parent (smart repositioning if needed)
 
-See [Detached UI - Tooltip](50_detached_ui.md#tooltip) for full details.
+See [Detached UI - Tooltip](80_detached_ui.md#tooltip) for full details.

@@ -1,10 +1,12 @@
 # Sources
 
-Sources are special stores that produce values asynchronously from external systems - like timers, network requests, or event streams. They're managed by the runtime and represent effectful operations that happen outside the fragment's control.
+Sources are special stores that produce values asynchronously from external systems - like 
+timers, network requests, or event streams. They're managed by the runtime and represent 
+effectful operations that happen outside the fragment's control.
 
 ## Syntax
 
-`source <id> [:<type>]? = <producer>(…options…)`
+`source <id> [:<type>]? = <producer>(…options…) [.. on_value |val: T| { <handler> }]`
 
 ## Semantics
 
@@ -12,7 +14,8 @@ Sources are special stores that produce values asynchronously from external syst
 - **Views for expressions**:
   - `<id>.latest() → Option<T>`: Most recent value produced (if any).
   - `<id>.status() → Status<E>`: Current status - `Loading`, `Ready`, or `Error(E)`.
-- **As a dependency**: Can feed fan-in stores directly (source events become the inputs).
+- **Event handler**: `on_value` runs each time the source produces a new value. The handler receives the unwrapped value (not `Option<T>`).
+- **As a dependency**: Sources can be read by other stores, triggering reactive updates.
 - **Typical producers**: `interval(ms)`, `fetch(|| …)`, `sse(url, event)`.
 
 ## Lifecycle
@@ -43,6 +46,26 @@ enum Status<E> {
 ```
 
 ## Examples
+
+### Using on_value Handler
+
+The `on_value` handler is the recommended way to handle source events:
+
+```frel
+fragment NotificationBadge() {
+    source notifications = sse("/notifications")
+    writable unread_count = 0
+
+    // Handler runs each time a notification arrives
+    notifications .. on_value |notif: Notification| {
+        unread_count = unread_count + 1
+        show_toast(notif.message)
+    }
+
+    button { "Notifications (${unread_count})" }
+        .. on_click { unread_count = 0 }
+}
+```
 
 ### Timer/Interval
 
@@ -98,13 +121,16 @@ fragment UserProfile(user_id: u32) {
 
 ### Server-Sent Events (SSE)
 
-Streaming data:
+Streaming data with accumulation:
 
 ```frel
 fragment LiveFeed() {
     source updates = sse(url: "/api/feed", event: "update")
+    writable messages: Vec<Message> = vec![]
 
-    fanin messages = updates.latest() with append
+    updates .. on_value |msg: Message| {
+        messages.push(msg)
+    }
 
     column {
         text { "Live Feed (${messages.len()} messages)" }
@@ -141,6 +167,12 @@ fragment Dashboard() {
     source notifications = sse(url: "/notifications")
     source health = interval_fetch(|| api::health_check(), interval_ms: 5000)
 
+    writable notif_list: Vec<Notification> = vec![]
+
+    notifications .. on_value |notif: Notification| {
+        notif_list.push(notif)
+    }
+
     column {
         gap { 16 }
 
@@ -163,8 +195,6 @@ fragment Dashboard() {
         }
 
         // Live notifications
-        fanin notif_list = notifications.latest() with append
-
         column {
             text { "Notifications (${notif_list.len()})" }
 
@@ -313,13 +343,13 @@ Bidirectional communication:
 
 ```frel
 fragment ChatRoom(room_id: String) {
-    source messages = websocket(
-        url: "/chat/${room_id}",
-        on_message: |msg| parse_message(msg)
-    )
-
+    source messages = websocket(url: "/chat/${room_id}")
     writable draft = ""
-    fanin chat_history = messages.latest() with append
+    writable chat_history: Vec<Message> = vec![]
+
+    messages .. on_value |msg: Message| {
+        chat_history.push(msg)
+    }
 
     column {
         // Message history
@@ -442,7 +472,7 @@ fragment UserPosts() {
 
 ### Handle All Status States
 
-Always handle Loading, Ready, and Error states:
+Always handle Loading, Ready, and Error states for one-time fetches:
 
 ```frel
 select on source.status() {
@@ -452,17 +482,21 @@ select on source.status() {
 }
 ```
 
-### Use Fan-in for Accumulation
+### Use on_value for Accumulation
 
-Don't try to manually collect source events - use fan-in:
+Use `on_value` handlers to accumulate source events:
 
 ```frel
-// Good
-fanin items = source.latest() with append
-
-// Bad - won't work, sources aren't writable
+// Good - explicit accumulation
 source items = sse("/items")
-// Can't do: items = items.push(new_item)
+writable item_list: Vec<Item> = vec![]
+
+items .. on_value |item: Item| {
+    item_list.push(item)
+}
+
+// Also good - use .latest() for simple derived values
+decl latest_item = items.latest()
 ```
 
 ### Extract Status Checks

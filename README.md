@@ -4,15 +4,6 @@ Frel is currently in the **planning and early design** stage.
 
 The repository serves as a place to **document ideas, architecture drafts**.
 
->
-> [!NOTE]
->
-> Frel started as a Rust library, and some plans are still Rust-related. That said, I was thinking
-> about how AI code assistants will change coding. Should I keep to Rust, should I switch to 
-> TypeScript, or go back and use Kotlin? I realized that almost all concepts in the plans are
-> language-agnostic. Why not start with a language-agnostic design from the beginning?
->
-
 For actual implementations see other repositories under [frel-ui](https://github.com/frel-ui).
 
 Expect:

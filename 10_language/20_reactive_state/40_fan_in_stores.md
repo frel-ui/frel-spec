@@ -1,38 +1,37 @@
 # Fan-in Stores
 
-Fan-in stores combine reactive and imperative state management. They automatically recompute when dependencies change (like read-only stores) but can also be directly assigned to (like writable stores). They're perfect for scenarios where state needs both reactive updates and manual overrides.
+Fan-in stores combine reactive and imperative state management. They automatically recompute when 
+dependencies change (like read-only stores) but can also be directly assigned to (like writable
+stores). They're perfect for scenarios where state needs both reactive updates and manual overrides.
 
 ## Syntax
 
-`fanin <id> [:<type>]? = <calc_expr> [with <reducer>]`
+`fanin <id> [:<type>]? = <calc_expr>`
 
 ## Semantics
 
 - **Kind**: Writable state that subscribes to all stores read by `<calc_expr>`.
-- **Calculation**: `<calc_expr>` is re-evaluated when dependencies change to produce an input value. Must be a PHLE.
-- **Reducer**: Combines the current state and new input into the next state.
-- **Default reducer**: `replace(state, input) = input` - simply mirrors the dependencies.
-- **Custom reducer**: User supplies a closure with signature `|state, input| → state`.
-- **Writes**: `<id> = <expr2>` is allowed and directly changes the current state. Future dependency changes continue applying the reducer on top of that new state. The right-hand side `<expr2>` must be a PHLE.
-- **Order/consistency**: Per drain cycle, `<calc_expr>` is evaluated once after dependencies settle; reducer is applied once (no glitches).
-- **Side effects**: Reducers should be pure; side effects belong in event handlers or sources.
-
-## Built-in Reducers
-
-| Reducer     | Signature                    | Description                           |
-|-------------|------------------------------|---------------------------------------|
-| `replace`   | `(_, input) -> input`        | Replace state with input (default)    |
-| `append`    | `(vec, item) -> vec + item`  | Append item to vector                 |
-| `union`     | `(set, items) -> set ∪ items`| Union of sets                         |
-| `max_by`    | `(state, input) -> max`      | Keep maximum value                    |
-| `min_by`    | `(state, input) -> min`      | Keep minimum value                    |
-| `coalesce`  | `(state, opt) -> opt or state`| Keep state if input is None          |
+- **Calculation**:
+    `<calc_expr>` is re-evaluated when dependencies change, and the result becomes the new value.
+    Must be a PHLE.
+- **Writes**: Fan-in stores can be modified in event handlers through:
+  - Direct assignment: `<id> = <expr2>` where `<expr2>` must be a PHLE
+  - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
+- **Reactive continuation**:
+    After a manual write, the store continues tracking dependencies. The next time dependencies
+    change, `<calc_expr>` is re-evaluated and overwrites the manually set value.
+- **Order/consistency**:
+    Per drain cycle, `<calc_expr>` is evaluated once after dependencies settle (no glitches). If
+    both a dependency update and manual write occur in the same cycle, the manual write wins.
+- **Reactivity**: 
+    When the value changes (either through calculation or manual write), dependent stores are
+    notified. See [Mutation Detection](10_store_basics.md#mutation-detection) for details on how 
+    the runtime detects changes.
+- **Type**: Can be inferred from `<calc_expr>` or explicitly annotated.
 
 ## Examples
 
-### Simple Mirroring (Default)
-
-The default `replace` reducer makes fan-in behave like a derived store with manual override capability:
+### Simple Mirroring
 
 ```frel
 fragment SelectionSync(external_selection: Option<u32>) {
@@ -52,17 +51,22 @@ fragment SelectionSync(external_selection: Option<u32>) {
 }
 ```
 
+When `external_selection` changes, `selection` updates automatically. When you click "Select Item 5",
+`selection` is set to `Some(5)`. The next time `external_selection` changes, `selection` will mirror
+the new value.
+
 ### Accumulating Events
 
 Collect events over time while allowing manual clear:
 
 ```frel
-fragment EventLog(events: source<Event>) {
-    fanin log: Vec<Event> = events.latest() with |mut state, input| {
-        if let Some(event) = input {
-            state.push(event);
-        }
-        state
+fragment EventLog() {
+    source events = sse("/events")
+    writable log: Vec<Event> = vec![]
+
+    // Accumulate events as they arrive
+    events .. on_value |event: Event| {
+        log.push(event)
     }
 
     column {
@@ -73,20 +77,21 @@ fragment EventLog(events: source<Event>) {
         }
 
         button { "Clear Log" }
-            .. on_click { log = vec![] }  // Manual clear
+            .. on_click { log = vec![] }
     }
 }
 ```
 
-### Using the `append` Reducer
-
-Simpler syntax for accumulation:
+### Notification Center with Removal
 
 ```frel
 fragment NotificationCenter() {
     source notifications = sse("/notifications")
+    writable notification_list: Vec<Notification> = vec![]
 
-    fanin notification_list = notifications.latest() with append
+    notifications .. on_value |notif: Notification| {
+        notification_list.push(notif)
+    }
 
     column {
         repeat on notification_list as notif {
@@ -109,58 +114,19 @@ fragment NotificationCenter() {
 }
 ```
 
-### Keeping Maximum Value
-
-Track the highest value seen:
-
-```frel
-fragment HighScore(current_score: u32) {
-    fanin high_score = current_score with max_by
-
-    column {
-        text { "Current: ${current_score}" }
-        text { "High Score: ${high_score}" }
-
-        button { "Reset High Score" }
-            .. on_click { high_score = 0 }
-    }
-}
-```
-
-### Coalesce Pattern
-
-Keep last valid value when new value is None:
-
-```frel
-fragment LastKnownLocation(gps_signal: Option<Location>) {
-    fanin last_location = gps_signal with coalesce
-
-    column {
-        select on gps_signal {
-            Some(loc) => text { "Current: ${loc}" } .. font { color: Green }
-            None => text { "Signal lost, last known: ${last_location}" }
-                .. font { color: Orange }
-        }
-
-        button { "Clear History" }
-            .. on_click { last_location = None }
-    }
-}
-```
-
-### Custom Reducer: Deduplication
+### Deduplication
 
 Only add items that aren't already in the list:
 
 ```frel
-fragment UniqueItemList(new_item: source<Item>) {
-    fanin items: Vec<Item> = new_item.latest() with |mut state, input| {
-        if let Some(item) = input {
-            if !state.iter().any(|i| i.id == item.id) {
-                state.push(item);
-            }
+fragment UniqueItemList() {
+    source new_item = sse("/items")
+    writable items: Vec<Item> = vec![]
+
+    new_item .. on_value |item: Item| {
+        if !items.iter().any(|i| i.id == item.id) {
+            items.push(item)
         }
-        state
     }
 
     column {
@@ -176,20 +142,20 @@ fragment UniqueItemList(new_item: source<Item>) {
 }
 ```
 
-### Custom Reducer: Sliding Window
+### Sliding Window
 
 Keep only the last N items:
 
 ```frel
-fragment RecentActivity(activity: source<Activity>) {
-    fanin recent: Vec<Activity> = activity.latest() with |mut state, input| {
-        if let Some(act) = input {
-            state.push(act);
-            if state.len() > 10 {
-                state.remove(0);  // Keep only last 10
-            }
+fragment RecentActivity() {
+    source activity = sse("/activity")
+    writable recent: Vec<Activity> = vec![]
+
+    activity .. on_value |act: Activity| {
+        recent.push(act)
+        if recent.len() > 10 {
+            recent.remove(0)  // Keep only last 10
         }
-        state
     }
 
     column {
@@ -204,24 +170,22 @@ fragment RecentActivity(activity: source<Activity>) {
 
 ### Combining Multiple Sources
 
-Fan-in can combine data from multiple reactive sources:
+Merge multiple event streams into one timeline:
 
 ```frel
 fragment CombinedFeed() {
     source user_actions = sse("/user-actions")
     source system_events = sse("/system-events")
+    writable timeline: Vec<Event> = vec![]
 
-    // Merge both streams into one timeline
-    fanin timeline = match (user_actions.latest(), system_events.latest()) {
-        (Some(action), _) => Some(Event::UserAction(action)),
-        (_, Some(event)) => Some(Event::SystemEvent(event)),
-        _ => None,
-    } with |mut state: Vec<Event>, input| {
-        if let Some(event) = input {
-            state.push(event);
-            state.sort_by_key(|e| e.timestamp());
-        }
-        state
+    user_actions .. on_value |action: UserAction| {
+        timeline.push(Event::UserAction(action))
+        timeline.sort_by_key(|e| e.timestamp())
+    }
+
+    system_events .. on_value |event: SystemEvent| {
+        timeline.push(Event::SystemEvent(event))
+        timeline.sort_by_key(|e| e.timestamp())
     }
 
     column {
@@ -240,15 +204,16 @@ fragment CombinedFeed() {
 Track validation results but allow manual override:
 
 ```frel
-fragment EmailInput(validator: source<ValidationResult>) {
+fragment EmailInput() {
+    source validator = validation_source()
     writable email = ""
     fanin is_valid = validator.latest().map(|v| v.is_ok()).unwrap_or(true)
 
     column {
         text_input { email }
             .. on_change |new_email: String| {
-                email = new_email;
-                trigger_validation(email.clone());
+                email = new_email
+                trigger_validation(email.clone())
             }
 
         when !is_valid {
@@ -270,12 +235,10 @@ Accumulate requests but allow manual flush:
 ```frel
 fragment RateLimitedSearch(query: String) {
     source debounced = debounce(query, 300)  // Wait 300ms after typing stops
+    writable pending_queries: Vec<String> = vec![]
 
-    fanin pending_queries = debounced.latest() with |mut state: Vec<String>, input| {
-        if let Some(q) = input {
-            state.push(q);
-        }
-        state
+    debounced .. on_value |q: String| {
+        pending_queries.push(q)
     }
 
     column {
@@ -285,9 +248,9 @@ fragment RateLimitedSearch(query: String) {
             button { "Search Now" }
                 .. on_click {
                     for query in &pending_queries {
-                        perform_search(query.clone());
+                        perform_search(query.clone())
                     }
-                    pending_queries = vec![];
+                    pending_queries = vec![]
                 }
         }
     }
@@ -299,99 +262,57 @@ fragment RateLimitedSearch(query: String) {
 | Aspect          | Read-only (`decl`)  | Writable          | Fan-in                  |
 |-----------------|---------------------|-------------------|-------------------------|
 | Dependencies    | Auto-subscribed     | None              | Auto-subscribed         |
-| Assignment      | ✗ Not allowed       | ✓ Full control    | ✓ Overrides reducer     |
+| Assignment      | ✗ Not allowed       | ✓ Full control    | ✓ Temporarily overrides |
 | Updates         | Auto on dep change  | Manual only       | Both auto and manual    |
 | Use case        | Pure computation    | User input state  | Hybrid reactive/manual  |
 
 ## Best Practices
 
-### Choose the Right Reducer
+### Choose the Right Store Type
 
 ```frel
-// For mirroring with override capability - use default
+// For pure derived values - use decl
+decl total = price * quantity
+
+// For user input and independent state - use writable
+writable email = ""
+
+// For reactive mirroring with override capability - use fanin
 fanin selection = external.selection
 
-// For accumulation - use append
-fanin log = events.latest() with append
-
-// For last-valid-value - use coalesce
-fanin last_gps = gps_signal with coalesce
-
-// For custom logic - write a reducer
-fanin unique_items = new_items.latest() with |state, input| { /* custom */ }
-```
-
-### Keep Reducers Pure
-
-Reducers should not have side effects:
-
-```frel
-// Bad - side effect in reducer
-fanin items = new_item with |mut state, input| {
-    log("Adding item");  // Side effect!
-    state.push(input);
-    state
-}
-
-// Good - side effects in event handler
-fanin items = new_item with append
-
-button { "Add" }
-    .. on_click {
-        log("Adding item");  // Side effect in handler
-        trigger_add();
-    }
+// For accumulation from sources - use writable + on_value
+writable log: Vec<Event> = vec![]
+events .. on_value |event| { log.push(event) }
 ```
 
 ### Manual Override Semantics
 
-Manual assignments replace the current state and become the new base for future reducer applications:
+Manual assignments temporarily override the reactive expression:
 
 ```frel
-fanin count = external_count  // Uses replace reducer by default
+fanin selection = external.selection
 
-button { "Override to 100" }
-    .. on_click { count = 100 }
+button { "Override to 5" }
+    .. on_click { selection = Some(5) }
 
 // After this click:
-// - count is now 100
-// - When external_count next changes (e.g., to 50):
-//   - Reducer is called: replace(100, 50) = 50
-//   - count becomes 50
-// - The reducer uses the manually set value (100) as the state
-
-// With accumulation:
-fanin items: Vec<Item> = source.latest() with append
-
-button { "Clear" }
-    .. on_click { items = vec![] }
-
-// After clear:
-// - items is vec![]
-// - When source next emits an item "foo":
-//   - Reducer is called: append(vec![], "foo") = vec!["foo"]
-//   - items becomes vec!["foo"]
-// - Future emissions continue appending to this new cleared base
+// - selection is now Some(5)
+// - When external.selection next changes (e.g., to Some(10)):
+//   - selection becomes Some(10)
+//   - The manual override is replaced by the reactive value
 ```
 
-**Key principle:** Manual assignment sets a new state value. The reducer continues to operate, using this new value as the state parameter in future applications.
+**Key principle:** Manual assignment temporarily sets a value. The next time dependencies change, 
+the reactive expression takes over again.
 
-### Type Annotations for Reducers
+### When to Use Fan-in vs Writable
 
-**When a custom reducer is used, type annotation is mandatory:**
+Use **fan-in** when:
+- You want the value to track a reactive expression most of the time
+- But occasionally need to override it manually
+- And want reactive tracking to resume after the override
 
-```frel
-// Required - explicit type with custom reducer
-fanin items: Vec<Item> = source.latest() with |state, input| {
-    // Compiler knows state is Vec<Item>
-    // ...
-}
-
-// Optional - type can be inferred without reducer
-fanin selection = external.selection  // Type inferred from external.selection
-
-// Optional - type can be inferred with built-in reducer
-fanin log = events.latest() with append  // Type inferred from events
-```
-
-**Rationale:** While the type could theoretically be inferred from the reducer's return type, explicit annotation improves code clarity and helps catch type mismatches early.
+Use **writable** when:
+- The state is primarily controlled by user input or event handlers
+- You don't want automatic updates from dependencies
+- You need full manual control

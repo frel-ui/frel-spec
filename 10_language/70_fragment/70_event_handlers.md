@@ -7,7 +7,7 @@ imperative logic into the otherwise declarative fragment body.
 ## Syntax
 
 Event handlers are instructions and follow the standard instruction syntax rules (inner or postfix).
-See [Fragment Creation - Instructions](20_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for style guidelines on when to use each form.
+See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for style guidelines on when to use each form.
 
 ```text
 <event-handler> ::= <event-name> [ <parameter-clause> ] "{" <handler-body> "}"
@@ -225,6 +225,6 @@ button { "Fetch" } .. on_click {
 
 ## See Also
 
-- [Instructions](40_instructions.md) - Event handler syntax and available events
-- [Store Declarations](20_reactive_state/10_store_basics.md) - Store mutations in handlers
-- [Detached UI](50_detached_ui.md) - Using handlers with modals and toasts
+- [Instructions](60_instructions.md) - Event handler syntax and available events
+- [Store Declarations](../20_reactive_state/10_store_basics.md) - Store mutations in handlers
+- [Detached UI](80_detached_ui.md) - Using handlers with modals and toasts

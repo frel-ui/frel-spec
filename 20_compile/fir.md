@@ -1,6 +1,6 @@
 # Fragment IR
 
-- The struct `FragmentIR` contains the IR of a fragment template.
+- The struct `FragmentIR` contains the IR of a fragment definition.
 - The Fragment Linker processes the IR to link fragments (creating handles, stores, and subscriptions).
 - Once a fragment is built, the IR is not used anymore by that fragment.
 

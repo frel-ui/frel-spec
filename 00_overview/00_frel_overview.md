@@ -48,14 +48,14 @@ state (reactive)     transformation                             UI elements
 * [**Store**](../30_runtime/stores.md)
   A backend-neutral state container exposing reactive notifications to fragments and other stores.
 
-* **Fragment Template**
-  A declarative definition authored in the Frel DSL. Templates are compiled into Fragment IR.
+* **Fragment Definition**
+  A declarative definition authored in the Frel DSL. Definitions are compiled into Fragment IR.
 
 * **Fragment**
-  A runtime composition derived from a fragment template. It consists of a handle (lifetime), stores (data), 
+  A runtime composition derived from a fragment definition. It consists of a handle (lifetime), stores (data),
   and subscriptions (reactivity). A fragment can be headless (logic-only) or produce renderable content.
 
-* [**Scene**](../30_runtime/scene.md)
+* [**Scene**](../10_language/70_fragment/15_scene_model.md)
   A collection of platform-independent UI nodes. Organizes all visual content into **channels**,
   **viewports**, and **layers**.
 
@@ -88,15 +88,15 @@ DSL Source
 
 | Stage                  | Component                                | Responsibility                                                                                                                                           |
 |------------------------|------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. Source Code**     | **Frel DSL**                             | **Defines** declarative fragment templates written by the developer.                                                                                     |
+| **1. Source Code**     | **Frel DSL**                             | **Defines** declarative fragment definitions written by the developer.                                                                                   |
 | **2. Compile Stage**   | **Fragment Compiler** (procedural macro) | **Transforms** the DSL into backend-neutral **Fragment IR (FIR)**; performs validation, symbol resolution, and metadata embedding.                       |
 | **3. Link Stage**      | **Fragment Linker** (runtime)            | **Instantiates and links** fragments (creates handles), stores, and handlers into a connected runtime tree.                                              |
 | **4. Execution Stage** | **Fragment Renderer** (runtime)          | **Applies** the linked runtime tree to the target backend. After the initial build, updates are propagated incrementally through reactive notifications. |
 
 ## Core Concepts
 
-* [**Frel DSL**](../10_language/00_overview.md)
-  A declarative language for describing fragment templates.
+* [**Frel**](../10_language/00_language_overview.md)
+  A declarative language for describing user interfaces.
 
 * [**Fragment Compiler (FC)**](../20_compile/compiler.md)
   The procedural macro that compiles the Frel DSL into **Fragment IR (FIR)**.

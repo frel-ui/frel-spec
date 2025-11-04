@@ -10,9 +10,11 @@ Writable stores hold mutable state that can be updated through explicit assignme
 
 - **Kind**: Writable stores hold mutable state with no automatic subscriptions to other stores.
 - **Initializer**: `<expr>` is evaluated once at store creation. Even if it mentions other stores, there's no ongoing subscription. Must be a PHLE.
-- **Writes**: `<id> = <expr2>` allowed in event handlers at any time. The right-hand side `<expr2>` must be a PHLE.
-- **Updates**: Only through direct assignment (no automatic recomputation).
-- **Reactivity**: When the value changes, dependent stores are notified and recompute.
+- **Writes**: Writable stores can be modified in event handlers through:
+  - Direct assignment: `<id> = <expr2>` where `<expr2>` must be a PHLE
+  - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
+- **Updates**: Only through explicit writes (no automatic recomputation from dependencies).
+- **Reactivity**: When the value changes, dependent stores are notified and recompute. See [Mutation Detection](10_store_basics.md#mutation-detection) for details on how the runtime detects changes.
 - **Persistence**: Implemented by the adapter of the host platform.
 
 `<lifetime>` is one of:

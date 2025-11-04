@@ -457,7 +457,7 @@ theme Button {
 
 ### Automatic Resolution
 
-The appropriate theme is automatically selected based on the [environment](20_reactive_state/60_standard_sources.md#environment):
+The appropriate theme is automatically selected based on the [environment](../20_reactive_state/60_standard_sources.md#environment):
 
 ```frel
 fragment ThemedButton(text: String) {
@@ -588,7 +588,7 @@ Like all [resources](60_resources.md#resources-as-shared-sources), themes are **
 
 - **Global lifecycle:** Created once during application initialization, not per-fragment
 - **Shared subscriptions:** All fragments accessing the same theme subscribe to the same underlying source
-- **Reactive updates:** When the [environment](20_reactive_state/60_standard_sources.md#environment) changes (e.g., appearance switch), themes automatically re-resolve and notify subscribers
+- **Reactive updates:** When the [environment](../20_reactive_state/60_standard_sources.md#environment) changes (e.g., appearance switch), themes automatically re-resolve and notify subscribers
 - **Status tracking:** Themes have `Loading`, `Ready`, or `Error` status (accessible via `.status()`)
 - **Optional values:** Themes provide `.latest()` to access the current value
 
@@ -981,6 +981,6 @@ fragment TextInput(value: String, error: Option<String>) {
 ## See Also
 
 - [Resources](60_resources.md) - Resource system overview
-- [Standard Sources](20_reactive_state/60_standard_sources.md#environment) - Environment source for theme qualification
-- [Instructions](40_instructions.md) - Available styling instructions
-- [Store Declarations](20_reactive_state/10_store_basics.md#data-source) - Source system
+- [Standard Sources](../20_reactive_state/60_standard_sources.md#environment) - Environment source for theme qualification
+- [Instructions](../70_fragment/60_instructions.md) - Available styling instructions
+- [Store Declarations](../20_reactive_state/10_store_basics.md#data-source) - Source system

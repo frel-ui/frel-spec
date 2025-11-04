@@ -3,7 +3,7 @@
 Instructions configure layout, styling, and behavior for fragments. They can be written using either
 inner syntax (inside the fragment's content block) or postfix syntax (after the fragment with `..`).
 
-See [Fragment Creation - Instructions](20_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for detailed syntax rules and style guidelines.
+See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for detailed syntax rules and style guidelines.
 
 **DIP**: Device Independent Pixel (floating point)
 
@@ -176,7 +176,7 @@ align_items_center_bottom
 `align_relative { horizontal: (before|start|center|end|after) vertical : (above|start|center|end|below)  }`
 
 Note: `align_relative` is used primarily by popups to align themselves to the element they are relative to.
-See [Detached UI - Tooltip](50_detached_ui.md#tooltip).
+See [Detached UI - Tooltip](80_detached_ui.md#tooltip).
 
 The following diagram shows the positions for each alignment. The corners/edges touch the node 
 they are relative to (end/start at the previous/next pixel).
@@ -372,7 +372,7 @@ icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
 
 - Only affects monochrome/symbolic icons and vector graphics
 - For multi-color icons, `tint` has no effect
-- Primarily used with the `icon` fragment (see [Standard Templates](12_standard_templates.md#icon))
+- Primarily used with the `icon` fragment (see [Standard Fragments](30_standard_fragments.md#icon))
 - Not applicable to raster images (use `image` fragment without tint for photos/bitmaps)
 
 ## Focus

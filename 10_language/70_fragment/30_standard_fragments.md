@@ -1,7 +1,7 @@
-# Standard Fragment Templates
+# Standard Fragments
 
-These fragment templates are provided by the standard library and serve as the building blocks for
-Fragment applications. They are compiled to efficient native rendering primitives specific to each 
+These fragment definitions are provided by the standard library and serve as the building blocks for
+Fragment applications. They are compiled to efficient native rendering primitives specific to each
 host platform.
 
 ## Basic Fragments
@@ -46,7 +46,7 @@ text { "Click here" }
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Text-specific instructions: `font`, `line_height`, `text_wrap`, `text_overflow`, `underline`, `small_caps`, `letter_spacing`, `no_select`
 - String interpolation using `${}` is supported and reactive
 - Without `text_wrap { wrap }`, text renders as a single line
@@ -90,7 +90,7 @@ image { "icon.png" }
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Use explicit `width` and `height` to prevent layout shift during loading
 - Images are loaded asynchronously; loading state depends on platform adapter
 - Resource references are resolved via the resource system (see [Resources](60_resources.md))
@@ -133,7 +133,7 @@ icon { icon_name } .. width { 32 } .. height { 32 } .. tint { Blue }
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Icon-specific instruction: `tint { <color> }` - tint color for monochrome icons
 - Icons are typically vector graphics (SVG or icon fonts)
 - `tint` only affects monochrome/symbolic icons; multi-color icons ignore it
@@ -218,7 +218,7 @@ box {
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Children without `position` or `align_self` are positioned at (0, 0)
 - Coordinates in `position { top left }` are relative to content box (excludes surrounding)
 - Later children render on top of earlier children (painter's algorithm)
@@ -294,7 +294,7 @@ column {
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Container-specific: `fill_strategy`, `gap`, `align_items`, `space_between`, `space_around`
 - Children with `height { expand }` share remaining space equally
 - Children with `height { container }` try to take all available space
@@ -368,7 +368,7 @@ row {
 
 **Notes:**
 
-- Supports all standard instructions - see [Instructions](40_instructions.md)
+- Supports all standard instructions - see [Instructions](60_instructions.md)
 - Container-specific: `fill_strategy`, `gap`, `align_items`, `space_between`, `space_around`
 - Children with `width { expand }` share remaining space equally
 - Children with `width { container }` try to take all available space
