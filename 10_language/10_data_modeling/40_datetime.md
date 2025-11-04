@@ -8,13 +8,13 @@ Represents a specific moment in time (UTC):
 
 ```frel
 scheme Event {
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
 
-    published_at { Instant }
-        .. optional { true }
+    published_at .. Instant
+        .. optional
 
-    updated_at { Instant }
+    updated_at .. Instant
 }
 ```
 
@@ -42,11 +42,11 @@ let elapsed = Instant::now() - event.created_at  // Returns Duration
 **Timestamps:**
 ```frel
 scheme Post {
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
         .. readonly { true }
 
-    updated_at { Instant }
+    updated_at .. Instant
         .. auto_now { true }
 }
 ```
@@ -54,8 +54,8 @@ scheme Post {
 **Scheduling:**
 ```frel
 scheme Meeting {
-    start_time { Instant }
-    end_time { Instant }
+    start_time .. Instant
+    end_time .. Instant
 }
 ```
 
@@ -65,12 +65,12 @@ Represents a calendar date without time information (e.g., 2024-03-15):
 
 ```frel
 scheme Schedule {
-    birth_date { LocalDate }
+    birth_date .. LocalDate
 
-    event_date { LocalDate }
+    event_date .. LocalDate
         .. default { LocalDate::today() }
 
-    deadline { LocalDate }
+    deadline .. LocalDate
 }
 ```
 
@@ -102,10 +102,10 @@ let last_week = today - Duration::days(7)
 
 ```frel
 scheme Event {
-    birth_date { LocalDate }
+    birth_date .. LocalDate
         .. before { LocalDate::today() }  // Must be in the past
 
-    event_date { LocalDate }
+    event_date .. LocalDate
         .. after { LocalDate::today() }   // Must be in the future
 }
 ```
@@ -116,9 +116,9 @@ Represents a time of day without date information (e.g., 14:30:00):
 
 ```frel
 scheme Alarm {
-    alarm_time { LocalTime }
+    alarm_time .. LocalTime
 
-    reminder_time { LocalTime }
+    reminder_time .. LocalTime
         .. default { LocalTime::from_hms(9, 0, 0) }
 }
 ```
@@ -146,18 +146,18 @@ if current_time > alarm_time {
 **Daily schedules:**
 ```frel
 scheme DailySchedule {
-    wake_up { LocalTime }
-    work_start { LocalTime }
-    lunch { LocalTime }
-    work_end { LocalTime }
+    wake_up .. LocalTime
+    work_start .. LocalTime
+    lunch .. LocalTime
+    work_end .. LocalTime
 }
 ```
 
 **Opening hours:**
 ```frel
 scheme BusinessHours {
-    open_time { LocalTime }
-    close_time { LocalTime }
+    open_time .. LocalTime
+    close_time .. LocalTime
 }
 ```
 
@@ -167,10 +167,10 @@ Represents a date and time without timezone information:
 
 ```frel
 scheme Appointment {
-    scheduled { LocalDateTime }
+    scheduled .. LocalDateTime
 
-    completed { LocalDateTime }
-        .. optional { true }
+    completed .. LocalDateTime
+        .. optional
 }
 ```
 
@@ -204,8 +204,8 @@ let later = dt + Duration::hours(2)
 **Event scheduling (without timezone):**
 ```frel
 scheme Event {
-    scheduled_at { LocalDateTime }
-    notes { String }
+    scheduled_at .. LocalDateTime
+    notes .. String
 }
 ```
 
@@ -215,7 +215,7 @@ Represents a timezone (e.g., "America/New_York", "Europe/London"):
 
 ```frel
 scheme UserSettings {
-    timezone { Timezone }
+    timezone .. Timezone
         .. default { Timezone::system() }
 }
 ```
@@ -243,7 +243,7 @@ let local_time = instant.in_timezone(tz)
 **User preferences:**
 ```frel
 scheme UserProfile {
-    timezone { Timezone }
+    timezone .. Timezone
         .. default { Timezone::system() }
 }
 ```
@@ -251,8 +251,8 @@ scheme UserProfile {
 **Multi-timezone scheduling:**
 ```frel
 scheme Meeting {
-    start_time { Instant }
-    timezone { Timezone }
+    start_time .. Instant
+    timezone .. Timezone
 }
 ```
 
@@ -270,7 +270,7 @@ Represents a length of time:
 
 ```frel
 scheme Meeting {
-    duration { Duration }
+    duration .. Duration
         .. default { Duration::hours(1) }
         .. min { Duration::minutes(15) }
         .. max { Duration::hours(8) }
@@ -316,12 +316,12 @@ if task_duration > Duration::hours(1) {
 
 ```frel
 scheme Task {
-    estimated_duration { Duration }
+    estimated_duration .. Duration
         .. min { Duration::minutes(5) }
         .. max { Duration::hours(8) }
 
-    actual_duration { Duration }
-        .. optional { true }
+    actual_duration .. Duration
+        .. optional
 }
 ```
 
@@ -330,10 +330,10 @@ scheme Task {
 **Timeouts:**
 ```frel
 scheme Config {
-    request_timeout { Duration }
+    request_timeout .. Duration
         .. default { Duration::seconds(30) }
 
-    session_timeout { Duration }
+    session_timeout .. Duration
         .. default { Duration::hours(24) }
 }
 ```
@@ -341,9 +341,9 @@ scheme Config {
 **Time tracking:**
 ```frel
 scheme TimeEntry {
-    duration { Duration }
-    task { String }
-    date { LocalDate }
+    duration .. Duration
+    task .. String
+    date .. LocalDate
 }
 ```
 
@@ -353,15 +353,15 @@ scheme TimeEntry {
 
 ```frel
 scheme Event {
-    title { String }
+    title .. String
 
     // Store as Instant (UTC) for consistency
-    start_time { Instant }
+    start_time .. Instant
 
     // Store user's timezone for display
-    timezone { Timezone }
+    timezone .. Timezone
 
-    duration { Duration }
+    duration .. Duration
         .. default { Duration::hours(1) }
 }
 
@@ -382,23 +382,23 @@ fragment EventDisplay(event: Event, user_tz: Timezone) {
 
 ```frel
 scheme Appointment {
-    id { Uuid }
+    id .. Uuid
         .. default { Uuid::new() }
 
-    title { String }
+    title .. String
 
     // Use Instant for absolute time
-    scheduled_at { Instant }
+    scheduled_at .. Instant
 
     // User's timezone for display
-    timezone { Timezone }
+    timezone .. Timezone
 
-    duration { Duration }
+    duration .. Duration
         .. default { Duration::minutes(30) }
         .. min { Duration::minutes(15) }
         .. max { Duration::hours(4) }
 
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
         .. readonly { true }
 }
@@ -408,15 +408,15 @@ scheme Appointment {
 
 ```frel
 scheme BusinessHours {
-    open_time { LocalTime }
+    open_time .. LocalTime
         .. default { LocalTime::from_hms(9, 0, 0) }
 
-    close_time { LocalTime }
+    close_time .. LocalTime
         .. default { LocalTime::from_hms(17, 0, 0) }
 
-    timezone { Timezone }
+    timezone .. Timezone
 
-    closed_dates { Set<LocalDate> }
+    closed_dates .. Set<LocalDate>
 }
 ```
 
@@ -438,13 +438,13 @@ scheme BusinessHours {
 ```frel
 // Good - absolute time, timezone-independent
 scheme Event {
-    start_time { Instant }
-    timezone { Timezone }  // Store for display
+    start_time .. Instant
+    timezone .. Timezone  // Store for display
 }
 
 // Avoid - ambiguous without timezone
 scheme Event {
-    start_time { LocalDateTime }  // Which timezone?
+    start_time .. LocalDateTime  // Which timezone?
 }
 ```
 
@@ -464,13 +464,13 @@ fragment EventCard(event: Event, user_tz: Timezone) {
 ```frel
 // Good - date without time
 scheme Holiday {
-    date { LocalDate }
-    name { String }
+    date .. LocalDate
+    name .. String
 }
 
 // Avoid - unnecessary time information
 scheme Holiday {
-    date { Instant }  // Overkill for just a date
+    date .. Instant  // Overkill for just a date
 }
 ```
 
@@ -478,8 +478,8 @@ scheme Holiday {
 
 ```frel
 scheme Event {
-    start_date { LocalDate }
-    end_date { LocalDate }
+    start_date .. LocalDate
+    end_date .. LocalDate
         .. validate { |end, data| end >= data.start_date }
         .. error_message { "End date must be after start date" }
 }

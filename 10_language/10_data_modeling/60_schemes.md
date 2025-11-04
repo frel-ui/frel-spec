@@ -1,14 +1,14 @@
 # Schemes
 
 Schemes define structured data types with built-in validation, metadata, and automatic UI
-integration. They serve as the foundation for forms, structured state, and data persistence in 
+integration. They serve as the foundation for forms, structured state, and data persistence in
 Frel applications.
 
 ## Syntax
 
 ```
 scheme <Name> {
-    <field_name> { <Type> } [.. <instruction>]*
+    <field_name> .. <type> [.. <instruction>]*
     ...
 }
 ```
@@ -16,7 +16,8 @@ scheme <Name> {
 ## Semantics
 
 - **Fields**: Named typed values with optional validation and metadata
-- **Types**: Primitives, Frel collections (List, Set, Map), DateTime types, enums, or nested schemes
+- **Types**: Primitives, Frel collections (List, Set, Map, Tree), DateTime types, enums, or nested
+  schemes
 - **Instructions**: Validation rules, defaults, constraints attached via `..`
 - **Validation**: Automatic validation based on field instructions
 - **UI Integration**: Automatic form generation and two-way data binding
@@ -25,27 +26,28 @@ scheme <Name> {
 
 ```frel
 scheme User {
-    username { String }
+    username .. String
         .. min_len { 3 }
         .. max_len { 20 }
         .. blank { false }
 
-    email { String }
+    email .. String
         .. pattern { r"^[\w\.-]+@[\w\.-]+\.\w+$" }
         .. blank { false }
 
-    age { u8 }
+    age .. u8
         .. range { 13 150 }
-        .. optional { true }
+        .. optional
 
-    newsletter { Boolean }
+    newsletter .. bool
         .. default { false }
 }
 ```
 
 ## Field Types
 
-Schemes support all Frel types. For details on primitive types, collections, and DateTime types, see [Data Basics](10_data_basics.md).
+Schemes support all Frel types. For details on primitive types, collections, and DateTime types,
+see [Data Basics](10_data_basics.md).
 
 ### DateTime Types
 
@@ -54,24 +56,24 @@ Frel provides standard temporal types:
 ```frel
 scheme Event {
     // Instant - point in time (UTC)
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
 
     // LocalDate - date without time (2024-03-15)
-    event_date { LocalDate }
+    event_date .. LocalDate
 
     // LocalTime - time without date (14:30:00)
-    alarm_time { LocalTime }
+    alarm_time .. LocalTime
 
     // LocalDateTime - date and time, no timezone
-    scheduled { LocalDateTime }
+    scheduled .. LocalDateTime
 
     // Timezone - IANA timezone identifier
-    timezone { Timezone }
-        .. optional { true }
+    timezone .. Timezone
+        .. optional
 
     // Duration - time span
-    duration { Duration }
+    duration .. Duration
         .. default { Duration::hours(1) }
 }
 ```
@@ -85,16 +87,16 @@ enum Status { draft published archived }
 
 scheme Article {
     // Top-level enum
-    status { Status }
+    status .. Status
         .. default { Status::draft }
 
     // Inline enum
-    priority { enum { low medium high } }
+    priority enum { low medium high }
         .. default { priority::medium }
 }
 ```
 
-See [Enums](20_enums.md) for more details.
+See [Enums](50_enums.md) for more details.
 
 ### Nested Schemes
 
@@ -102,18 +104,18 @@ Schemes can reference other schemes:
 
 ```frel
 scheme Address {
-    street { String } .. blank { false }
-    city { String } .. blank { false }
-    zip { String } .. pattern { r"\d{5}" }
+    street .. String .. blank { false }
+    city .. String .. blank { false }
+    zip .. String .. pattern { r"\d{5}" }
 }
 
 scheme User {
-    name { String }
-    address { Address }
-        .. optional { true }
+    name .. String
+    address .. Address
+        .. optional
 
     // Collection of nested schemes
-    previous_addresses { List<Address> }
+    previous_addresses .. List<Address>
         .. max_items { 5 }
 }
 ```
@@ -126,7 +128,7 @@ scheme User {
 
 ```frel
 scheme Text {
-    name { String }
+    name .. String
         .. min_len { 3 }          // Minimum length
         .. max_len { 50 }         // Maximum length
         .. blank { false }        // Disallow empty strings
@@ -139,13 +141,14 @@ scheme Text {
 
 ```frel
 scheme Numbers {
-    age { u8 }
+    age .. u8
         .. range { 18 65 }        // Min and max inclusive
         .. default { 18 }
 
-    price { f64 }
-        .. min { 0.0 }           // Minimum value
-        .. max { 1000000.0 }     // Maximum value
+    price .. Decimal
+        .. min { Decimal::zero() }           // Minimum value
+        .. max { Decimal::from_str("1000000.00") }     // Maximum value
+        .. precision { 2 }
 }
 ```
 
@@ -153,13 +156,13 @@ scheme Numbers {
 
 ```frel
 scheme Scheduling {
-    birth_date { LocalDate }
+    birth_date .. LocalDate
         .. before { LocalDate::today() }  // Must be in the past
 
-    appointment { Instant }
+    appointment .. Instant
         .. after { Instant::now() }       // Must be in the future
 
-    duration { Duration }
+    duration .. Duration
         .. min { Duration::minutes(15) }
         .. max { Duration::hours(8) }
 }
@@ -169,17 +172,17 @@ scheme Scheduling {
 
 ```frel
 scheme Lists {
-    tags { List<String> }
+    tags .. List<String>
         .. min_items { 1 }
         .. max_items { 10 }
         .. each .. min_len { 2 }    // Validate each item
         .. each .. max_len { 20 }
         .. default { List::new() }
 
-    categories { Set<String> }
+    categories .. Set<String>
         .. max_items { 5 }
 
-    metadata { Map<String, String> }
+    metadata .. Map<String, String>
         .. max_items { 20 }
         .. key_pattern { "^[a-z_]+$" }  // Validate keys
 }
@@ -187,19 +190,27 @@ scheme Lists {
 
 ### Optional Fields
 
+Fields are required by default. Use the `.. optional` instruction to make a field nullable:
+
 ```frel
 scheme Profile {
     // Required by default
-    username { String }
+    username .. String
 
     // Explicitly optional
-    bio { String }
-        .. optional { true }
+    bio .. String
+        .. optional
 
-    age { u8 }
-        .. optional { true }
+    age .. u8
+        .. optional
 }
 ```
+
+**Optional field semantics:**
+- Maps to `Option<T>` in Rust, `T | null` in TypeScript, `Optional[T]` in Python
+- Can be absent (`null`/`None`) or present with a value
+- Validation rules (if any) only apply when value is present
+- Optional fields can have defaults, but default is not required
 
 ### Default Values
 
@@ -207,16 +218,16 @@ Default values are evaluated at instance creation:
 
 ```frel
 scheme Settings {
-    theme { String }
+    theme .. String
         .. default { "dark" }
 
-    volume { f32 }
+    volume .. f32
         .. default { 0.5 }
 
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }  // Evaluated at creation
 
-    tags { List<String> }
+    tags .. List<String>
         .. default { List::new() }
 }
 ```
@@ -225,10 +236,10 @@ scheme Settings {
 
 ```frel
 scheme Entity {
-    id { u64 }
+    id .. u64
         .. readonly { true }
 
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
         .. readonly { true }
 }
@@ -240,19 +251,19 @@ For code generation, database mapping, etc:
 
 ```frel
 scheme User {
-    id { u64 }
+    id .. u64
         .. db_primary_key { true }
         .. readonly { true }
 
-    email { String }
+    email .. String
         .. db_unique { true }
         .. db_indexed { true }
 
-    created_at { Instant }
+    created_at .. Instant
         .. auto_now_add { true }
         .. readonly { true }
 
-    updated_at { Instant }
+    updated_at .. Instant
         .. auto_now { true }
 }
 ```
@@ -261,7 +272,7 @@ scheme User {
 
 ```frel
 scheme User {
-    username { String }
+    username .. String
         .. label { "user.username" }           // I18n key for label
         .. help_text { "user.username.help" }  // I18n key for tooltip
         .. placeholder { "user.username.placeholder" }
@@ -274,15 +285,15 @@ scheme User {
 
 ```frel
 scheme Login {
-    username { String }
+    username .. String
         .. min_len { 3 }
         .. blank { false }
 
-    password { Secret }
+    password .. Secret
         .. min_len { 8 }
         .. blank { false }
 
-    remember { Boolean }
+    remember .. Boolean
         .. default { false }
 }
 
@@ -321,6 +332,7 @@ When bound to widgets, schemes automatically provide:
 5. **Validation**: Real-time field-level validation
 
 **Example:**
+
 ```frel
 text_input { user.email }
 // Automatically:
@@ -386,9 +398,9 @@ Scheme instances support fine-grained reactivity:
 
 ```frel
 scheme Settings {
-    theme { String }
-    font_size { u8 }
-    auto_save { bool }
+    theme .. String
+    font_size .. u8
+    auto_save .. bool
 }
 
 fragment SettingsPanel() {
@@ -407,7 +419,8 @@ fragment SettingsPanel() {
 }
 ```
 
-**Field-level subscriptions:** The runtime tracks which fields are accessed and only notifies dependents when those specific fields change.
+**Field-level subscriptions:** The runtime tracks which fields are accessed and only notifies
+dependents when those specific fields change.
 
 ## Complex Examples
 
@@ -417,61 +430,61 @@ fragment SettingsPanel() {
 enum AccountType { free premium enterprise }
 
 scheme SocialLinks {
-    twitter { String } .. optional { true } .. pattern { "^@\\w+" }
-    github { String } .. optional { true }
-    linkedin { String } .. optional { true }
+    twitter .. String .. optional .. pattern { "^@\\w+" }
+    github .. String .. optional
+    linkedin .. String .. optional
 }
 
 scheme UserProfile {
     // Identity
-    id { u64 } .. readonly { true }
-    username { String }
+    id .. u64 .. readonly { true }
+    username .. String
         .. min_len { 3 }
         .. max_len { 20 }
         .. pattern { "^[a-zA-Z0-9_]+$" }
         .. blank { false }
 
-    email { String }
+    email .. String
         .. blank { false }
         .. pattern { r"^[\w\.-]+@[\w\.-]+\.\w+$" }
 
     // Profile details
-    display_name { String }
+    display_name .. String
         .. max_len { 50 }
         .. blank { true }
 
-    bio { String }
+    bio .. String
         .. max_len { 500 }
-        .. optional { true }
+        .. optional
         .. multiline { true }
 
-    avatar_url { String }
-        .. optional { true }
+    avatar_url .. String
+        .. optional
 
     // Account info
-    account_type { AccountType }
+    account_type .. AccountType
         .. default { AccountType::free }
 
-    verified { Boolean }
+    verified .. Boolean
         .. default { false }
         .. readonly { true }
 
     // Nested
-    social_links { SocialLinks }
-        .. optional { true }
+    social_links .. SocialLinks
+        .. optional
 
     // Collections
-    interests { Set<String> }
+    interests .. Set<String>
         .. max_items { 10 }
         .. each .. max_len { 30 }
 
     // Temporal
-    joined_at { Instant }
+    joined_at .. Instant
         .. default { Instant::now() }
         .. readonly { true }
 
-    last_seen { Instant }
-        .. optional { true }
+    last_seen .. Instant
+        .. optional
 }
 ```
 
@@ -479,35 +492,35 @@ scheme UserProfile {
 
 ```frel
 scheme Registration {
-    username { String }
+    username .. String
         .. min_len { 3 }
         .. max_len { 20 }
         .. pattern { "^[a-zA-Z0-9_]+$" }
         .. blank { false }
 
-    email { String }
+    email .. String
         .. blank { false }
         .. pattern { r"^[\w\.-]+@[\w\.-]+\.\w+$" }
 
-    password { Secret }
+    password .. Secret
         .. min_len { 8 }
         .. blank { false }
 
-    confirm_password { Secret }
+    confirm_password .. Secret
         .. blank { false }
         .. validate { |value, data|
             value == data.password
         }
         .. error_message { "Passwords must match" }
 
-    age { u8 }
+    age .. u8
         .. range { 13 150 }
 
-    terms_accepted { Boolean }
+    terms_accepted .. Boolean
         .. validate { |value, _| value == true }
         .. error_message { "You must accept the terms" }
 
-    newsletter { Boolean }
+    newsletter .. Boolean
         .. default { false }
 }
 
@@ -552,6 +565,70 @@ fragment RegistrationForm() {
 }
 ```
 
+### Application Configuration with New Primitives
+
+```frel
+enum Environment { development staging production }
+
+scheme ApiConfig {
+    // URL type for endpoints
+    base_url .. Url
+        .. blank { false }
+        .. scheme_allowed { ["https"] }
+
+    // Secret type for credentials
+    api_key .. Secret
+        .. blank { false }
+
+    api_secret .. Secret
+        .. blank { false }
+
+    // Decimal for rate limits
+    rate_limit .. Decimal
+        .. default { Decimal::from_str("1000.0") }
+        .. min { Decimal::zero() }
+
+    timeout_seconds .. u32
+        .. default { 30 }
+}
+
+scheme UserSettings {
+    // UUID for user identification
+    user_id .. Uuid
+        .. default { Uuid::new() }
+        .. readonly { true }
+
+    // Color preferences
+    theme_primary .. Color
+        .. default { Color::hex("#007bff") }
+
+    theme_accent .. Color
+        .. default { Color::hex("#28a745") }
+
+    // URL for profile
+    profile_url .. Url
+        .. optional
+
+    // File storage
+    avatar .. Blob
+        .. optional
+        .. max_size { 2097152 }  // 2 MB
+        .. mime_types { ["image/jpeg" "image/png"] }
+
+    // Decimal for financial
+    subscription_price .. Decimal
+        .. default { Decimal::from_str("9.99") }
+        .. precision { 2 }
+
+    environment .. Environment
+        .. default { Environment::production }
+
+    created_at .. Instant
+        .. default { Instant::now() }
+        .. readonly { true }
+}
+```
+
 ### E-commerce Product Scheme
 
 ```frel
@@ -559,75 +636,77 @@ enum ProductStatus { draft active out_of_stock discontinued }
 enum ProductCategory { electronics clothing home_garden books }
 
 scheme Money {
-    amount { f64 } .. min { 0.0 }
-    currency { String } .. default { "USD" }
+    amount .. Decimal
+        .. min { Decimal::zero() }
+        .. precision { 2 }
+    currency .. String .. default { "USD" }
 }
 
 scheme Dimensions {
-    length { f64 } .. min { 0.0 }
-    width { f64 } .. min { 0.0 }
-    height { f64 } .. min { 0.0 }
+    length .. f64 .. min { 0.0 }
+    width .. f64 .. min { 0.0 }
+    height .. f64 .. min { 0.0 }
     unit { enum { cm inch } } .. default { unit::cm }
 }
 
 scheme Product {
     // Identity
-    id { u64 } .. readonly { true }
-    sku { String }
+    id .. u64 .. readonly { true }
+    sku .. String
         .. min_len { 3 }
         .. max_len { 50 }
         .. blank { false }
 
     // Basic info
-    name { String }
+    name .. String
         .. min_len { 3 }
         .. max_len { 200 }
         .. blank { false }
 
-    description { String }
+    description .. String
         .. max_len { 2000 }
         .. multiline { true }
 
-    category { ProductCategory }
+    category .. ProductCategory
 
-    status { ProductStatus }
+    status .. ProductStatus
         .. default { ProductStatus::draft }
 
     // Pricing
-    price { Money }
+    price .. Money
 
-    sale_price { Money }
-        .. optional { true }
+    sale_price .. Money
+        .. optional
 
     // Inventory
-    quantity { u32 }
+    quantity .. u32
         .. default { 0 }
 
     // Physical attributes
-    dimensions { Dimensions }
-        .. optional { true }
+    dimensions .. Dimensions
+        .. optional
 
-    weight { f64 }
+    weight .. f64
         .. min { 0.0 }
-        .. optional { true }
+        .. optional
 
     // Media
-    images { List<String> }
+    images .. List<String>
         .. max_items { 10 }
 
     // Metadata
-    tags { Set<String> }
+    tags .. Set<String>
         .. max_items { 20 }
 
-    specifications { Map<String, String> }
+    specifications .. Map<String, String> }
         .. max_items { 50 }
 
     // Timestamps
-    created_at { Instant }
+    created_at .. Instant
         .. default { Instant::now() }
         .. readonly { true }
 
-    updated_at { Instant }
+    updated_at .. Instant
         .. auto_now { true }
 }
 ```
@@ -643,9 +722,9 @@ scheme ShoppingCart { }
 
 // Field names: snake_case
 scheme Example {
-    user_name { String }
-    email_address { String }
-    is_active { Boolean }
+    user_name .. String
+    email_address .. String
+    is_active .. Boolean
 }
 ```
 
@@ -656,7 +735,7 @@ Put validation in schemes, not in UI code:
 ```frel
 // Good - validation in scheme
 scheme Email {
-    address { String }
+    address .. String
         .. pattern { r"^[\w\.-]+@[\w\.-]+\.\w+$" }
         .. blank { false }
 }
@@ -676,16 +755,16 @@ fragment EmailForm() {
 ```frel
 scheme User {
     // Optional: field may be absent
-    middle_name { String }
-        .. optional { true }
+    middle_name .. String
+        .. optional
 
     // Blank false: field must be present and non-empty
-    first_name { String }
+    first_name .. String
         .. blank { false }
 
     // Both: field may be absent, but if present must not be empty
-    bio { String }
-        .. optional { true }
+    bio .. String
+        .. optional
         .. blank { false }
 }
 ```
@@ -693,14 +772,15 @@ scheme User {
 ### Scheme Granularity
 
 **Small focused schemes:**
+
 ```frel
 // Good - focused, reusable
 scheme Address { street city zip }
 scheme ContactInfo { email phone }
 scheme User {
-    name { String }
-    address { Address }
-    contact { ContactInfo }
+    name .. String
+    address .. Address
+    contact .. ContactInfo
 }
 
 // Avoid - monolithic
@@ -715,8 +795,8 @@ Schemes automatically support serialization:
 
 ```frel
 scheme User {
-    id { u64 }
-    name { String }
+    id .. u64
+    name .. String
 }
 
 let user = User { id: 1, name: "Alice" }
@@ -726,19 +806,3 @@ user.to_json()  // {"id": 1, "name": "Alice"}
 
 // Deserialization
 User::from_json(json_string)  // Result<User, ParseError>
-```
-
-## Type Mapping
-
-| Frel Type         | Rust              | TypeScript       | Python           |
-|-------------------|-------------------|------------------|------------------|
-| `String`          | `String`          | `string`         | `str`            |
-| `i32`, `u64`, etc | `i32`, `u64`, etc | `number`         | `int`            |
-| `f32`, `f64`      | `f32`, `f64`      | `number`         | `float`          |
-| `bool`            | `bool`            | `boolean`        | `bool`           |
-| `List<T>`         | `Vec<T>`          | `Array<T>`       | `list[T]`        |
-| `Set<T>`          | `HashSet<T>`      | `Set<T>`         | `set[T]`         |
-| `Map<K,V>`        | `HashMap<K,V>`    | `Map<K,V>`       | `dict[K,V]`      |
-| `Tree<T>`         | Custom `Tree<T>`  | Custom `Tree<T>` | Custom `Tree[T]` |
-| `Instant`         | `DateTime<Utc>`   | `Date`           | `datetime` (UTC) |
-| `Duration`        | `Duration`        | `Duration`       | `timedelta`      |

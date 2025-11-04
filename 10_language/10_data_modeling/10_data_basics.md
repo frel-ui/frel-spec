@@ -1,7 +1,11 @@
 # Data Basics
 
-Frel provides a type system for modeling application data. The data model consists of primitive
-types, collections, temporal types, and user-defined structured types (enums, schemes, and trees).
+Frel provides a type system for modeling application data. The data model consists of:
+
+- primitive types (integers, floats, booleans, strings, and specialized types)
+- collections (lists, sets, maps, trees)
+- temporal types (dates, times, durations)
+- user-defined structured types (enums and schemes)
 
 ## Type System Overview
 
@@ -9,37 +13,41 @@ The Frel type system is designed to be:
 
 - **Platform-independent**: Types map naturally to host languages (Rust, TypeScript, Python)
 - **Validatable**: Built-in validation and constraints at the type level
+- **Reactive**: Types are either immutable or support fine-grained reactivity out-of-the-box.
 - **Composable**: Types can be nested and combined to model complex domains
 
 ## Type Categories
 
-### [Primitive Types](11_primitives.md)
+### [Primitive Types](20_primitives.md)
 
-Standard scalar types supported by all host languages:
+Standard scalar types and specialized primitives:
 
 - **Integers**: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`
 - **Floating point**: `f32`, `f64`
 - **Boolean**: `bool`
-- **String**: `String`
-
-### [Miscellaneous Types](14_misc.md)
-
-Additional specialized types:
-
+- **String**: `String` (Unicode text)
+- **Secret**: Sensitive string data (passwords, API keys)
+- **Decimal**: Arbitrary-precision decimal numbers (financial calculations)
 - **Uuid**: Universally unique identifiers
+- **Url**: URL/URI with validation
+- **Color**: Color values for styling (RGB, HSL, hex)
+- **Blob**: Binary data (files, images)
 
-### [Collections](12_collections.md)
+All primitive types are immutable.
+
+### [Collections](30_collections.md)
 
 Platform-independent collection types with built-in reactivity:
 
 - **List**: Ordered, indexed collection
 - **Set**: Unique values, unordered
-- **Map**: Key-value pairs (primitive keys only)
+- **Map**: Key-value pairs (numeric, String, Url, Uuid, enum keys)
+- **Tree**: Hierarchical structure with automatic node management
 
-Collections are implemented using Frel-provided wrappers (`FrelList`, `FrelSet`, `FrelMap`) around
+Collections are implemented using Frel-provided wrappers (`FrelList`, `FrelSet`, `FrelMap`, `FrelTree`) around
 native host language types.
 
-### [DateTime Types](13_datetime.md)
+### [DateTime Types](40_datetime.md)
 
 Standard temporal types for working with dates, times, and durations:
 
@@ -50,11 +58,12 @@ Standard temporal types for working with dates, times, and durations:
 - **Timezone**: IANA timezone identifier
 - **Duration**: Time span
 
+All temporal types are immutable.
+
 ### User-Defined Types
 
-- **[Enums](20_enums.md)**: Fixed sets of named variants
-- **[Schemes](30_schemes.md)**: Structured data types with validation
-- **[Trees](40_trees.md)**: Hierarchical data structures
+- **[Enums](50_enums.md)**: Fixed sets of named variants
+- **[Schemes](60_schemes.md)**: Structured data types with validation
 
 ## Type Usage Examples
 
@@ -63,23 +72,28 @@ Standard temporal types for working with dates, times, and durations:
 ```frel
 scheme User {
     // Primitives
-    id { u64 }
-    username { String }
-    age { u8 }
-    verified { bool }
+    id .. Uuid
+        .. default { Uuid::new() }
+    username .. String
+    age .. u8
+    verified .. bool
 
-    // Miscellaneous
-    uuid { Uuid }
+    // Specialized primitives
+    password .. Secret
+    avatar_url .. Url
+        .. optional
+    theme_color .. Color
+        .. default { Color::hex("#007bff") }
 
     // Collections
-    tags { List<String> }
-    roles { Set<String> }
-    preferences { Map<String, String> }
+    tags .. List<String>
+    roles .. Set<String>
+    preferences .. Map<String, String>
 
     // DateTime
-    created_at { Instant }
-    birth_date { LocalDate }
-    timezone { Timezone }
+    created_at .. Instant
+    birth_date .. LocalDate
+    timezone .. Timezone
 }
 ```
 
@@ -88,13 +102,13 @@ scheme User {
 ```frel
 scheme Analytics {
     // List of lists
-    data_points { List<List<f64>> }
+    data_points .. List<List<f64>>
 
     // Map with list values
-    user_tags { Map<u64, List<String>> }
+    user_tags .. Map<u64, List<String>>
 
     // Set of numeric IDs
-    active_users { Set<u64> }
+    active_users .. Set<u64>
 }
 ```
 
@@ -104,13 +118,13 @@ Any type can be made optional:
 
 ```frel
 scheme Profile {
-    name { String }                    // Required
-    bio { String }                     // Required but can be empty
+    name .. String                     // Required
+    bio .. String                      // Required but can be empty
         .. blank { true }
-    avatar_url { String }              // Optional
-        .. optional { true }
-    age { u8 }                        // Optional
-        .. optional { true }
+    avatar_url .. String               // Optional
+        .. optional
+    age .. u8                         // Optional
+        .. optional
 }
 ```
 
@@ -118,33 +132,37 @@ scheme Profile {
 
 Frel types map to native types in different host languages:
 
-| Frel Type       | Rust            | TypeScript      | Python           |
-|-----------------|-----------------|-----------------|------------------|
-| `String`        | `String`        | `string`        | `str`            |
-| `i32`, `u64`... | `i32`, `u64`... | `number`        | `int`            |
-| `f32`, `f64`    | `f32`, `f64`    | `number`        | `float`          |
-| `bool`          | `bool`          | `boolean`       | `bool`           |
-| `Uuid`          | `Uuid`          | `string` (UUID) | `UUID`           |
-| `List<T>`       | `FrelList<T>`   | `FrelList<T>`   | `FrelList[T]`    |
-| `Set<T>`        | `FrelSet<T>`    | `FrelSet<T>`    | `FrelSet[T]`     |
-| `Map<K,V>`      | `FrelMap<K,V>`  | `FrelMap<K,V>`  | `FrelMap[K,V]`   |
-| `Tree<T>`       | `FrelTree<T>`   | `FrelTree<T>`   | `FrelTree[T]`    |
-| `Instant`       | `DateTime<Utc>` | `Date`          | `datetime` (UTC) |
-| `LocalDate`     | `NaiveDate`     | Custom          | `date`           |
-| `LocalTime`     | `NaiveTime`     | Custom          | `time`           |
-| `LocalDateTime` | `NaiveDateTime` | Custom          | `datetime`       |
-| `Timezone`      | `Tz`            | `string`        | `ZoneInfo`       |
-| `Duration`      | `Duration`      | Custom          | `timedelta`      |
+| Frel Type       | Rust                    | TypeScript          | Python                     |
+|-----------------|-------------------------|---------------------|----------------------------|
+| `String`        | `String`                | `string`            | `str`                      |
+| `i32`, `u64`... | `i32`, `u64`...         | `number`            | `int`                      |
+| `f32`, `f64`    | `f32`, `f64`            | `number`            | `float`                    |
+| `bool`          | `bool`                  | `boolean`           | `bool`                     |
+| `Secret`        | `Secret`                | `Secret`            | `Secret`                   |
+| `Decimal`       | `rust_decimal::Decimal` | `Decimal`           | `decimal.Decimal`          |
+| `Uuid`          | `uuid::Uuid`            | `string` (UUID)     | `uuid.UUID`                |
+| `Url`           | `url::Url`              | `URL`               | `urllib.parse.ParseResult` |
+| `Color`         | `Color`                 | `Color`             | `Color`                    |
+| `Blob`          | `Vec<u8>`               | `Blob`/`Uint8Array` | `bytes`                    |
+| `List<T>`       | `FrelList<T>`           | `FrelList<T>`       | `FrelList[T]`              |
+| `Set<T>`        | `FrelSet<T>`            | `FrelSet<T>`        | `FrelSet[T]`               |
+| `Map<K,V>`      | `FrelMap<K,V>`          | `FrelMap<K,V>`      | `FrelMap[K,V]`             |
+| `Tree<T>`       | `FrelTree<T>`           | `FrelTree<T>`       | `FrelTree[T]`              |
+| `Instant`       | `DateTime<Utc>`         | `Date`              | `datetime` (UTC)           |
+| `LocalDate`     | `NaiveDate`             | Custom              | `date`                     |
+| `LocalTime`     | `NaiveTime`             | Custom              | `time`                     |
+| `LocalDateTime` | `NaiveDateTime`         | Custom              | `datetime`                 |
+| `Timezone`      | `Tz`                    | `string`            | `ZoneInfo`                 |
+| `Duration`      | `Duration`              | Custom              | `timedelta`                |
 
 **Note:** `FrelList`, `FrelSet`, `FrelMap`, and `FrelTree` are Frel-provided wrappers around host
 language-specific implementations (e.g., `Vec`, `HashSet`, `HashMap` in Rust) with built-in reactivity support.
 
 ## Next Steps
 
-- **[Primitive Types](11_primitives.md)**: Integers, floats, booleans, and strings
-- **[Miscellaneous Types](14_misc.md)**: Uuid and other specialized types
-- **[Collections](12_collections.md)**: List, Set, and Map types
-- **[DateTime Types](13_datetime.md)**: Working with dates, times, and durations
-- **[Enums](20_enums.md)**: Define fixed sets of named variants for categorical data
-- **[Schemes](30_schemes.md)**: Create structured types with validation and metadata
-- **[Trees](40_trees.md)**: Work with hierarchical data structures
+- **[Primitive Types](20_primitives.md)**: All basic and specialized primitive types
+- **[Collections](30_collections.md)**: List, Set, Map, and Tree types with built-in reactivity
+- **[DateTime Types](40_datetime.md)**: Working with dates, times, and durations
+- **[Miscellaneous Types](50_misc.md)**: Reserved for future specialized types
+- **[Enums](50_enums.md)**: Define fixed sets of named variants for categorical data
+- **[Schemes](60_schemes.md)**: Create structured types with validation and metadata

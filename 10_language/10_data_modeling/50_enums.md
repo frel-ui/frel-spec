@@ -35,9 +35,9 @@ enum Visibility { public private unlisted }
 enum ArticleStatus { draft published archived }
 
 scheme Article {
-    title { String } .. blank { false }
-    status { ArticleStatus } .. default { ArticleStatus::draft }
-    created_at { Instant } .. default { Instant::now() }
+    title .. String .. blank { false }
+    status .. ArticleStatus .. default { ArticleStatus::draft }
+    created_at .. Instant .. default { Instant::now() }
 }
 ```
 
@@ -77,7 +77,7 @@ For single-use enums, you can define them inline within scheme fields:
 
 ```frel
 scheme Meeting {
-    title { String }
+    title .. String
     frequency { enum { once daily weekly monthly } }
         .. default { frequency::once }
 }
@@ -144,8 +144,8 @@ Enums can have validation rules when used in schemes:
 
 ```frel
 scheme Task {
-    status { TaskStatus } .. default { TaskStatus::pending }
-    priority { Priority } .. default { Priority::medium }
+    status .. TaskStatus .. default { TaskStatus::pending }
+    priority .. Priority .. default { Priority::medium }
 }
 ```
 
@@ -163,7 +163,7 @@ enum OrderStatus {
 }
 
 scheme Order {
-    status { OrderStatus }
+    status .. OrderStatus
         .. default { OrderStatus::pending }
         .. transitions {
             pending => [confirmed cancelled]
@@ -297,9 +297,9 @@ enum UserRole { guest user moderator admin }
 
 // Use String for open-ended content
 scheme Post {
-    title { String }  // Not enum - unbounded
-    author { String }  // Not enum - many users
-    status { PostStatus }  // Enum - fixed states
+    title .. String  // Not enum - unbounded
+    author .. String  // Not enum - many users
+    status .. PostStatus  // Enum - fixed states
 }
 ```
 
@@ -321,9 +321,9 @@ enum TicketStatus {
 }
 
 scheme Ticket {
-    id { u64 } .. readonly { true }
-    title { String } .. blank { false }
-    status { TicketStatus }
+    id .. u64 .. readonly { true }
+    title .. String .. blank { false }
+    status .. TicketStatus
         .. default { TicketStatus::new }
         .. transitions {
             new => [triaged closed]
@@ -409,7 +409,7 @@ Enums serialize to strings by default:
 enum Status { draft published }
 
 scheme Article {
-    status { Status }
+    status .. Status
 }
 
 // JSON serialization

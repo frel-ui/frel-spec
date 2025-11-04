@@ -8,11 +8,11 @@ This document is a specification of Frel.
 
 ## Glossary
 
-[**Enum**](10_data_modeling/20_enums.md): Declaration of a fixed set of named variants for type-safe
+[**Enum**](10_data_modeling/50_enums.md): Declaration of a fixed set of named variants for type-safe
 categorical data. Used for state machines, status values, and configuration options. Enums provide
 compile-time safety and automatic string conversion.
 
-[**Scheme**](10_data_modeling/30_schemes.md): Declaration of a structured data type with built-in
+[**Scheme**](10_data_modeling/60_schemes.md): Declaration of a structured data type with built-in
 validation, constraints, and metadata. Schemes define the shape of data with typed fields and 
 validation rules, supporting automatic form generation and data binding.
 
