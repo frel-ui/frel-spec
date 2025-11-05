@@ -174,7 +174,7 @@ Changes the application locale. This triggers re-rendering of all localized cont
 ```frel
 select { workspace.locale }
     .. options { ["en", "es", "fr", "de"] }
-    .. on_change |new_locale: String| {
+    .. on_change { new_locale: String -> {
         workspace.change_locale(new_locale);
     }
 ```

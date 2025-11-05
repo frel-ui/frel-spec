@@ -6,7 +6,7 @@ effectful operations that happen outside the fragment's control.
 
 ## Syntax
 
-`source <id> [:<type>]? = <producer>(…options…) [.. on_value |val: T| { <handler> }]`
+`source <id> [:<type>]? = <producer>(…options…) [.. on_value { val: T -> <handler> }]`
 
 ## Semantics
 
@@ -57,7 +57,7 @@ blueprint NotificationBadge() {
     writable unread_count = 0
 
     // Handler runs each time a notification arrives
-    notifications .. on_value |notif: Notification| {
+    notifications .. on_value { notif: Notification ->
         unread_count = unread_count + 1
         show_toast(notif.message)
     }
@@ -128,7 +128,7 @@ blueprint LiveFeed() {
     source updates = sse(url: "/api/feed", event: "update")
     writable messages: Vec<Message> = vec![]
 
-    updates .. on_value |msg: Message| {
+    updates .. on_value { msg: Message ->
         messages.push(msg)
     }
 
@@ -169,7 +169,7 @@ blueprint Dashboard() {
 
     writable notif_list: Vec<Notification> = vec![]
 
-    notifications .. on_value |notif: Notification| {
+    notifications .. on_value { notif: Notification ->
         notif_list.push(notif)
     }
 
@@ -347,7 +347,7 @@ blueprint ChatRoom(room_id: String) {
     writable draft = ""
     writable chat_history: Vec<Message> = vec![]
 
-    messages .. on_value |msg: Message| {
+    messages .. on_value { msg: Message ->
         chat_history.push(msg)
     }
 
@@ -491,7 +491,7 @@ Use `on_value` handlers to accumulate source events:
 source items = sse("/items")
 writable item_list: Vec<Item> = vec![]
 
-items .. on_value |item: Item| {
+items .. on_value { item: Item ->
     item_list.push(item)
 }
 

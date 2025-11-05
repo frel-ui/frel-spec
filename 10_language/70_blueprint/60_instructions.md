@@ -408,7 +408,7 @@ Makes the node focusable.
 `autofocus`
 
 - Node receives focus when created.
-- When more than one blueprint has `autofocus`, the last-rendered fragment wins.
+- When more than one fragment has `autofocus`, the last-rendered fragment wins.
 
 ### Focus Trap
 
@@ -521,15 +521,23 @@ const BUTTON_SECONDARY: u8 = 2;
 ```
 
 ```
-on_click |event: PointerEvent| { <event-handler> }
-on_double_click |event: PointerEvent| { <event-handler> }
-on_pointer_move |event: PointerEvent| { <event-handler> }
-on_pointer_enter |event: PointerEvent| { <event-handler> }
-on_pointer_leave |event: PointerEvent| { <event-handler> }
-on_primary_down |event: PointerEvent| { <event-handler> }
-on_primary_up |event: PointerEvent| { <event-handler> }
-on_secondary_down |event: PointerEvent| { <event-handler> }
-on_secondary_up |event: PointerEvent| { <event-handler> }
+on_click { event: PointerEvent -> <event-handler> }
+on_double_click { event: PointerEvent -> <event-handler> }
+on_pointer_move { event: PointerEvent -> <event-handler> }
+on_pointer_enter { event: PointerEvent -> <event-handler> }
+on_pointer_leave { event: PointerEvent -> <event-handler> }
+on_primary_down { event: PointerEvent -> <event-handler> }
+on_primary_up { event: PointerEvent -> <event-handler> }
+on_secondary_down { event: PointerEvent -> <event-handler> }
+on_secondary_up { event: PointerEvent -> <event-handler> }
+```
+
+Or using default `it` parameter:
+
+```
+on_click { /* use 'it' to access PointerEvent */ }
+on_double_click { /* use 'it' to access PointerEvent */ }
+// ... etc
 ```
 
 #### Suppressing pointer events
@@ -550,7 +558,11 @@ When `enabled` is used in a child of a `disabled` parent, the child receives poi
 
 ### Wheel events
 
-`on_wheel |event: WheelEvent| { <event-handler> }`
+`on_wheel { event: WheelEvent -> <event-handler> }`
+
+Or using default `it` parameter:
+
+`on_wheel { /* use 'it' to access WheelEvent */ }`
 
 ```rust
 // mod frel::wheel
@@ -575,7 +587,11 @@ or **any of its children** has focus.
 **Event propagation:** The first event handler upwards (same channel, no horizontal) from the
 focused fragment is called.
 
-`on_key |event: KeyEvent| { <event-handler> }`
+`on_key { event: KeyEvent -> <event-handler> }`
+
+Or using default `it` parameter:
+
+`on_key { /* use 'it' to access KeyEvent */ }`
 
 Convenience handlers:
 
@@ -587,7 +603,11 @@ Repeats and key releases are ignored.
 
 Input events are triggered only on text input primitives when the composed text is ready:
 
-`on_input |event: InputEvent| { <event-handler> }`
+`on_input { event: InputEvent -> <event-handler> }`
+
+Or using default `it` parameter:
+
+`on_input { /* use 'it' to access InputEvent */ }`
 
 ```rust
 // mod frel::keyboard
@@ -636,12 +656,16 @@ mod key {
 
 ### On Resize
 
-`on_resize |rect : Option<Rect>| { <event-handler> }`
+`on_resize { rect: Option<Rect> -> <event-handler> }`
+
+Or using default `it` parameter:
+
+`on_resize { /* use 'it' to access Option<Rect> */ }`
 
 The event handler is called when the node is resized. The call takes place after all layout changes
 are applied.
 
-- `rect` contains the position and size of the node.
+- `rect` (or `it`) contains the position and size of the node.
 - If the sizes do not change during a layout pass, the event handler is not called.
 - Size comparison uses a small epsilon to avoid false positives.
 

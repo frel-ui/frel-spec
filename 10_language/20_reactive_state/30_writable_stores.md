@@ -209,7 +209,7 @@ blueprint SplitView() {
             background { color: Gray }
             cursor { resize_horizontal }
 
-            on_drag |event: DragEvent| {
+            on_drag { event: DragEvent ->
                 split_position = split_position + event.delta_x
             }
         }
@@ -340,7 +340,7 @@ blueprint UserPreferences(user_id: u32) {
             text { "Language:" }
             select { language }
                 .. options { ["en", "es", "fr", "de"] }
-                .. on_change |lang: String| { language = lang }
+                .. on_change { lang: String -> language = lang }
         }
 
         column {
@@ -417,7 +417,7 @@ blueprint EditableText(initial: String) {
     writable text = initial  // Initialized once, no subscription to 'initial'
 
     text_input { text }
-        .. on_change |new_text: String| { text = new_text }
+        .. on_change { new_text: String -> text = new_text }
 }
 
 // When used:

@@ -62,22 +62,23 @@ Collect events over time while allowing manual clear:
 ```frel
 blueprint EventLog() {
     source events = sse("/events")
-    writable log: Vec<Event> = vec![]
+    writable log: List<Event> = []
 
     // Accumulate events as they arrive
-    events .. on_value |event: Event| {
-        log.push(event)
+    events .. on_value { event: Event ->
+        // TODO: list.append(event) - need to specify list append operation
+        log = log  // placeholder
     }
 
     column {
-        text { "Events: ${log.len()}" }
+        text { "Events: ${log.length}" }
 
         repeat on log as event {
             text { "${event.timestamp}: ${event.message}" }
         }
 
         button { "Clear Log" }
-            .. on_click { log = vec![] }
+            .. on_click { log = [] }
     }
 }
 ```
@@ -87,10 +88,11 @@ blueprint EventLog() {
 ```frel
 blueprint NotificationCenter() {
     source notifications = sse("/notifications")
-    writable notification_list: Vec<Notification> = vec![]
+    writable notification_list: List<Notification> = []
 
-    notifications .. on_value |notif: Notification| {
-        notification_list.push(notif)
+    notifications .. on_value { notif: Notification ->
+        // TODO: list.append(notif) - need to specify list append operation
+        notification_list = notification_list  // placeholder
     }
 
     column {
@@ -99,17 +101,13 @@ blueprint NotificationCenter() {
                 text { notif.message }
                 button { "×" }
                     .. on_click {
-                        notification_list = notification_list
-                            .iter()
-                            .filter(|n| n.id != notif.id)
-                            .cloned()
-                            .collect()
+                        notification_list = notification_list.filter(n => n.id != notif.id)
                     }
             }
         }
 
         button { "Clear All" }
-            .. on_click { notification_list = vec![] }
+            .. on_click { notification_list = [] }
     }
 }
 ```
@@ -121,23 +119,23 @@ Only add items that aren't already in the list:
 ```frel
 blueprint UniqueItemList() {
     source new_item = sse("/items")
-    writable items: Vec<Item> = vec![]
+    writable items: List<Item> = []
 
-    new_item .. on_value |item: Item| {
-        if !items.iter().any(|i| i.id == item.id) {
-            items.push(item)
-        }
+    new_item .. on_value { item: Item ->
+        // TODO: conditional append - if item not in list, append it
+        // Need: list.contains() or list.any() and list.append()
+        items = items  // placeholder
     }
 
     column {
-        text { "${items.len()} unique items" }
+        text { "${items.length} unique items" }
 
         repeat on items as item {
             text { item.name }
         }
 
         button { "Clear" }
-            .. on_click { items = vec![] }
+            .. on_click { items = [] }
     }
 }
 ```
@@ -149,13 +147,12 @@ Keep only the last N items:
 ```frel
 blueprint RecentActivity() {
     source activity = sse("/activity")
-    writable recent: Vec<Activity> = vec![]
+    writable recent: List<Activity> = []
 
-    activity .. on_value |act: Activity| {
-        recent.push(act)
-        if recent.len() > 10 {
-            recent.remove(0)  // Keep only last 10
-        }
+    activity .. on_value { act: Activity ->
+        // TODO: append and trim list
+        // Need: list.append() and list.slice() or list.takeLast()
+        recent = recent  // placeholder
     }
 
     column {
@@ -176,16 +173,18 @@ Merge multiple event streams into one timeline:
 blueprint CombinedFeed() {
     source user_actions = sse("/user-actions")
     source system_events = sse("/system-events")
-    writable timeline: Vec<Event> = vec![]
+    writable timeline: List<Event> = []
 
-    user_actions .. on_value |action: UserAction| {
-        timeline.push(Event::UserAction(action))
-        timeline.sort_by_key(|e| e.timestamp())
+    user_actions .. on_value { action: UserAction ->
+        // TODO: append and sort list
+        // Need: list.append() and list.sort()
+        timeline = timeline  // placeholder
     }
 
-    system_events .. on_value |event: SystemEvent| {
-        timeline.push(Event::SystemEvent(event))
-        timeline.sort_by_key(|e| e.timestamp())
+    system_events .. on_value { event: SystemEvent ->
+        // TODO: append and sort list
+        // Need: list.append() and list.sort()
+        timeline = timeline  // placeholder
     }
 
     column {
@@ -194,7 +193,7 @@ blueprint CombinedFeed() {
         }
 
         button { "Clear Timeline" }
-            .. on_click { timeline = vec![] }
+            .. on_click { timeline = [] }
     }
 }
 ```
@@ -211,7 +210,7 @@ blueprint EmailInput() {
 
     column {
         text_input { email }
-            .. on_change |new_email: String| {
+            .. on_change { new_email: String -> {
                 email = new_email
                 trigger_validation(email.clone())
             }
@@ -237,7 +236,7 @@ blueprint RateLimitedSearch(query: String) {
     source debounced = debounce(query, 300)  // Wait 300ms after typing stops
     writable pending_queries: Vec<String> = vec![]
 
-    debounced .. on_value |q: String| {
+    debounced .. on_value { q: String -> {
         pending_queries.push(q)
     }
 
@@ -282,7 +281,7 @@ fanin selection = external.selection
 
 // For accumulation from sources - use writable + on_value
 writable log: Vec<Event> = vec![]
-events .. on_value |event| { log.push(event) }
+events .. on_value { event -> { log.push(event) }
 ```
 
 ### Manual Override Semantics

@@ -170,7 +170,10 @@ TextWrapper { at content: __anon_1 }
 
 **Anonymous Blueprint Parameter Syntax:**
 
-When an anonymous blueprint has parameters, use parameter names or positional references:
+When an anonymous blueprint has parameters, you can use:
+- **Named parameters** with the arrow syntax `{ param1, param2 -> ... }`
+- **Default `it` parameter** for single-parameter blueprints (omit parameter list)
+- **Positional references** `$0`, `$1`, etc. (less common, named parameters preferred)
 
 ```frel
 // Named parameter (explicit)
@@ -178,25 +181,42 @@ TextWrapper { s ->
     text { "Text: ${s}" }
 }
 
-// Positional reference (implicit)
+// Default 'it' for single parameter (no arrow needed)
+TextWrapper {
+    text { "Text: ${it}" }
+}
+
+// Positional reference (implicit) - less idiomatic
 TextWrapper {
     text { "Text: ${$0}" }
 }
 
-// Multiple parameters
+// Multiple parameters - must use named parameters
 ItemRenderer {
     at header: { title, isActive ->
         text { "${title} - ${isActive}" }
     }
 }
 
-// Or with positional references
+// Multiple parameters with positional references - not recommended
 ItemRenderer {
     at header: {
         text { "${$0} - ${$1}" }
     }
 }
 ```
+
+**Style Guidelines:**
+- Prefer `it` for single parameters when the meaning is clear from context
+- Use explicit names when `it` would be unclear or when working with multiple nested scopes
+- Prefer named parameters over positional references (`$0`, `$1`) for better readability
+
+**Unified Parameter Syntax:**
+
+This parameter syntax (`{ param1, param2 -> ... }` with default `it`) is **unified across Frel**:
+- Anonymous blueprint parameters use it (as shown above)
+- Event handler parameters use the same syntax (see [Event Handlers](70_event_handlers.md))
+- This consistency makes the language more predictable and easier to learn
 
 **Closure Capture:**
 

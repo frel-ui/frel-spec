@@ -10,8 +10,9 @@ Event handlers are instructions and follow the standard instruction syntax rules
 See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for style guidelines on when to use each form.
 
 ```text
-<event-handler> ::= <event-name> [ <parameter-clause> ] "{" <handler-body> "}"
-<parameter-clause> ::= "|" <param-name> ":" <param-type> "|"
+<event-handler> ::= <event-name> [ <param-list> "->" ] "{" <handler-body> "}"
+<param-list> ::= <param-spec> | <param-spec> { "," <param-spec> }
+<param-spec> ::= <param-name> [ ":" <param-type> ]
 <handler-body> ::= <handler-statement>*
 <handler-statement> ::= <store-assignment> | <command-call>
 <store-assignment> ::= <store-name> "=" <frel-expr>
@@ -19,6 +20,11 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 ```
 
 Event handlers contain a sequence of statements that perform side effects.
+
+**Parameter syntax:**
+- When a handler has no parameters, omit the parameter list entirely
+- When a handler has one parameter and no name is specified, it defaults to `it`
+- Type annotations are optional when the type can be inferred from the event definition
 
 **Forms:**
 
@@ -28,9 +34,19 @@ button { "Click" } .. on_click {
     count = count + 1           // Store mutation
 }
 
-// Handler with event parameter
-button { "Click" } .. on_click |event: PointerEvent| {
+// Handler with event parameter (explicit name)
+button { "Click" } .. on_click { event: PointerEvent ->
     log_event("Clicked at ${event.x_dip}, ${event.y_dip}")  // Command call
+}
+
+// Handler with event parameter (using default 'it')
+button { "Click" } .. on_click {
+    log_event("Clicked at ${it.x_dip}, ${it.y_dip}")  // 'it' is the PointerEvent
+}
+
+// Handler with inferred type
+button { "Click" } .. on_click { event ->
+    log_event("Clicked at ${event.x_dip}, ${event.y_dip}")  // Type inferred
 }
 
 // Multiple statements
@@ -190,8 +206,21 @@ blueprint ColorPicker() {
     box {
         width { 300 }
         height { 50 }
-        on_click |event: PointerEvent| {
+        on_click { event: PointerEvent ->
             hue = event.x_dip / 300.0
+        }
+    }
+}
+
+// Or using default 'it' parameter
+blueprint ColorPicker() {
+    writable hue = 0.0
+
+    box {
+        width { 300 }
+        height { 50 }
+        on_click {
+            hue = it.x_dip / 300.0
         }
     }
 }
