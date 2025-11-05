@@ -1,6 +1,6 @@
 # Module Basics
 
-Frel source code is organized using a simple module system. Modules provide namespacing for declarations (fragments, backends, contracts, schemes, enums) and control which declarations are accessible from other parts of the application.
+Frel source code is organized using a simple module system. Modules provide namespacing for declarations (blueprints, backends, contracts, schemes, enums) and control which declarations are accessible from other parts of the application.
 
 ## Overview
 
@@ -31,6 +31,7 @@ module frel.ui.components
 ```
 
 **Rules:**
+
 - Must be the first non-comment statement in the file
 - Exactly one `module` declaration per file
 - Module paths use dot notation (e.g., `frel.ui.components`)
@@ -44,8 +45,8 @@ All top-level declarations in a file belong to the declared module:
 module frel.ui.buttons
 
 // All of these are in the frel.ui.buttons namespace:
-fragment PrimaryButton() { ... }     // frel.ui.buttons.PrimaryButton
-fragment SecondaryButton() { ... }   // frel.ui.buttons.SecondaryButton
+blueprint PrimaryButton() { ... }     // frel.ui.buttons.PrimaryButton
+blueprint SecondaryButton() { ... }   // frel.ui.buttons.SecondaryButton
 backend ButtonState { ... }          // frel.ui.buttons.ButtonState
 scheme ButtonConfig { ... }          // frel.ui.buttons.ButtonConfig
 enum ButtonSize { small medium large } // frel.ui.buttons.ButtonSize
@@ -62,13 +63,14 @@ use frel.ui.buttons.PrimaryButton
 use frel.ui.themes.DarkTheme
 use frel.data.Color
 
-fragment MainScreen() {
+blueprint MainScreen() {
     // Can use PrimaryButton, DarkTheme, Color directly
     PrimaryButton("Click me")
 }
 ```
 
 **Rules:**
+
 - `use` statements must appear after the `module` declaration
 - `use` statements must appear before any other declarations
 - Each `use` imports a single declaration
@@ -87,7 +89,7 @@ use frel.backends.UserBackend
 use frel.data.schemes.User
 
 // Declarations
-fragment LoginScreen() {
+blueprint LoginScreen() {
     with UserBackend()
 
     column {
@@ -104,7 +106,7 @@ Declarations can be referenced using their fully qualified module path without i
 ```frel
 module frel.app
 
-fragment MainScreen() {
+blueprint MainScreen() {
     column {
         // Use fully qualified paths
         frel.ui.buttons.PrimaryButton("Save")
@@ -117,6 +119,7 @@ fragment MainScreen() {
 ```
 
 **When to use qualified paths:**
+
 - One-off usage of a declaration
 - Avoiding naming conflicts
 - Making dependencies explicit
@@ -140,11 +143,11 @@ module frel.app
 use frel.ui.Button
 
 // Local declaration shadows import
-fragment Button() {
+blueprint Button() {
     // This is the local Button
 }
 
-fragment Example() {
+blueprint Example() {
     Button()  // Refers to local Button
 
     // Must use qualified path for imported Button
@@ -162,16 +165,16 @@ Multiple files can declare the same module to split large modules across files:
 // File: buttons/primary.frel
 module frel.ui.buttons
 
-fragment PrimaryButton() { ... }
-fragment PrimaryIconButton() { ... }
+blueprint PrimaryButton() { ... }
+blueprint PrimaryIconButton() { ... }
 ```
 
 ```frel
 // File: buttons/secondary.frel
 module frel.ui.buttons
 
-fragment SecondaryButton() { ... }
-fragment SecondaryIconButton() { ... }
+blueprint SecondaryButton() { ... }
+blueprint SecondaryIconButton() { ... }
 ```
 
 Both files contribute declarations to the `frel.ui.buttons` module. All declarations are available to importers:
@@ -198,20 +201,20 @@ Private/internal declarations are not supported in this version. If you need to 
 ```frel
 // File A
 module myapp.a
-use myapp.b.FragmentB
+use myapp.b.BlueprintB
 
-fragment FragmentA() {
-    FragmentB()  // Can reference B
+blueprint BlueprintA() {
+    BlueprintB()  // Can reference B
 }
 ```
 
 ```frel
 // File B
 module myapp.b
-use myapp.a.FragmentA  // ✓ Allowed - modules can reference each other
+use myapp.a.BlueprintA  // ✓ Allowed - modules can reference each other
 
-fragment FragmentB() {
-    FragmentA()  // Can reference A
+blueprint BlueprintB() {
+    BlueprintA()  // Can reference A
 }
 ```
 

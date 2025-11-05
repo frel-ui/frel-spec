@@ -1,7 +1,7 @@
 # Fragment Creation
 
-Fragment creation statements instantiate child fragments within the body of a fragment.
-A **block** following a fragment name is an **inline fragment**, conceptually a small anonymous fragment definition.
+Fragment creation statements instantiate child fragments during instantiation.
+A **block** following a blueprint name is an **inline blueprint**, conceptually a small anonymous blueprint.
 Blocks may bind to the **default content slot** or to **named slots**.
 
 ## Surface Forms
@@ -25,9 +25,7 @@ multiSlot {
 
 Notes:
 
-* Parentheses `()` are **only** for value parameters.
-* The block `{ ... }` is always an **inline fragment definition**, not an instance.
-* In a multi-slot block, each `at <slot>:` binds a fragment (inline or named) to a slot parameter.
+* In a multi-slot block, each `at <slot>:` binds a blueprint (inline or named) to a slot parameter.
 * A plain block binds to the callee's **default slot** (usually named `content`).
 
 ## Syntax (Informal)
@@ -40,26 +38,27 @@ Notes:
 <block-or-slots> ::= <default-block> | <slot-block>
 <default-block>  ::= "{" <body> "}"
 <slot-block> ::= "{" <slot-binding> { <separator> <slot-binding> } "}"
-<slot-binding>   ::= "at" <slot-name> ":" <fragment-value>
+<slot-binding>   ::= "at" <slot-name> ":" <blueprint-value>
 <separator>  ::= "," | newline
-<fragment-value> ::= <inline-fragment> | <fragment-ref>
-<inline-fragment> ::= [ <param-list> "->" ] "{" <body> "}"
+<blueprint-value> ::= <inline-blueprint> | <blueprint-ref>
+<inline-blueprint> ::= [ <param-list> "->" ] "{" <body> "}"
 <param-list>     ::= <param-name> { "," <param-name> }
-<fragment-ref>    ::= <name>
+<blueprint-ref>    ::= <name>
 
 <postfix>        ::= ".." <instruction>
 
-# Fragment parameter types
-<fragment-type> ::= "Fragment" [ "<" <fragment-params> ">" ]
-<fragment-params> ::= <fragment-param> { "," <fragment-param> }
-<fragment-param> ::= [<store-kind>] <type>
+# Blueprint parameter types
+<blueprint-type> ::= "Blueprint" [ "<" <blueprint-params> ">" ]
+<blueprint-params> ::= <blueprint-param> { "," <blueprint-param> }
+<blueprint-param> ::= [<store-kind>] <type>
 <store-kind> ::= "writable" | "source" | "decl" | "fanin"
 ```
 
 ## Semantics
 
-### 1. Value Parameters
+### 1. Normal Parameters
 
+* Are representing reactive stores.
 * Supplied only inside `(...)`.
 * Parentheses are **optional** when there are no parameters (e.g., `Counter { }` is equivalent to `Counter() { }`).
 * May be passed **positionally** or by **name**:
@@ -72,34 +71,34 @@ Notes:
 * `<expr>` must be a pure host language expression (no side effects).
 * Reactive dependencies from stores are tracked automatically.
 
-### 2. Fragment Parameters (Default Slot & Named Slots)
+### 2. Blueprint Parameters (Default Slot & Named Slots)
 
-* A plain block `{ ... }` provides a fragment for the **default slot**.
-* A slot block `{ at slot1: ..., at slot2: ... }` provides fragments for **named slots**.
-* Fragments may be given inline (`{ ... }`) or by reference (`FragmentName`).
-* If a fragment has only a default slot, the short form `{ ... }` is preferred.
+* A plain block `{ ... }` provides a blueprint for the **default slot**.
+* A slot block `{ at slot1: ..., at slot2: ... }` provides blueprints for **named slots**.
+* Blueprints may be given inline (`{ ... }`) or by reference (`BlueprintName`).
+* If a blueprint has only a default slot, the short form `{ ... }` is preferred.
 * For explicitness, named passing is allowed:
-  `higherOrder(12) { at content: FragmentName }`
+  `higherOrder(12) { at content: BlueprintName }`
 
-**Fragment Parameter Types**
+**Blueprint Parameter Types**
 
-Fragment parameters use the `Fragment<P1,...Pn>` type to declare what parameters they expect:
+Blueprint parameters use the `Blueprint<P1,...Pn>` type to declare what parameters they expect:
 
 ```frel
-fragment Container(content: Fragment) {
-    // content is a fragment with no parameters
+blueprint Container(content: Blueprint) {
+    // content is a blueprint with no parameters
     content()
 }
 
-fragment TextWrapper(content: Fragment<String>) {
+blueprint TextWrapper(content: Blueprint<String>) {
     decl hw = "Hello World!"
     content(hw)  // Must pass a String
 }
 
-fragment ItemRenderer(
-    header: Fragment<String, bool>,
-    item: Fragment<User>,
-    footer: Fragment
+blueprint ItemRenderer(
+    header: Blueprint<String, bool>,
+    item: Blueprint<User>,
+    footer: Blueprint
 ) {
     header("Title", true)
     item(current_user)
@@ -107,28 +106,28 @@ fragment ItemRenderer(
 }
 ```
 
-When invoking a fragment parameter, you must pass arguments matching its type signature:
+When invoking a blueprint parameter, you must pass arguments matching its type signature:
 
 ```frel
-fragment Parent() {
+blueprint Parent() {
     TextWrapper {
-        at content: { s ->  // Anonymous fragment receives String 's'
+        at content: { s ->  // Anonymous blueprint receives String 's'
             text { s }
         }
     }
 
     // Or pass by reference
-    TextWrapper { at content: MyTextFragment }
+    TextWrapper { at content: MyTextBlueprint }
 }
 
-fragment MyTextFragment(text: String) {
+blueprint MyTextBlueprint(text: String) {
     text { text }
 }
 ```
 
 ### 3. Desugaring and Type Inference
 
-Each inline block is desugared into a compiler-synthesized **anonymous fragment definition** and passed by name.
+Each inline block is desugared into a compiler-synthesized **anonymous blueprint** and passed by name.
 
 **Basic Example:**
 
@@ -139,23 +138,23 @@ column { text { "A" } }
 becomes conceptually:
 
 ```frel
-fragment __anon_1() { text { "A" } }
+blueprint __anon_1() { text { "A" } }
 column { at content: __anon_1 }
 ```
 
-**Type Inference for Anonymous Fragments:**
+**Type Inference for Anonymous Blueprints:**
 
-The compiler infers the `Fragment<...>` type for anonymous fragments based on the expected parameter type:
+The compiler infers the `Blueprint<...>` type for anonymous blueprints based on the expected parameter type:
 
 ```frel
-fragment TextWrapper(content: Fragment<String>) {
+blueprint TextWrapper(content: Blueprint<String>) {
     decl hw = "Hello World!"
     content(hw)
 }
 
-// Usage with anonymous fragment
+// Usage with anonymous blueprint
 TextWrapper {
-    // Compiler infers this anonymous fragment has type Fragment<String>
+    // Compiler infers this anonymous blueprint has type Blueprint<String>
     text { "The text is: ${$0}" }  // $0 is the first parameter (String)
 }
 ```
@@ -163,15 +162,15 @@ TextWrapper {
 The desugared form:
 
 ```frel
-fragment __anon_1(p0: String) {  // Parameter inferred from Fragment<String>
+blueprint __anon_1(p0: String) {  // Parameter inferred from Blueprint<String>
     text { "The text is: ${p0}" }
 }
 TextWrapper { at content: __anon_1 }
 ```
 
-**Anonymous Fragment Parameter Syntax:**
+**Anonymous Blueprint Parameter Syntax:**
 
-When an anonymous fragment has parameters, use parameter names or positional references:
+When an anonymous blueprint has parameters, use parameter names or positional references:
 
 ```frel
 // Named parameter (explicit)
@@ -201,19 +200,19 @@ ItemRenderer {
 
 **Closure Capture:**
 
-* Anonymous fragments close over their lexical scope (capture visible stores reactively).
-* Each inline block produces a unique synthesized fragment definition.
-* Captured stores remain reactive - changes propagate to the anonymous fragment automatically.
+* Anonymous blueprints close over their lexical scope (capture visible stores reactively).
+* Each inline block produces a unique synthesized blueprint.
+* Captured stores remain reactive - changes propagate to fragments created from the anonymous blueprint automatically.
 
 **Example with Closure:**
 
 ```frel
-fragment A() {
+blueprint A() {
     decl i = 1
 
     column {
         row {
-            b(i)  // Anonymous fragment { b(i) } captures 'i'
+            b(i)  // Anonymous blueprint { b(i) } captures 'i'
         }
     }
 }
@@ -222,14 +221,14 @@ fragment A() {
 Desugars to:
 
 ```frel
-fragment A() {
+blueprint A() {
     decl i = 1
 
-    fragment __anon_row() {
+    blueprint __anon_row() {
         b(i)  // 'i' captured from parent scope
     }
 
-    fragment __anon_column() {
+    blueprint __anon_column() {
         row { at content: __anon_row }
     }
 
@@ -237,16 +236,16 @@ fragment A() {
 }
 ```
 
-The anonymous fragments capture `i` reactively. When `i` changes, `b(i)` automatically receives the updated value. The intermediate fragments (`column` and `row`) don't need to know about `i` - it's automatically carried in the closure.
+The anonymous blueprints capture `i` reactively. When `i` changes in the runtime fragment, the child fragments created from `b(i)` automatically receive the updated value. The intermediate blueprints (`column` and `row`) don't need to know about `i` - it's automatically carried in the closure.
 
 ### 4. Instructions: Inner vs Postfix Syntax
 
 Instructions (layout, styling, event handlers) can be written in two ways:
 
-1. **Inner Syntax** - Inside the fragment's content block: `box { width { 300 } }`
-2. **Postfix Syntax** - After the fragment using `..`: `box { } .. width { 300 }`
+1. **Inner Syntax** - Inside the blueprint's content block: `box { width { 300 } }`
+2. **Postfix Syntax** - After the blueprint using `..`: `box { } .. width { 300 }`
 
-Both forms are semantically identical and apply to the fragment's root node.
+Both forms are semantically identical and apply to the created fragment's root node.
 
 **Precedence:**
 
@@ -277,8 +276,8 @@ box {
 **Style Guidelines:**
 
 Use **inner syntax**:
-- When the fragment has a content block with child fragments
-- **Convention:** Place instructions before child fragments for better readability
+- When the blueprint has a content block with child elements
+- **Convention:** Place instructions before child elements for better readability
 
 ```frel
 box {
@@ -299,8 +298,8 @@ box {
 
 Use **postfix syntax**:
 - For single-line declarations to keep code compact
-- When the fragment has no content block (empty `{ }`)
-- When adding instructions to a fragment reference (required)
+- When the blueprint has no content block (empty `{ }`)
+- When adding instructions to a blueprint reference (required)
 
 ```frel
 text { "Title" } .. font { size: 30 }
@@ -315,26 +314,26 @@ CustomComponent() .. padding { 16 }
 
 ### 5. Lifetime and Reactivity
 
-* Child fragments subscribe to stores used in value parameters or captured by inline fragments.
-* All subscriptions are cleaned up automatically when the parent is destroyed.
+* Child fragments subscribe to stores used in value parameters or captured by inline blueprints.
+* All subscriptions are cleaned up automatically when the parent fragment is destroyed.
 
 ## Error Conditions
 
-| Condition                                     | Kind         | Description                                          |
-|-----------------------------------------------|--------------|------------------------------------------------------|
-| Unknown fragment name                         | Compile-time | Not found in scope.                                  |
-| Unknown or duplicate parameter                | Compile-time | Invalid or repeated name.                            |
-| Type mismatch in parameter                    | Compile-time | Incompatible type.                                   |
-| Impure expression                             | Compile-time | Expression has side effects.                         |
-| Named argument before positional              | Compile-time | Positional args must come first.                     |
-| Too many positional arguments                 | Compile-time | More positional args than parameters.                |
-| Missing required parameter                    | Compile-time | Required parameter not supplied.                     |
-| Block supplied but callee has no default slot | Compile-time | Use `at <slot>:` explicitly.                         |
-| Unknown slot name                             | Compile-time | Slot not declared by callee.                         |
-| Non-fragment value in slot                    | Compile-time | Slot expects a fragment.                             |
-| Fragment parameter arity mismatch             | Compile-time | Anonymous fragment parameters don't match signature. |
-| Fragment parameter type mismatch              | Compile-time | Anonymous fragment parameter types incompatible.     |
-| Fragment store kind mismatch                  | Compile-time | Fragment parameter store kind less restrictive.      |
+| Condition                                     | Kind         | Description                                           |
+|-----------------------------------------------|--------------|-------------------------------------------------------|
+| Unknown blueprint name                        | Compile-time | Not found in scope.                                   |
+| Unknown or duplicate parameter                | Compile-time | Invalid or repeated name.                             |
+| Type mismatch in parameter                    | Compile-time | Incompatible type.                                    |
+| Impure expression                             | Compile-time | Expression has side effects.                          |
+| Named argument before positional              | Compile-time | Positional args must come first.                      |
+| Too many positional arguments                 | Compile-time | More positional args than parameters.                 |
+| Missing required parameter                    | Compile-time | Required parameter not supplied.                      |
+| Block supplied but callee has no default slot | Compile-time | Use `at <slot>:` explicitly.                          |
+| Unknown slot name                             | Compile-time | Slot not declared by callee.                          |
+| Non-blueprint value in slot                   | Compile-time | Slot expects a blueprint.                             |
+| Blueprint parameter arity mismatch            | Compile-time | Anonymous blueprint parameters don't match signature. |
+| Blueprint parameter type mismatch             | Compile-time | Anonymous blueprint parameter types incompatible.     |
+| Blueprint store kind mismatch                 | Compile-time | Blueprint parameter store kind less restrictive.      |
 
 ## Examples
 
@@ -375,11 +374,11 @@ button {
 }
 ```
 
-### Fragment Parameters and Closures
+### Blueprint Parameters and Closures
 
 ```frel
-// Higher-order fragment with Fragment parameter
-fragment Container(content: Fragment) {
+// Higher-order blueprint with Blueprint parameter
+blueprint Container(content: Blueprint) {
     column {
         padding { 16 }
         border { Gray, 1 }
@@ -387,43 +386,43 @@ fragment Container(content: Fragment) {
     }
 }
 
-// Usage - anonymous fragment with no parameters
+// Usage - anonymous blueprint with no parameters
 Container {
     text { "Hello World" }
 }
 
-// Fragment expecting a String parameter
-fragment TextWrapper(content: Fragment<String>) {
+// Blueprint expecting a String parameter
+blueprint TextWrapper(content: Blueprint<String>) {
     decl hw = "Hello World!"
     content(hw)
 }
 
-// Usage - anonymous fragment with explicit parameter
+// Usage - anonymous blueprint with explicit parameter
 TextWrapper { s ->
     text { "The text is: ${s}" }
 }
 
-// Usage - anonymous fragment with positional reference
+// Usage - anonymous blueprint with positional reference
 TextWrapper {
     text { "The text is: ${$0}" }
 }
 
 // Closure capture example
-fragment Parent() {
+blueprint Parent() {
     decl count = 0
 
     Container {
-        // Anonymous fragment captures 'count' from parent scope
+        // Anonymous blueprint captures 'count' from parent scope
         text { "Count: ${count}" }
         button { "Increment" } .. on_click { count = count + 1 }
     }
 }
 
-// Multiple fragment parameters
-fragment Layout(
-    header: Fragment<String>,
-    content: Fragment,
-    footer: Fragment<i32, bool>
+// Multiple blueprint parameters
+blueprint Layout(
+    header: Blueprint<String>,
+    content: Blueprint,
+    footer: Blueprint<i32, bool>
 ) {
     column {
         header("My App")
@@ -445,27 +444,27 @@ Layout {
     }
 }
 
-// Fragment with writable store parameter
-fragment Editor(renderer: Fragment<writable String>) {
+// Blueprint with writable store parameter
+blueprint Editor(renderer: Blueprint<writable String>) {
     writable text = "Initial"
     renderer(text)
 }
 
-// Usage - pass writable store to fragment
+// Usage - pass writable store to blueprint
 Editor { writable_text ->
     text_editor { writable_text }
 }
 
 // Complex closure example
-fragment ListManager() {
+blueprint ListManager() {
     decl items = ["A", "B", "C"]
     writable selected = 0
 
     column {
-        // Nested anonymous fragments all capture parent stores
+        // Nested anonymous blueprints all capture parent stores
         repeat on items by $0 as item {
             button {
-                // This anonymous fragment captures both 'item' and 'selected'
+                // This anonymous blueprint captures both 'item' and 'selected'
                 text { item }
                 when selected == _index {
                     text { " ✓" }
@@ -482,7 +481,7 @@ fragment ListManager() {
 
 ### Tooltip Slot
 
-All fragments support an optional `tooltip` slot for contextual help:
+All blueprints support an optional `tooltip` slot for contextual help:
 
 ```frel
 button {

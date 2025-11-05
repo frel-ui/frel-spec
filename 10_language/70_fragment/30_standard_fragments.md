@@ -1,10 +1,10 @@
-# Standard Fragments
+# Standard Blueprints
 
-These fragment definitions are provided by the standard library and serve as the building blocks for
-Fragment applications. They are compiled to efficient native rendering primitives specific to each
+These blueprint definitions are provided by the standard library and serve as the building blocks for
+Frel applications. They are compiled to efficient native rendering primitives specific to each
 host platform.
 
-## Basic Fragments
+## Basic Blueprints
 
 ### text
 

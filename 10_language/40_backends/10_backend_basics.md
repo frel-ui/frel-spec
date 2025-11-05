@@ -1,6 +1,6 @@
 # Backends
 
-Backends are **reactive state containers with behavior**. They encapsulate related stores (decl, writable, fanin, source) along with commands and lifecycle hooks that operate on those stores. Backends separate business logic from UI declarations, following the Model-View-Controller pattern where the fragment is the view and the backend is the controller + model.
+Backends are **reactive state containers with behavior**. They encapsulate related stores (decl, writable, fanin, source) along with commands and lifecycle hooks that operate on those stores. Backends separate business logic from UI declarations, following the Model-View-Controller pattern where the blueprint defines the view and the backend is the controller + model.
 
 Conceptually, a backend is not a single store with a value, but rather a structured collection of reactive state with associated operations. When backend stores change, fragments that depend on them automatically update.
 
@@ -21,16 +21,16 @@ Conceptually, a backend is not a single store with a value, but rather a structu
 <command-decl>   ::= "command" <name> "(" [ <param-list> ] ")" [ "->" <return-type> ]
 ```
 
-Store declarations (`<store-decl>`) use the same syntax as in fragments. See [Reactive State](../20_reactive_state/10_store_basics.md) for the complete definition.
+Store declarations (`<store-decl>`) use the same syntax as in blueprints. See [Reactive State](../20_reactive_state/10_store_basics.md) for the complete definition.
 
 ## Semantics
 
 - **Parameters**: Constructor parameters for backend initialization
 - **Uses**: Declares dependency on contracts (external services)
 - **Include**: Composes other backends for reusable logic
-- **Store declarations**: Reactive stores exposed to the fragment (see [Store Types](#store-types))
+- **Store declarations**: Reactive stores exposed to blueprints (see [Store Types](#store-types))
 - **Lifecycle hooks**: Declarations indicating the backend has initialization/cleanup behavior (implemented in host language)
-- **Commands**: Async method signatures callable from fragment event handlers (implemented in host language)
+- **Commands**: Async method signatures callable from event handlers (implemented in host language)
 
 ### Parameters
 
@@ -138,10 +138,10 @@ impl UserEditor for UserEditorImpl {
 
 ## Store Exposure
 
-All store declarations become reactive stores accessible from the fragment:
+All store declarations become reactive stores accessible from blueprints:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     with UserEditor(user_id)
 
     // Access writable stores
@@ -167,7 +167,7 @@ fragment UserProfile(user_id: u32) {
 Commands are async methods callable from event handlers:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     with UserEditor(user_id)
 
     button { "Save" }
@@ -182,7 +182,7 @@ Lifecycle hooks are **declarations only** - they indicate that the backend has l
 
 ### on_init
 
-Declares that the backend has initialization logic (executed when fragment is mounted):
+Declares that the backend has initialization logic (executed when a fragment is mounted):
 
 ```frel
 backend UserEditor(user_id: u32) {
@@ -211,7 +211,7 @@ impl UserEditor {
 
 ### on_cleanup
 
-Declares that the backend has cleanup logic (executed when fragment is unmounted):
+Declares that the backend has cleanup logic (executed when a fragment is unmounted):
 
 ```frel
 backend UserEditor(user_id: u32) {
@@ -290,10 +290,10 @@ backend UserEditor(user_id: u32) {
 }
 ```
 
-Included backends are accessible from the fragment:
+Included backends are accessible from fragments:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     with UserEditor(user_id)
 
     // Access main backend state
@@ -387,7 +387,7 @@ backend AppWorkspace {
     // Returns all included backends that implement ToolPane
 }
 
-fragment ToolPanelArea {
+blueprint ToolPanelArea {
     backend workspace = AppWorkspace()
 
     // Iterate over all tool panes automatically
@@ -482,7 +482,7 @@ backend PointConfigBackend(point_id: u32, mode: EditMode) {
     command previous_page()
 }
 
-fragment PointConfigDialog(point_id: u32, mode: EditMode) {
+blueprint PointConfigDialog(point_id: u32, mode: EditMode) {
     with PointConfigBackend(point_id, mode)
 
     column {

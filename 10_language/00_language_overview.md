@@ -50,13 +50,17 @@ that operate on those stores. They separate business logic from UI declarations 
 called from event handlers. Commands are implemented in the host language and are the primary way to trigger
 complex business logic with side effects.
 
-[**Theme**](60_themes/10_theme_basics.md): A reusable styling configuration to be used in a fragment template.
+[**Theme**](60_themes/10_theme_basics.md): A reusable styling configuration to be used in a blueprint.
 
-[**Resource**](50_resources/10_resource_basics.md): A reusable UI asset to be used in a fragment template.
+[**Resource**](50_resources/10_resource_basics.md): A reusable UI asset to be used in a blueprint.
 
-[**Fragment**](70_fragment/10_fragment_basics.md): Declaration of a reusable UI component. A fragment
-has a name, parameters, and a body containing stores, UI elements, and event handlers. Fragments are
-instantiated at runtime and compose to build the complete user interface.
+[**Blueprint**](70_fragment/10_fragment_basics.md): Declaration of a reusable UI component template. A blueprint
+has a name, parameters, and a body containing stores, UI elements, and event handlers. Blueprints are
+written in the Frel language and define how to build fragments.
+
+[**Fragment**](70_fragment/10_fragment_basics.md): The runtime instance of a blueprint that contains stores,
+child fragments, and rendered UI elements. Fragments are created from blueprints and compose to build the
+complete user interface.
 
 [**Event Handler**](70_fragment/70_event_handlers.md): A callback that executes in response to user
 interactions or system events. Event handlers are the only place in Frel where side effects are allowed -
@@ -78,15 +82,16 @@ Frel applications are built from these interconnected pieces:
 
 1. **Data Model**: Define your domain with **Enums** and **Schemes**
 2. **Services**: Declare external APIs with **Contracts**
-3. **Business Logic**: Create **Backends** that contain:
+3. **Business Logic**: Define **Backends** that contain:
    - **Stores** (reactive state including **Sources**)
    - **Commands** (methods with side effects, implemented in the host language)
    - Dependencies on **Contracts**
-4. **UI**: Build **Fragments** that:
+4. **UI**: Define **Blueprints** that:
    - Reference **Backends** (via `with`)
    - Bind to **Stores** (reactive data)
    - Respond to user input via **Event Handlers**
    - Call **Commands** from event handlers
+   - Create runtime **fragments** when instantiated
 5. **Styling**: Apply **Themes** and use **Resources**
 
 All expressions throughout Frel use **Frel Expressions** - a pure, host-independent expression language.

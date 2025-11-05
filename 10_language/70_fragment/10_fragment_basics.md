@@ -1,17 +1,17 @@
-# Fragment Basics
+# Blueprint Basics
 
 ## Syntax
 
-Fragment definitions are declared using the `fragment` keyword and use the DSL syntax specified below.
+Blueprints are declared using the `blueprint` keyword and use the DSL syntax specified below.
 
-A fragment definition is composed of:
+A blueprint is composed of:
 
 - a name
 - zero or more parameters
 - body that contains zero or more statements
 
 ```text
-<fragment> ::= "fragment" <name> [ "(" <param-list> ")" ] "{" <body> "}"
+<blueprint> ::= "blueprint" <name> [ "(" <param-list> ")" ] "{" <body> "}"
 <param-list> ::= <param> { "," <param> }
 <param> ::= [<store-kind>] <param-name> ":" <param-type> [ "=" <default-expr> ]
 <store-kind> ::= "writable" | "source" | "decl" | "fanin"
@@ -22,9 +22,9 @@ A fragment definition is composed of:
 
 **Definition**
 
-`<name>` is the identifier of the fragment definition; it is the symbol used to refer
-to (instantiate) the fragment from other fragments. It exists at compile time and does not create
-a runtime instance by itself.
+`<name>` is the identifier of the blueprint; it is the symbol used to refer
+to (instantiate) the blueprint from other blueprints. It exists at compile time and does not create
+a runtime fragment instance by itself.
 
 **Rules**
 
@@ -47,7 +47,7 @@ When no store kind is specified, `decl` is assumed (read-only reactive).
 **Syntax Examples**
 
 ```frel
-fragment UserDisplay(
+blueprint UserDisplay(
     name: String,              // Same as: decl name: String
     writable count: i32,       // Writable store parameter
     source user: User,         // Source store parameter
@@ -56,35 +56,35 @@ fragment UserDisplay(
 )
 ```
 
-**Fragment Parameters**
+**Blueprint Parameters**
 
-Parameters can also accept fragments using the `Fragment<P1,...Pn>` type. This enables higher-order fragments that accept other fragments as children:
+Parameters can also accept blueprints using the `Blueprint<P1,...Pn>` type. This enables higher-order blueprints that accept other blueprints as children:
 
 ```frel
-fragment Container(
-    content: Fragment             // Fragment with no parameters
+blueprint Container(
+    content: Blueprint             // Blueprint with no parameters
 )
 
-fragment TextWrapper(
-    content: Fragment<String>     // Fragment expecting one String parameter
+blueprint TextWrapper(
+    content: Blueprint<String>     // Blueprint expecting one String parameter
 )
 
-fragment Editor(
-    header: Fragment<String, bool>,      // Multiple parameters
-    renderer: Fragment<writable String>  // With explicit store kind
+blueprint Editor(
+    header: Blueprint<String, bool>,      // Multiple parameters
+    renderer: Blueprint<writable String>  // With explicit store kind
 )
 ```
 
-Fragment parameters automatically capture their closure environment, allowing nested fragments to access parent stores. See [Fragment Creation](40_fragment_creation.md) for details on how fragment parameters work and how type inference determines the `Fragment<...>` type for anonymous fragments.
+Blueprint parameters automatically capture their closure environment, allowing nested fragments to access parent stores. See [Fragment Creation](40_fragment_creation.md) for details on how blueprint parameters work and how type inference determines the `Blueprint<...>` type for anonymous blueprints.
 
 **Rules**
 
 - `<param-name>` must be a valid identifier
-- `<param-type>` must be a valid Frel type (including `Fragment<...>`)
+- `<param-type>` must be a valid Frel type (including `Blueprint<...>`)
 - Optional parameters use `?` suffix: `name: String?`
 - Default values must be pure Frel expressions
 - Store kind prefix is optional (defaults to `decl`)
-- For `Fragment<...>` parameters, store kinds in the type signature default to `decl` when omitted
+- For `Blueprint<...>` parameters, store kinds in the type signature default to `decl` when omitted
 
 ### Body
 
@@ -100,8 +100,8 @@ Fragment parameters automatically capture their closure environment, allowing ne
 **Statements**
 
 - [**Backend binding**](#backend-binding) - Connect fragment to backend state
-- [**Store declarations**](20_reactive_state/10_store_basics.md)
-- [**Data modeling**](25_data_modeling/20_schemes.md) - Schemes and enums
+- [**Store declarations**](../20_reactive_state/10_store_basics.md)
+- [**Data modeling**](../10_data_modeling/60_schemes.md) - Schemes and enums
 - [**Fragment creation**](40_fragment_creation.md)
 - [**Control statements**](50_control_statements.md)
 - [**Instructions**](60_instructions.md)
@@ -128,7 +128,7 @@ The `with` keyword declares the backend state for a fragment. It serves two purp
 
 **Rules:**
 
-- Exactly one `with` statement is allowed per fragment
+- Exactly one `with` statement is allowed per blueprint
 - The `with` statement must appear before any usage of backend state or commands
 - All backend state fields become accessible as unqualified identifiers
 - All backend commands become callable as unqualified functions
@@ -138,7 +138,7 @@ The `with` keyword declares the backend state for a fragment. It serves two purp
 When a backend is passed as a parameter, `with` imports its namespace:
 
 ```frel
-fragment UserEditor(editor: Editor) {
+blueprint UserEditor(editor: Editor) {
     with editor
 
     // Access backend state directly
@@ -160,7 +160,7 @@ fragment UserEditor(editor: Editor) {
 When a backend needs to be created locally, `with` instantiates and imports it:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     with Editor(user_id)
 
     column {
@@ -184,7 +184,7 @@ backend EditorWithValidation(user_id: u32) {
     include ValidationBackend
 }
 
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     with EditorWithValidation(user_id)
 
     // Access state from both included backends
@@ -196,12 +196,12 @@ fragment UserProfile(user_id: u32) {
 }
 ```
 
-This pattern maintains the "one backend per fragment" rule while allowing composition at the backend definition level.
+This pattern maintains the "one backend per blueprint" rule while allowing composition at the backend definition level.
 
 ## Example
 
 ```frel
-fragment Counter(label: String) {
+blueprint Counter(label: String) {
     decl count = 0
 
     column {
