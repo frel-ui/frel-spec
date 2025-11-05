@@ -35,6 +35,41 @@ Standard scalar types and specialized primitives:
 
 All primitive types are immutable.
 
+### Fragment Type
+
+The `Fragment<P1,...Pn>` type represents a fragment definition with its closure environment:
+
+- **Fragment**: A fragment with no parameters
+- **Fragment<T>**: A fragment with one parameter of type `T`
+- **Fragment<T1, T2, ...>**: A fragment with multiple typed parameters
+
+Fragment parameters can specify store kinds:
+
+```frel
+fragment Container(content: Fragment<String>) {
+    // content expects a String parameter (defaults to 'decl')
+}
+
+fragment Editor(renderer: Fragment<writable String, bool>) {
+    // renderer expects a writable String and a bool (decl)
+}
+```
+
+When a fragment is passed as a parameter, it automatically captures its closure - all stores visible in its lexical scope. This means nested fragments have access to parent stores without explicit passing:
+
+```frel
+fragment A() {
+    decl i = 1
+    column {
+        row {
+            b(i)  // Anonymous fragment { b(i) } captures 'i' in closure
+        }
+    }
+}
+```
+
+Store kind defaults follow regular parameter rules: when omitted, `decl` is assumed.
+
 ### [Collections](30_collections.md)
 
 Platform-independent collection types with built-in reactivity:

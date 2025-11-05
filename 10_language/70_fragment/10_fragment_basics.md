@@ -56,13 +56,35 @@ fragment UserDisplay(
 )
 ```
 
+**Fragment Parameters**
+
+Parameters can also accept fragments using the `Fragment<P1,...Pn>` type. This enables higher-order fragments that accept other fragments as children:
+
+```frel
+fragment Container(
+    content: Fragment             // Fragment with no parameters
+)
+
+fragment TextWrapper(
+    content: Fragment<String>     // Fragment expecting one String parameter
+)
+
+fragment Editor(
+    header: Fragment<String, bool>,      // Multiple parameters
+    renderer: Fragment<writable String>  // With explicit store kind
+)
+```
+
+Fragment parameters automatically capture their closure environment, allowing nested fragments to access parent stores. See [Fragment Creation](40_fragment_creation.md) for details on how fragment parameters work and how type inference determines the `Fragment<...>` type for anonymous fragments.
+
 **Rules**
 
 - `<param-name>` must be a valid identifier
-- `<param-type>` must be a valid Frel type
+- `<param-type>` must be a valid Frel type (including `Fragment<...>`)
 - Optional parameters use `?` suffix: `name: String?`
 - Default values must be pure Frel expressions
 - Store kind prefix is optional (defaults to `decl`)
+- For `Fragment<...>` parameters, store kinds in the type signature default to `decl` when omitted
 
 ### Body
 
