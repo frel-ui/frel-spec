@@ -60,7 +60,7 @@ If two stores use the same key:
 
 **Example of collision:**
 ```frel
-fragment UserTable(scope: String) {
+blueprint UserTable(scope: String) {
     session filter: "${scope}.filter" = ""
 }
 
@@ -84,24 +84,24 @@ persistent writable settings: "user.${user_id}.settings" = default_settings()
 - Default and `session` lifetime: any type
 - `persistent` lifetime: type must be serializable (implement appropriate traits for the host platform)
 
-### Reusable fragments pattern
+### Reusable blueprints pattern
 
-When the same fragment is instantiated multiple times, pass a scope parameter:
+When the same blueprint is instantiated multiple times, pass a scope parameter:
 
 ```frel
-fragment UserTable(users: Vec<User>, scope: String) {
+blueprint UserTable(users: Vec<User>, scope: String) {
     session writable filter: "${scope}.filter" = ""
     session writable sort_column: "${scope}.sort" = "name"
     // ...
 }
 
-fragment DocumentEditor(doc: Document, scope: String) {
+blueprint DocumentEditor(doc: Document, scope: String) {
     persistent writable font_size: "${scope}.fontSize" = 14
     persistent writable zoom: "${scope}.zoom" = 1.0
     // ...
 }
 
-fragment App() {
+blueprint App() {
     column {
         UserTable(active_users, scope: "active")
         UserTable(archived_users, scope: "archived")
@@ -116,7 +116,7 @@ fragment App() {
 Basic mutable state that lives as long as the fragment:
 
 ```frel
-fragment Counter() {
+blueprint Counter() {
     writable count = 0
 
     column {
@@ -136,7 +136,7 @@ fragment Counter() {
 Managing multiple writable stores for form inputs:
 
 ```frel
-fragment LoginForm() {
+blueprint LoginForm() {
     writable username = ""
     writable password = ""
     writable remember_me = false
@@ -168,7 +168,7 @@ fragment LoginForm() {
 Simple boolean toggles:
 
 ```frel
-fragment CollapsibleSection(title: String) {
+blueprint CollapsibleSection(title: String) {
     writable is_expanded = false
 
     column {
@@ -193,7 +193,7 @@ fragment CollapsibleSection(title: String) {
 State that survives fragment recreation but not app restart:
 
 ```frel
-fragment SplitView() {
+blueprint SplitView() {
     session split_position: "app.split" = 300
 
     row {
@@ -224,10 +224,10 @@ fragment SplitView() {
 
 ### Session with Scoping
 
-Using session stores in reusable fragments:
+Using session stores in reusable blueprints:
 
 ```frel
-fragment DataTable(data: Vec<Row>, scope: String) {
+blueprint DataTable(data: Vec<Row>, scope: String) {
     session sort_column: "${scope}.sort" = "name"
     session sort_direction: "${scope}.direction" = "asc"
     session page: "${scope}.page" = 0
@@ -272,7 +272,7 @@ fragment DataTable(data: Vec<Row>, scope: String) {
 }
 
 // Usage - each instance maintains separate state
-fragment App() {
+blueprint App() {
     column {
         DataTable(users, scope: "users")
         DataTable(orders, scope: "orders")
@@ -285,7 +285,7 @@ fragment App() {
 State that survives app restart:
 
 ```frel
-fragment Settings() {
+blueprint Settings() {
     persistent theme: "app.theme" = "light"
     persistent font_size: "app.fontSize" = 14
     persistent auto_save: "app.autoSave" = true
@@ -324,7 +324,7 @@ fragment Settings() {
 Separate persistent state per user:
 
 ```frel
-fragment UserPreferences(user_id: u32) {
+blueprint UserPreferences(user_id: u32) {
     persistent notifications: "user.${user_id}.notifications" = true
     persistent language: "user.${user_id}.language" = "en"
     persistent recent_files: "user.${user_id}.recentFiles" = vec![]
@@ -356,7 +356,7 @@ fragment UserPreferences(user_id: u32) {
 ### Complex State Updates
 
 ```frel
-fragment ShoppingCart() {
+blueprint ShoppingCart() {
     writable items: Vec<CartItem> = vec![]
     writable coupon_code = ""
 
@@ -410,10 +410,10 @@ fragment ShoppingCart() {
 
 ## Initialization from Parameters
 
-Writable stores can be initialized from fragment parameters, but won't track changes:
+Writable stores can be initialized from blueprint parameters, but won't track changes:
 
 ```frel
-fragment EditableText(initial: String) {
+blueprint EditableText(initial: String) {
     writable text = initial  // Initialized once, no subscription to 'initial'
 
     text_input { text }
@@ -421,7 +421,7 @@ fragment EditableText(initial: String) {
 }
 
 // When used:
-fragment Parent() {
+blueprint Parent() {
     writable source = "Hello"
 
     EditableText(source)  // EditableText gets "Hello" initially

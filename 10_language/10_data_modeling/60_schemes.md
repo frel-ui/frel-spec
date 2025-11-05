@@ -279,7 +279,7 @@ scheme User {
 }
 ```
 
-## Usage in Fragments
+## Usage in Blueprints
 
 ### Basic Form Binding
 
@@ -297,7 +297,7 @@ scheme Login {
         .. default { false }
 }
 
-fragment LoginForm() {
+blueprint LoginForm() {
     writable credentials = Login()
 
     column {
@@ -347,7 +347,7 @@ text_input { user.email }
 Override auto-generated errors when needed:
 
 ```frel
-fragment CustomForm() {
+blueprint CustomForm() {
     writable user = User()
 
     text_input { user.email }
@@ -403,7 +403,7 @@ scheme Settings {
     auto_save .. bool
 }
 
-fragment SettingsPanel() {
+blueprint SettingsPanel() {
     writable settings = Settings()
 
     column {
@@ -524,7 +524,7 @@ scheme Registration {
         .. default { false }
 }
 
-fragment RegistrationForm() {
+blueprint RegistrationForm() {
     writable registration = Registration()
 
     column {
@@ -741,7 +741,7 @@ scheme Email {
 }
 
 // Avoid - validation in fragment
-fragment EmailForm() {
+blueprint EmailForm() {
     writable email = ""
 
     // Don't do this - validation belongs in scheme

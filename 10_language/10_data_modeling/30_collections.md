@@ -183,7 +183,7 @@ scheme ValidatedCollections {
 Collections support fine-grained reactivity:
 
 ```frel
-fragment TodoList() {
+blueprint TodoList() {
     writable todos = List::new()
 
     column {
@@ -253,7 +253,7 @@ scheme FileSystem {
     files .. Tree<FileNode>
 }
 
-fragment FileManager() {
+blueprint FileManager() {
     writable fs = FileSystem {
         files: Tree::new(FileNode {
             name: "root",
@@ -410,7 +410,7 @@ decl path_exists = tree.contains(node_id)
 #### Recursive Rendering
 
 ```frel
-fragment TreeView(tree: Tree<FileNode>, node_id: NodeId) {
+blueprint TreeView(tree: Tree<FileNode>, node_id: NodeId) {
     decl node = tree.get(node_id).unwrap()
     decl children = tree.children(node_id)
 
@@ -437,7 +437,7 @@ fragment TreeView(tree: Tree<FileNode>, node_id: NodeId) {
 #### Interactive Tree with Expand/Collapse
 
 ```frel
-fragment FileExplorer() {
+blueprint FileExplorer() {
     writable tree = Tree::new(FileNode {
         name: "root",
         size: None,
@@ -452,7 +452,7 @@ fragment FileExplorer() {
     }
 }
 
-fragment FileTreeNode(
+blueprint FileTreeNode(
     tree: Tree<FileNode>,
     node_id: NodeId,
     selected: Option<NodeId>,
@@ -577,10 +577,10 @@ decl is_leaf = tree.children(node_id).is_empty()
 **Use NodeId consistently:**
 ```frel
 // Good - pass NodeIds
-fragment TreeNode(tree: Tree<T>, node_id: NodeId) { }
+blueprint TreeNode(tree: Tree<T>, node_id: NodeId) { }
 
 // Avoid - extracting and passing values
-fragment TreeNode(tree: Tree<T>, value: T) { }  // Loses tree context
+blueprint TreeNode(tree: Tree<T>, value: T) { }  // Loses tree context
 ```
 
 **Batch operations:**

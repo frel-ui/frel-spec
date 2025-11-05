@@ -42,7 +42,7 @@ decl doubled = count * 2         // Derived (depends on 'count')
 Simple unchanging values:
 
 ```frel
-fragment AppConfig() {
+blueprint AppConfig() {
     decl app_name = "My Application"
     decl version = "1.0.0"
     decl max_items = 100
@@ -56,7 +56,7 @@ fragment AppConfig() {
 Values computed from other stores:
 
 ```frel
-fragment PriceCalculator() {
+blueprint PriceCalculator() {
     writable price = 100.0
     writable quantity = 1
 
@@ -77,7 +77,7 @@ fragment PriceCalculator() {
 Derived stores can use any Pure HLE, including method calls and transformations:
 
 ```frel
-fragment UserList(users: Vec<User>) {
+blueprint UserList(users: Vec<User>) {
     writable search = ""
 
     decl filtered_users = users
@@ -105,7 +105,7 @@ fragment UserList(users: Vec<User>) {
 Derived stores work naturally with Option types:
 
 ```frel
-fragment UserProfile(user_id: Option<u32>) {
+blueprint UserProfile(user_id: Option<u32>) {
     decl has_user = user_id.is_some()
     decl user_display = user_id
         .map(|id| format!("User #{}", id))
@@ -120,7 +120,7 @@ fragment UserProfile(user_id: Option<u32>) {
 Derived stores can depend on other derived stores:
 
 ```frel
-fragment TemperatureDisplay() {
+blueprint TemperatureDisplay() {
     writable celsius = 20.0
 
     decl fahrenheit = celsius * 9.0 / 5.0 + 32.0
@@ -146,7 +146,7 @@ fragment TemperatureDisplay() {
 ### Collections and Aggregations
 
 ```frel
-fragment Statistics(values: Vec<f64>) {
+blueprint Statistics(values: Vec<f64>) {
     decl count = values.len()
     decl sum = values.iter().sum::<f64>()
     decl average = if count > 0 { sum / count as f64 } else { 0.0 }
@@ -164,7 +164,7 @@ fragment Statistics(values: Vec<f64>) {
 ### Conditional Logic
 
 ```frel
-fragment StatusBadge(status: String) {
+blueprint StatusBadge(status: String) {
     decl badge_color = match status.as_str() {
         "active" => Green,
         "pending" => Yellow,
@@ -186,7 +186,7 @@ fragment StatusBadge(status: String) {
 When a dependency changes, all derived stores that depend on it recompute automatically:
 
 ```frel
-fragment ReactivityDemo() {
+blueprint ReactivityDemo() {
     writable count = 0
 
     decl doubled = count * 2          // Recomputes when count changes

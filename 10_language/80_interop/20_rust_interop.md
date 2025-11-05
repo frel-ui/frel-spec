@@ -341,7 +341,7 @@ async fn fetch_user(id: u32) -> Result<Box<dyn User>, Error> {
 Event handlers can construct schemes:
 
 ```frel
-fragment UserCreator() {
+blueprint UserCreator() {
     writable username = ""
     writable email = ""
 
@@ -403,10 +403,10 @@ if !user.is_valid() {
 }
 ```
 
-#### Using in Fragments (via DSL)
+#### Using in Blueprints
 
 ```frel
-fragment UserEditor() {
+blueprint UserEditor() {
     writable user = User()
 
     column {

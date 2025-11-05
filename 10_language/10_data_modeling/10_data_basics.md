@@ -35,34 +35,34 @@ Standard scalar types and specialized primitives:
 
 All primitive types are immutable.
 
-### Fragment Type
+### Blueprint Type
 
-The `Fragment<P1,...Pn>` type represents a fragment definition with its closure environment:
+The `Blueprint<P1,...Pn>` type represents a blueprint with its closure environment:
 
-- **Fragment**: A fragment with no parameters
-- **Fragment<T>**: A fragment with one parameter of type `T`
-- **Fragment<T1, T2, ...>**: A fragment with multiple typed parameters
+- **Blueprint**: A blueprint with no parameters
+- **Blueprint<T>**: A blueprint with one parameter of type `T`
+- **Blueprint<T1, T2, ...>**: A blueprint with multiple typed parameters
 
-Fragment parameters can specify store kinds:
+Blueprint parameters can specify store kinds:
 
 ```frel
-fragment Container(content: Fragment<String>) {
+blueprint Container(content: Blueprint<String>) {
     // content expects a String parameter (defaults to 'decl')
 }
 
-fragment Editor(renderer: Fragment<writable String, bool>) {
+blueprint Editor(renderer: Blueprint<writable String, bool>) {
     // renderer expects a writable String and a bool (decl)
 }
 ```
 
-When a fragment is passed as a parameter, it automatically captures its closure - all stores visible in its lexical scope. This means nested fragments have access to parent stores without explicit passing:
+When a blueprint is passed as a parameter, it automatically captures its closure - all stores visible in its lexical scope. This means nested fragments have access to parent stores without explicit passing:
 
 ```frel
-fragment A() {
+blueprint A() {
     decl i = 1
     column {
         row {
-            b(i)  // Anonymous fragment { b(i) } captures 'i' in closure
+            b(i)  // Anonymous blueprint { b(i) } captures 'i' in closure
         }
     }
 }

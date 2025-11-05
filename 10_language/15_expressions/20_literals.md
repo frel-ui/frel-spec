@@ -260,7 +260,7 @@ decl origin = Point { x: 0, y: 0 }
 ### Combining Literals
 
 ```frel
-fragment Example() {
+blueprint Example() {
     // Numbers
     decl count = 42
     decl price = 19.99

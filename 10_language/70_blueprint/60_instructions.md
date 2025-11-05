@@ -1,7 +1,7 @@
 # Instructions
 
-Instructions configure layout, styling, and behavior for fragments. They can be written using either
-inner syntax (inside the fragment's content block) or postfix syntax (after the fragment with `..`).
+Instructions configure layout, styling, and behavior for blueprints. They can be written using either
+inner syntax (inside the blueprint's content block) or postfix syntax (after the blueprint with `..`).
 
 See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-inner-vs-postfix-syntax) for detailed syntax rules and style guidelines.
 
@@ -237,7 +237,7 @@ tools junior developers use to hide layout bugs.
 `background { gradient: <gradient> }`
 `background { image: <image-resource> }`
 
-Fills the background of the fragment's content box and padding area.
+Fills the background of the created fragment's content box and padding area.
 
 **Parameters:**
 
@@ -265,7 +265,7 @@ box { } .. background { image: "background.png" }
 
 `corner_radius { top_left: DIP top_right: DIP bottom_left: DIP bottom_right: DIP }`
 
-Rounds the corners of the fragment's border box.
+Rounds the corners of the created fragment's border box.
 
 **Parameters:**
 
@@ -304,7 +304,7 @@ box { } .. corner_radius { right: 8 }                        // Top right and bo
 
 `shadow { color: <color> offset_x: DIP offset_y: DIP blur: DIP }`
 
-Adds a drop shadow to the fragment.
+Adds a drop shadow to the created fragment.
 
 **Parameters:**
 
@@ -330,7 +330,7 @@ box { } .. shadow { color: 0x00000080 offset_x: 4 offset_y: 4 blur: 8 }
 
 `cursor { default|pointer|text|crosshair|move|none|grab|grabbing }`
 
-Sets the mouse cursor appearance when hovering over the fragment.
+Sets the mouse cursor appearance when hovering over the created fragment.
 
 **Values:**
 
@@ -372,7 +372,7 @@ icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
 
 - Only affects monochrome/symbolic icons and vector graphics
 - For multi-color icons, `tint` has no effect
-- Primarily used with the `icon` fragment (see [Standard Fragments](30_standard_fragments.md#icon))
+- Primarily used with the `icon` fragment (see [Standard Fragments](30_standard_blueprints.md#icon))
 - Not applicable to raster images (use `image` fragment without tint for photos/bitmaps)
 
 ## Focus
@@ -408,7 +408,7 @@ Makes the node focusable.
 `autofocus`
 
 - Node receives focus when created.
-- When more than one fragment has `autofocus`, the last-rendered wins.
+- When more than one blueprint has `autofocus`, the last-rendered fragment wins.
 
 ### Focus Trap
 
@@ -468,7 +468,7 @@ Stereotypes add semantic behavior to fragments.
   - current focus has `cancel` stereotype -> `on_cancel`
 
 ```frel
-fragment Confirm(text: &str) {
+blueprint Confirm(text: &str) {
     DefaultModal {
   
         text { "Are you sure?" }

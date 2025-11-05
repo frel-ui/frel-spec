@@ -258,7 +258,7 @@ scheme Meeting {
 
 **Timezone conversion:**
 ```frel
-fragment TimeDisplay(instant: Instant, user_tz: Timezone) {
+blueprint TimeDisplay(instant: Instant, user_tz: Timezone) {
     decl local_time = instant.in_timezone(user_tz)
     text { local_time.format("%Y-%m-%d %H:%M:%S %Z") }
 }
@@ -365,7 +365,7 @@ scheme Event {
         .. default { Duration::hours(1) }
 }
 
-fragment EventDisplay(event: Event, user_tz: Timezone) {
+blueprint EventDisplay(event: Event, user_tz: Timezone) {
     // Convert to user's timezone for display
     decl local_start = event.start_time.in_timezone(user_tz)
     decl local_end = (event.start_time + event.duration).in_timezone(user_tz)
@@ -451,7 +451,7 @@ scheme Event {
 ### Store UTC, Display in Local
 
 ```frel
-fragment EventCard(event: Event, user_tz: Timezone) {
+blueprint EventCard(event: Event, user_tz: Timezone) {
     // Store as Instant (UTC) in backend
     // Display in user's timezone in UI
     decl local_time = event.start_time.in_timezone(user_tz)

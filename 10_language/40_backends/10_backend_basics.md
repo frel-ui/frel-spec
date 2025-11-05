@@ -50,7 +50,7 @@ All parameters are reactive - changes propagate automatically to/from the backen
 
 ## Store Types
 
-Backends support four types of reactive stores. Each store type has the same semantics as in fragments:
+Backends support four types of reactive stores. Each store type has the same semantics as in blueprints:
 
 - **`decl`** - [Read-only stores](../20_reactive_state/20_read_only_stores.md): Derived values that automatically update when dependencies change
 - **`writable`** - [Writable stores](../20_reactive_state/30_writable_stores.md): Mutable state modified by commands
@@ -129,7 +129,7 @@ impl UserEditor for UserEditorImpl {
 **Rules:**
 
 - Backend names use PascalCase
-- Parameters use the same syntax as fragment parameters
+- Parameters use the same syntax as blueprint parameters
 - Store type keyword (`decl`, `writable`, `fanin`, `source`) is required
 - Store initializers use pure Frel expressions
 - Type annotations can be inferred for `decl`, required for others
@@ -317,7 +317,7 @@ backend ToolPane {
     writable title: String
     writable visible: bool = true
 
-    writable content_fragment: Fragment
+    writable content_blueprint: Blueprint
 
     command toggle()
 }
@@ -327,7 +327,7 @@ backend GitPane {
         position = PanePosition::Right
         icon = Graphics.git
         title = Strings.git_panel
-        content_fragment = GitContent
+        content_blueprint = GitContent
     }
 
     // Git-specific state
@@ -355,7 +355,7 @@ backend EditorPane(file_path: String) {
         position = PanePosition::Right
         icon = Graphics.file
         title = file_path
-        content_fragment = EditorContent
+        content_blueprint = EditorContent
     }
 
     include NavTarget {
@@ -398,7 +398,7 @@ blueprint ToolPanelArea {
                     title: tool.title,
                     icon: tool.icon
                 ) {
-                    tool.content_fragment
+                    tool.content_blueprint
                 }
             }
         }

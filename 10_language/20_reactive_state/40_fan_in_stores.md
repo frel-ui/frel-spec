@@ -34,7 +34,7 @@ stores). They're perfect for scenarios where state needs both reactive updates a
 ### Simple Mirroring
 
 ```frel
-fragment SelectionSync(external_selection: Option<u32>) {
+blueprint SelectionSync(external_selection: Option<u32>) {
     fanin selection = external_selection  // Mirrors external_selection
 
     column {
@@ -60,7 +60,7 @@ the new value.
 Collect events over time while allowing manual clear:
 
 ```frel
-fragment EventLog() {
+blueprint EventLog() {
     source events = sse("/events")
     writable log: Vec<Event> = vec![]
 
@@ -85,7 +85,7 @@ fragment EventLog() {
 ### Notification Center with Removal
 
 ```frel
-fragment NotificationCenter() {
+blueprint NotificationCenter() {
     source notifications = sse("/notifications")
     writable notification_list: Vec<Notification> = vec![]
 
@@ -119,7 +119,7 @@ fragment NotificationCenter() {
 Only add items that aren't already in the list:
 
 ```frel
-fragment UniqueItemList() {
+blueprint UniqueItemList() {
     source new_item = sse("/items")
     writable items: Vec<Item> = vec![]
 
@@ -147,7 +147,7 @@ fragment UniqueItemList() {
 Keep only the last N items:
 
 ```frel
-fragment RecentActivity() {
+blueprint RecentActivity() {
     source activity = sse("/activity")
     writable recent: Vec<Activity> = vec![]
 
@@ -173,7 +173,7 @@ fragment RecentActivity() {
 Merge multiple event streams into one timeline:
 
 ```frel
-fragment CombinedFeed() {
+blueprint CombinedFeed() {
     source user_actions = sse("/user-actions")
     source system_events = sse("/system-events")
     writable timeline: Vec<Event> = vec![]
@@ -204,7 +204,7 @@ fragment CombinedFeed() {
 Track validation results but allow manual override:
 
 ```frel
-fragment EmailInput() {
+blueprint EmailInput() {
     source validator = validation_source()
     writable email = ""
     fanin is_valid = validator.latest().map(|v| v.is_ok()).unwrap_or(true)
@@ -233,7 +233,7 @@ fragment EmailInput() {
 Accumulate requests but allow manual flush:
 
 ```frel
-fragment RateLimitedSearch(query: String) {
+blueprint RateLimitedSearch(query: String) {
     source debounced = debounce(query, 300)  // Wait 300ms after typing stops
     writable pending_queries: Vec<String> = vec![]
 

@@ -20,7 +20,7 @@ backend UserProfile {
     source userData: User = fetch_user_data()
 }
 
-fragment UserView() {
+blueprint UserView() {
     with UserProfile
 
     match userData.status {
@@ -58,7 +58,7 @@ impl DataEditor {
 Fragment renders the state:
 
 ```frel
-fragment Editor() {
+blueprint Editor() {
     with DataEditor
 
     button { "Save" } .. on_click { save(currentItem) }
@@ -95,7 +95,7 @@ backend ApiClient {
     command fetch_data()
 }
 
-fragment ApiView() {
+blueprint ApiView() {
     with ApiClient
 
     match status {
@@ -119,7 +119,7 @@ backend FormValidator {
     command validate()
 }
 
-fragment ValidationForm() {
+blueprint ValidationForm() {
     with FormValidator
 
     text_input { email }
@@ -143,7 +143,7 @@ backend Dashboard {
     source stats: Stats = fetch_stats()
 }
 
-fragment DashboardView() {
+blueprint DashboardView() {
     with Dashboard
 
     column {

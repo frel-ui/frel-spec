@@ -339,7 +339,7 @@ Themes are accessed through the `Themes` namespace like other [resources](60_res
 ### Static Access
 
 ```frel
-fragment StatusBadge(status: Status, text: String) {
+blueprint StatusBadge(status: Status, text: String) {
     // Select theme variant based on status
     decl badge_variant = select on status {
         Status::Success => Themes.Badge.success
@@ -369,7 +369,7 @@ fragment StatusBadge(status: Status, text: String) {
 ### Direct Property Access
 
 ```frel
-fragment CustomButton() {
+blueprint CustomButton() {
     button {
         // Access theme properties directly
         height { Themes.Button.primary.height }
@@ -386,7 +386,7 @@ fragment CustomButton() {
 ### Dynamic Variant Lookup
 
 ```frel
-fragment DynamicBadge(badge_type: String, text: String) {
+blueprint DynamicBadge(badge_type: String, text: String) {
     // Dynamic lookup by variant name
     decl badge_variant = Themes.Badge.variant(badge_type)
         .unwrap_or(Themes.Badge.info)
@@ -460,7 +460,7 @@ theme Button {
 The appropriate theme is automatically selected based on the [environment](../20_reactive_state/60_standard_sources.md#environment):
 
 ```frel
-fragment ThemedButton(text: String) {
+blueprint ThemedButton(text: String) {
     // Automatically resolves to light or dark variant
     button {
         ..Themes.Button.primary.container
@@ -475,7 +475,7 @@ fragment ThemedButton(text: String) {
 ### Reactive Theme Switching
 
 ```frel
-fragment App() {
+blueprint App() {
     column {
         button {
             text { "Toggle Theme" }
@@ -569,7 +569,7 @@ theme Input {
 ### Usage
 
 ```frel
-fragment SearchInput(query: String) {
+blueprint SearchInput(query: String) {
     row {
         ..Themes.Input.default.container
 
@@ -595,7 +595,7 @@ Like all [resources](60_resources.md#resources-as-shared-sources), themes are **
 ### Explicit Source Handling
 
 ```frel
-fragment ThemedComponent() {
+blueprint ThemedComponent() {
     // Access environment to react to theme changes
     source env = environment()
 
@@ -618,7 +618,7 @@ fragment ThemedComponent() {
 ### Status Checking
 
 ```frel
-fragment SafeThemedComponent() {
+blueprint SafeThemedComponent() {
     // Check theme status
     decl theme_status = Themes.Button.primary.status()
 
@@ -938,10 +938,10 @@ theme Input {
 }
 ```
 
-**Usage in fragment:**
+**Usage in blueprint:**
 
 ```frel
-fragment TextInput(value: String, error: Option<String>) {
+blueprint TextInput(value: String, error: Option<String>) {
     source focused = focus()
 
     decl has_error = error.is_some()
@@ -982,5 +982,5 @@ fragment TextInput(value: String, error: Option<String>) {
 
 - [Resources](60_resources.md) - Resource system overview
 - [Standard Sources](../20_reactive_state/60_standard_sources.md#environment) - Environment source for theme qualification
-- [Instructions](../70_fragment/60_instructions.md) - Available styling instructions
+- [Instructions](../70_blueprint/60_instructions.md) - Available styling instructions
 - [Store Declarations](../20_reactive_state/10_store_basics.md#data-source) - Source system

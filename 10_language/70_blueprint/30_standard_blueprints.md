@@ -137,7 +137,7 @@ icon { icon_name } .. width { 32 } .. height { 32 } .. tint { Blue }
 - Icon-specific instruction: `tint { <color> }` - tint color for monochrome icons
 - Icons are typically vector graphics (SVG or icon fonts)
 - `tint` only affects monochrome/symbolic icons; multi-color icons ignore it
-- Use `image` fragment for raster icons
+- Use `image` for raster icons
 
 ## Containers
 
@@ -157,7 +157,7 @@ box {
 
 **Parameters:**
 
-- `content` (template slot) - Child fragments
+- `content` (blueprint)
 
 **Layout Algorithm:**
 
@@ -239,7 +239,7 @@ column {
 
 **Parameters:**
 
-- `content` (template slot) - Child fragments
+- `content` (blueprint)
 
 **Examples:**
 
@@ -314,7 +314,7 @@ row {
 
 **Parameters:**
 
-- `content` (template slot) - Child fragments
+- `content` (blueprint)
 
 **Examples:**
 

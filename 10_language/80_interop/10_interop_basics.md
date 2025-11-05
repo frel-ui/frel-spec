@@ -94,7 +94,7 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 - Error handling in handlers
 
 **References:**
-- [Event Handlers](../70_fragment/70_event_handlers.md)
+- [Event Handlers](../70_blueprint/70_event_handlers.md)
 - [Language Overview](../00_language_overview.md#expressions-and-statements)
 
 ### 8. Source Definition
@@ -185,7 +185,7 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 - Return value handling (for modals with results)
 
 **References:**
-- [Detached UI](../70_fragment/80_detached_ui.md)
+- [Detached UI](../70_blueprint/80_detached_ui.md)
 
 ## Design Principles
 

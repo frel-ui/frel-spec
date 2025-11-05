@@ -257,7 +257,7 @@ decl bad: i32 = null        // Error: use i32? instead
 ### Complex Expressions
 
 ```frel
-fragment Calculator(a: i32, b: i32, c: i32) {
+blueprint Calculator(a: i32, b: i32, c: i32) {
     // Arithmetic
     decl result1 = (a + b) * c
     decl result2 = a ** 2 + b ** 2
@@ -290,7 +290,7 @@ fragment Calculator(a: i32, b: i32, c: i32) {
 ### Practical Usage
 
 ```frel
-fragment UserCard(user: User) {
+blueprint UserCard(user: User) {
     // Field access with operators
     decl fullName = user.firstName + " " + user.lastName
     decl age = user.birthYear != null ? 2024 - user.birthYear : null

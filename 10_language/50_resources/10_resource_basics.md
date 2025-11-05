@@ -84,7 +84,7 @@ resource Strings {
 Resources are accessed via their category namespace:
 
 ```frel
-fragment UserProfile() {
+blueprint UserProfile() {
     column {
         image { Images.avatar }
         text { Strings.welcome }

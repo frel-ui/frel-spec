@@ -2,7 +2,7 @@
 
 Event handlers define reactive callbacks that execute in response to user interactions, system
 events, or lifecycle changes. They are the primary mechanism for introducing side effects and
-imperative logic into the otherwise declarative fragment body.
+imperative logic into the otherwise declarative blueprint body.
 
 ## Syntax
 
@@ -153,7 +153,7 @@ impl Counter {
 }
 
 // Fragment - simple call
-fragment CounterView() {
+blueprint CounterView() {
     with Counter
 
     button { "Click" } .. on_click { increment_or_reset() }
@@ -171,7 +171,7 @@ fragment CounterView() {
 ### Simple State Update
 
 ```frel
-fragment Counter() {
+blueprint Counter() {
     writable count = 0
 
     button {
@@ -184,7 +184,7 @@ fragment Counter() {
 ### Using Event Data
 
 ```frel
-fragment ColorPicker() {
+blueprint ColorPicker() {
     writable hue = 0.0
 
     box {
@@ -216,7 +216,7 @@ backend Analytics {
     command track(event_name: String)
 }
 
-fragment App() {
+blueprint App() {
     with Analytics
 
     button { "Log" } .. on_click {
@@ -236,7 +236,7 @@ backend Editor {
     command cancel()
 }
 
-fragment EditorView() {
+blueprint EditorView() {
     with Editor
 
     column {
@@ -268,7 +268,7 @@ button { "Process" } .. on_click {
 
 ### Avoid Side Effects Outside Event Handlers
 
-Side effects belong only in event handlers, not in store declarations or fragment parameters:
+Side effects belong only in event handlers, not in store declarations or blueprint parameters:
 
 ```frel
 // ✅ Good - side effects in event handler
@@ -276,7 +276,7 @@ backend Logger {
     command log(message: String)
 }
 
-fragment Counter() {
+blueprint Counter() {
     with Logger
 
     writable count = 0
@@ -340,7 +340,7 @@ impl DataLoader {
 }
 
 // Fragment just calls command
-fragment DataView() {
+blueprint DataView() {
     with DataLoader
 
     button { "Fetch" } .. on_click { fetch_data() }

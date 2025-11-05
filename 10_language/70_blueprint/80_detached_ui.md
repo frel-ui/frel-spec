@@ -1,7 +1,7 @@
 # Detached UI
 
 Detached UI elements are special constructs for creating UI that renders outside the main
-fragment tree in separate channels.
+blueprint hierarchy in separate channels.
 
 Unlike normal fragments that are children of their parent, detached UI elements:
 
@@ -237,13 +237,13 @@ the renderer automatically adjusts the position to keep it visible.
 ### Syntax
 
 ```frel
-<fragment> {
+<blueprint> {
     <content>
     at tooltip: { <tooltip-body> }
 }
 
 // Or with template reference:
-<fragment> {
+<blueprint> {
     <content>
     at tooltip: TooltipTemplate
 }

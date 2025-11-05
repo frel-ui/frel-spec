@@ -55,7 +55,7 @@ state (reactive)     transformation                             UI elements
   A runtime composition derived from a fragment definition. It consists of a handle (lifetime), stores (data),
   and subscriptions (reactivity). A fragment can be headless (logic-only) or produce renderable content.
 
-* [**Scene**](../10_language/70_fragment/15_scene_model.md)
+* [**Scene**](../10_language/70_blueprint/15_scene_model.md)
   A collection of platform-independent UI nodes. Organizes all visual content into **channels**,
   **viewports**, and **layers**.
 

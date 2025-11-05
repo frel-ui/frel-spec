@@ -52,7 +52,7 @@ enum Status<E> {
 The `on_value` handler is the recommended way to handle source events:
 
 ```frel
-fragment NotificationBadge() {
+blueprint NotificationBadge() {
     source notifications = sse("/notifications")
     writable unread_count = 0
 
@@ -72,7 +72,7 @@ fragment NotificationBadge() {
 Periodic events:
 
 ```frel
-fragment Clock() {
+blueprint Clock() {
     source tick = interval(ms: 1000)
 
     decl current_time = tick.latest()
@@ -89,7 +89,7 @@ fragment Clock() {
 One-time data fetch:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     source user = fetch(|| api::get_user(user_id))
 
     decl status = user.status()
@@ -124,7 +124,7 @@ fragment UserProfile(user_id: u32) {
 Streaming data with accumulation:
 
 ```frel
-fragment LiveFeed() {
+blueprint LiveFeed() {
     source updates = sse(url: "/api/feed", event: "update")
     writable messages: Vec<Message> = vec![]
 
@@ -162,7 +162,7 @@ fragment LiveFeed() {
 Combining different data sources:
 
 ```frel
-fragment Dashboard() {
+blueprint Dashboard() {
     source stats = fetch(|| api::get_stats())
     source notifications = sse(url: "/notifications")
     source health = interval_fetch(|| api::health_check(), interval_ms: 5000)
@@ -211,7 +211,7 @@ fragment Dashboard() {
 Fetch data based on user selection:
 
 ```frel
-fragment PostViewer() {
+blueprint PostViewer() {
     writable selected_post_id: Option<u32> = None
 
     // Source that re-fetches when selected_post_id changes
@@ -251,7 +251,7 @@ fragment PostViewer() {
 ### Pagination with Sources
 
 ```frel
-fragment PaginatedList() {
+blueprint PaginatedList() {
     writable page = 0
     writable page_size = 25
 
@@ -295,7 +295,7 @@ fragment PaginatedList() {
 Repeatedly fetch data at intervals:
 
 ```frel
-fragment SystemMonitor() {
+blueprint SystemMonitor() {
     source metrics = poll(
         producer: || api::get_metrics(),
         interval_ms: 2000
@@ -342,7 +342,7 @@ fragment SystemMonitor() {
 Bidirectional communication:
 
 ```frel
-fragment ChatRoom(room_id: String) {
+blueprint ChatRoom(room_id: String) {
     source messages = websocket(url: "/chat/${room_id}")
     writable draft = ""
     writable chat_history: Vec<Message> = vec![]
@@ -404,7 +404,7 @@ fragment ChatRoom(room_id: String) {
 Fetch with caching behavior:
 
 ```frel
-fragment CachedData(key: String) {
+blueprint CachedData(key: String) {
     source data = fetch_cached(
         key: key.clone(),
         producer: || api::get_data(key.clone()),
@@ -437,7 +437,7 @@ fragment CachedData(key: String) {
 Source that depends on another source:
 
 ```frel
-fragment UserPosts() {
+blueprint UserPosts() {
     source user = fetch(|| api::get_current_user())
 
     // This source depends on user being ready

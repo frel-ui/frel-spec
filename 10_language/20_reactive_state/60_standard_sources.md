@@ -39,7 +39,7 @@ enum Density {
 **Usage:**
 
 ```frel
-fragment AppearanceAwareIcon(icon_name: String) {
+blueprint AppearanceAwareIcon(icon_name: String) {
     source env = environment()
 
     decl current_appearance = env.latest().map(|e| e.appearance).unwrap_or(Appearance::Light)
@@ -106,7 +106,7 @@ The `focus()` source produces a `bool` value that indicates whether the fragment
 **Example:**
 
 ```frel
-fragment Input() {
+blueprint Input() {
     source focused = focus()
     writable text = ""
 
@@ -129,7 +129,7 @@ The `hover()` source produces a `bool` value that indicates whether the fragment
 **Example:**
 
 ```frel
-fragment Button() {
+blueprint Button() {
     source hovered = hover()
 
     decl bg_color = if hovered.latest().unwrap_or(false) { LightGray } else { White }

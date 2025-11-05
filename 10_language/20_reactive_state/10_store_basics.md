@@ -7,7 +7,7 @@ declarative reactive UIs.
 ## Overview
 
 Every store has:
-- **Identity**: A name used to reference it within the fragment
+- **Identity**: A name used to reference it within the blueprint
 - **Type**: The host language type of the value it holds
 - **Reactivity**: How it responds to changes in dependencies
 - **Mutability**: Whether it can be written to (and how)
@@ -92,10 +92,10 @@ automatic dependency tracking.
 
 ## Initialization Order
 
-Stores are initialized in **declaration order** within a fragment:
+Stores are initialized in **declaration order** within a blueprint:
 
 ```frel
-fragment Example() {
+blueprint Example() {
     decl doubled = count * 2   // Error! 'count' not declared yet
     writable count = 0
 }
@@ -106,7 +106,7 @@ The host language compiler enforces this ordering. Forward references are not al
 **Best practice:** Declare stores in dependency order - dependencies before dependents:
 
 ```frel
-fragment Example() {
+blueprint Example() {
     writable count = 0         // Declared first
     decl doubled = count * 2   // Can reference count ✓
     decl quadrupled = doubled * 2  // Can reference doubled ✓
@@ -116,7 +116,7 @@ fragment Example() {
 **Parameters are available from the start:**
 
 ```frel
-fragment Example(initial: i32) {
+blueprint Example(initial: i32) {
     decl doubled = initial * 2  // ✓ Parameters available before any declarations
     writable count = initial
 }
@@ -129,7 +129,7 @@ fragment Example(initial: i32) {
 Stores without lifetime modifiers are automatically disposed when the fragment is destroyed:
 
 ```frel
-fragment Child() {
+blueprint Child() {
     writable count = 0
     decl doubled = count * 2
     source data = fetch(|| api::get_data())
@@ -153,7 +153,7 @@ when show_child {
 Session stores persist beyond fragment destruction but are cleared on app restart:
 
 ```frel
-fragment Panel() {
+blueprint Panel() {
     session width: "panel.width" = 300
 }
 
@@ -167,7 +167,7 @@ fragment Panel() {
 Persistent stores survive app restart:
 
 ```frel
-fragment Settings() {
+blueprint Settings() {
     persistent theme: "app.theme" = "dark"
 }
 
@@ -177,11 +177,11 @@ fragment Settings() {
 
 ### Source Cancellation
 
-Sources are automatically dropped when their owning fragment is destroyed. Whether ongoing 
+Sources are automatically dropped when their owning runtime fragment is destroyed. Whether ongoing 
 operations are cancelled depends on the source implementation:
 
 ```frel
-fragment DataLoader() {
+blueprint DataLoader() {
     source data = fetch(|| expensive_api_call())
     // Fragment destroyed before fetch completes
     // → fetch source dropped, may cancel HTTP request

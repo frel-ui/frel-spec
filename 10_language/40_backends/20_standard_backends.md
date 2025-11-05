@@ -30,7 +30,7 @@ backend MyApp {
     }
 }
 
-fragment AppShell {
+blueprint AppShell {
     column {
         text { "Hello, World!" }
     }
@@ -205,7 +205,7 @@ backend MyApp {
     include SettingsBackend
 }
 
-fragment AppShell {
+blueprint AppShell {
     with MyApp()
 
     column {
@@ -282,7 +282,7 @@ backend MyApp {
 Fragments can access the workspace through backend declarations:
 
 ```frel
-fragment UserProfile {
+blueprint UserProfile {
     with MyApp()
 
     column {
@@ -393,7 +393,7 @@ backend MyApp {
     command toggle_sidebar()
 }
 
-fragment AppShell {
+blueprint AppShell {
     with MyApp()
 
     row {
@@ -458,7 +458,7 @@ backend TodoApp {
 }
 
 // Main application UI
-fragment TodoAppShell {
+blueprint TodoAppShell {
     with TodoApp()
 
     column {
@@ -503,5 +503,5 @@ fragment TodoAppShell {
 ### See Also
 
 - [Backend Basics](10_backend_basics.md) - Understanding backend definitions
-- [Standard Fragments](../70_fragment/30_standard_fragments.md) - Built-in UI components
+- [Standard Blueprints](../70_blueprint/30_standard_blueprints.md) - Built-in UI components
 - [Standard Sources](../20_reactive_state/60_standard_sources.md) - Built-in reactive data sources

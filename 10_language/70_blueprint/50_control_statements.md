@@ -1,7 +1,7 @@
 # Control statements
 
 The DSL provides three core control statements that allow conditional rendering,
-iteration, and branching logic within fragment definitions. These statements integrate
+iteration, and branching logic within blueprint definitions. These statements integrate
 with the reactive store system, ensuring that the UI automatically reacts to state changes.
 
 | Statement  | Purpose                             | Typical Use                            |

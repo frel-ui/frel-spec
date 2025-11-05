@@ -15,7 +15,7 @@ enum <Name> { <variant1> <variant2> <variant3> ... }
 - **Scope**: Top-level declarations, available throughout the module
 - **Naming**: Enum names use PascalCase, variants use snake_case
 - **Ordering**: Variants maintain declaration order
-- **Usage**: Can be used as types in schemes, fragments, and function signatures
+- **Usage**: Can be used as types in schemes, blueprints, and function signatures
 
 ## Basic Examples
 
@@ -41,12 +41,12 @@ scheme Article {
 }
 ```
 
-### Usage in Fragments
+### Usage in Blueprints
 
 ```frel
 enum ViewMode { list grid table }
 
-fragment ContentView() {
+blueprint ContentView() {
     writable mode = ViewMode::list
 
     row {
@@ -201,7 +201,7 @@ scheme Settings {
     language { enum { en es fr de } }
 }
 
-fragment SettingsForm() {
+blueprint SettingsForm() {
     writable settings = Settings()
 
     column {
@@ -221,7 +221,7 @@ Override default rendering with custom UI:
 ```frel
 enum Theme { light dark auto }
 
-fragment ThemeSelector(current: Theme) {
+blueprint ThemeSelector(current: Theme) {
     row {
         repeat on Theme::all() as theme {
             button { theme.to_string() }
@@ -256,7 +256,7 @@ priority:
 
 **Usage:**
 ```frel
-fragment PriorityBadge(priority: Priority) {
+blueprint PriorityBadge(priority: Priority) {
     text { i18n("priority.${priority.to_string()}") }
 }
 ```
@@ -370,7 +370,7 @@ impl LogLevel {
 
 **Usage:**
 ```frel
-fragment LogEntry(level: LogLevel, message: String) {
+blueprint LogEntry(level: LogLevel, message: String) {
     row {
         text { level.icon() }
             .. font { color: level.color() }

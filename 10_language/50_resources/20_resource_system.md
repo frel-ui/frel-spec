@@ -49,7 +49,7 @@ Resources are implemented as **shared sources** (see [Store Declarations - Data 
 **Usage as sources:**
 
 ```frel
-fragment ProfileImage(user_id: u32) {
+blueprint ProfileImage(user_id: u32) {
     // Resource as a source - can check status and value
     decl avatar_status = Images.avatar.status()
     decl avatar = Images.avatar.latest()
@@ -170,7 +170,7 @@ Resources can be accessed in two ways: **statically** (compile-time safe) or **d
 Static access provides compile-time safety and is the primary way to use resources:
 
 ```frel
-fragment AppMain() {
+blueprint AppMain() {
     column {
         // Document resource
         doc { Documents.help }
@@ -217,7 +217,7 @@ Each resource identifier (e.g., `Images.background`) is a **shared source** that
 Dynamic access allows runtime resource lookup by string key:
 
 ```frel
-fragment CountryFlag(country_code: String) {
+blueprint CountryFlag(country_code: String) {
     // Dynamic lookup by key
     decl flag_resource = Images.lookup("flag_" + country_code.to_lowercase())
 
@@ -367,7 +367,7 @@ Qualifier resolution is driven by the [environment source](20_reactive_state/60_
 When the environment changes (e.g., user switches from light to dark appearance), all resources automatically re-resolve and notify their subscribers:
 
 ```frel
-fragment ThemedBackground() {
+blueprint ThemedBackground() {
     // Automatically updates when environment.appearance changes
     box { } .. background { image: Images.background }
 }
@@ -413,7 +413,7 @@ String resources are stored in XML files with the same format as Android string 
 Strings support variable interpolation using `${variable}` syntax:
 
 ```frel
-fragment Greeting(username: String) {
+blueprint Greeting(username: String) {
     decl count = 42
 
     // Simple string
@@ -461,7 +461,7 @@ fn main() {
 When the environment language/region changes, string resources automatically reload and notify subscribers:
 
 ```frel
-fragment LanguageSwitcher() {
+blueprint LanguageSwitcher() {
     // Automatically updates when environment.language changes
     text { Strings.welcome }
 
@@ -481,7 +481,7 @@ fragment LanguageSwitcher() {
 For most cases, you can use strings directly (the `.latest().unwrap()` is implicit):
 
 ```frel
-fragment SomeFragment() {
+blueprint SomeFragment() {
     text { Strings.welcome }  // Automatically unwraps
 }
 ```
@@ -491,7 +491,7 @@ fragment SomeFragment() {
 If you need to handle loading states explicitly:
 
 ```frel
-fragment SomeFragment() {
+blueprint SomeFragment() {
     decl welcome_status = Strings.welcome.status()
     decl welcome_text = Strings.welcome.latest()
   
@@ -562,7 +562,7 @@ Resources may be:
 Resources can be referenced by URI for external linking:
 
 ```frel
-fragment TermsLink() {
+blueprint TermsLink() {
     // Generates a URI to the resource
     link(url: Files.terms.uri()) { "Terms of Service" }
 }
@@ -594,10 +594,10 @@ Runtime resource loading is generally error-free due to compile-time validation.
 
 ## Example Usage
 
-### Complete Fragment with Resources
+### Complete Blueprint with Resources
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     // Load user data
     source user = fetch(|| api.user(user_id))
 
@@ -676,7 +676,7 @@ resources/
 </resources>
 ```
 
-Fragment code remains unchanged; the resource system automatically selects the appropriate strings based on runtime locale.
+Blueprint remains unchanged; the resource system automatically selects the appropriate strings based on runtime locale.
 
 ## Implementation Notes
 

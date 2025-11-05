@@ -68,7 +68,7 @@ async fn load_user(&self) {
 Contracts can be called directly from fragment scope to create reactive sources:
 
 ```frel
-fragment UserProfile(user_id: u32) {
+blueprint UserProfile(user_id: u32) {
     // Contract call returns a source
     source user = UserAPI.get_user(user_id)
 

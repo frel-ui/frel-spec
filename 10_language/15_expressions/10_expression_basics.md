@@ -11,7 +11,7 @@ any host language.
 - Store initialization values
 - Derived store computations
 - Conditional expressions in control flow
-- Fragment parameter defaults
+- Blueprint parameter defaults
 - Attribute values
 
 All Frel expressions are **pure** - they cannot perform I/O, mutations, or other side effects. This
@@ -36,7 +36,7 @@ Used in:
 - Store initializers: `decl doubled = count * 2`
 - Derived stores: `decl total = price * quantity`
 - Conditionals: `when age >= 18 { ... }`
-- Fragment parameters: `fragment User(name: String = "Guest")`
+- Blueprint parameters: `blueprint User(name: String = "Guest")`
 - Attribute values: `.. width { containerWidth * 0.8 }`
 
 **Only Frel expressions allowed** - no side effects possible. Backend commands cannot be called from expressions.
@@ -92,7 +92,7 @@ These are not allowed in Frel expressions:
 ### Simple Expressions
 
 ```frel
-fragment Calculator(a: i32, b: i32) {
+blueprint Calculator(a: i32, b: i32) {
     // Arithmetic
     decl sum = a + b
     decl difference = a - b
@@ -115,7 +115,7 @@ fragment Calculator(a: i32, b: i32) {
 ### Field Access
 
 ```frel
-fragment UserProfile(user: User) {
+blueprint UserProfile(user: User) {
     decl fullName = user.firstName + " " + user.lastName
     decl city = user.address.city
     decl firstTag = user.tags[0]
@@ -128,7 +128,7 @@ fragment UserProfile(user: User) {
 ### Functional Operations
 
 ```frel
-fragment ItemList(items: List<Item>) {
+blueprint ItemList(items: List<Item>) {
     // Map
     decl prices = items.map(item => item.price)
 
@@ -149,7 +149,7 @@ fragment ItemList(items: List<Item>) {
 ### Pattern Matching
 
 ```frel
-fragment StatusDisplay(status: Status) {
+blueprint StatusDisplay(status: Status) {
     decl message = match status {
         Status::Loading => "Please wait..."
         Status::Ready => "Done!"
@@ -167,7 +167,7 @@ fragment StatusDisplay(status: Status) {
 ### String Templates
 
 ```frel
-fragment Greeting(user: User, count: i32) {
+blueprint Greeting(user: User, count: i32) {
     decl greeting = "Hello, ${user.name}!"
     decl itemLabel = "You have ${count} ${count == 1 ? 'item' : 'items'}"
     decl fullMessage = "${greeting} ${itemLabel}"
@@ -224,7 +224,7 @@ impl UserEditor {
 }
 
 // Usage in fragment
-fragment UserForm() {
+blueprint UserForm() {
     with UserEditor
 
     button { "Validate" }
