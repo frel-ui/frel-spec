@@ -11,8 +11,7 @@ Writable stores hold mutable state that can be updated through explicit assignme
 - **Kind**: Writable stores hold mutable state with no automatic subscriptions to other stores.
 - **Initializer**: `<expr>` is evaluated once at store creation. Even if it mentions other stores, there's no ongoing subscription. Must be a pure Frel expression. See [Frel Expressions](../15_expressions/10_expression_basics.md).
 - **Writes**: Writable stores can be modified in event handlers through:
-  - Direct assignment: `<id> = <expr2>` (in host language statement context)
-  - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
+  - Direct assignment: `<id> = <expr2>` (must be a pure Frel expression)
 - **Updates**: Only through explicit writes (no automatic recomputation from dependencies).
 - **Reactivity**: When the value changes, dependent stores are notified and recompute. See [Mutation Detection](10_store_basics.md#mutation-detection) for details on how the runtime detects changes.
 - **Persistence**: Implemented by the adapter of the host platform.
@@ -89,7 +88,7 @@ persistent writable settings: "user.${user_id}.settings" = default_settings()
 When the same blueprint is instantiated multiple times, pass a scope parameter:
 
 ```frel
-blueprint UserTable(users: Vec<User>, scope: String) {
+blueprint UserTable(users: List<User>, scope: String) {
     session writable filter: "${scope}.filter" = ""
     session writable sort_column: "${scope}.sort" = "name"
     // ...
@@ -141,7 +140,8 @@ blueprint LoginForm() {
     writable password = ""
     writable remember_me = false
 
-    decl is_valid = !username.is_empty() && password.len() >= 8
+    // TODO: String validation operations not yet fully specified
+    decl is_valid = username != "" && password != ""
 
     column {
         gap { 12 }
@@ -157,7 +157,7 @@ blueprint LoginForm() {
         button { "Log in" }
             .. enabled { is_valid }
             .. on_click {
-                login(username.clone(), password.clone(), remember_me)
+                login(username, password, remember_me)
             }
     }
 }
@@ -227,7 +227,7 @@ blueprint SplitView() {
 Using session stores in reusable blueprints:
 
 ```frel
-blueprint DataTable(data: Vec<Row>, scope: String) {
+blueprint DataTable(data: List<Row>, scope: String) {
     session sort_column: "${scope}.sort" = "name"
     session sort_direction: "${scope}.direction" = "asc"
     session page: "${scope}.page" = 0
@@ -242,12 +242,14 @@ blueprint DataTable(data: Vec<Row>, scope: String) {
             repeat on ["name", "age", "email"] as col {
                 button { col }
                     .. on_click {
-                        if sort_column == col {
-                            sort_direction = if sort_direction == "asc" { "desc" } else { "asc" }
+                        // Event handlers cannot contain control flow
+                        // Use expressions instead
+                        sort_direction = if sort_column == col {
+                            if sort_direction == "asc" { "desc" } else { "asc" }
                         } else {
-                            sort_column = col
-                            sort_direction = "asc"
+                            "asc"
                         }
+                        sort_column = col
                     }
             }
         }
@@ -327,7 +329,7 @@ Separate persistent state per user:
 blueprint UserPreferences(user_id: u32) {
     persistent notifications: "user.${user_id}.notifications" = true
     persistent language: "user.${user_id}.language" = "en"
-    persistent recent_files: "user.${user_id}.recentFiles" = vec![]
+    persistent recent_files: "user.${user_id}.recentFiles" = []
 
     column {
         row {
@@ -357,11 +359,12 @@ blueprint UserPreferences(user_id: u32) {
 
 ```frel
 blueprint ShoppingCart() {
-    writable items: Vec<CartItem> = vec![]
+    writable items: List<CartItem> = []
     writable coupon_code = ""
 
-    decl subtotal = items.iter().map(|i| i.price * i.quantity).sum::<f64>()
-    decl item_count = items.iter().map(|i| i.quantity).sum::<u32>()
+    // TODO: List operations for sum/reduce not yet specified
+    decl subtotal = calculate_subtotal(items)
+    decl item_count = calculate_item_count(items)
 
     column {
         text { "${item_count} items - $${subtotal:.2}" }
@@ -373,21 +376,15 @@ blueprint ShoppingCart() {
 
                 button { "+" }
                     .. on_click {
-                        items = items.iter().map(|i| {
-                            if i.id == item.id {
-                                CartItem { quantity: i.quantity + 1, ..i.clone() }
-                            } else {
-                                i.clone()
-                            }
-                        }).collect()
+                        // TODO: List update operations not yet specified
+                        // Need to define how to update items in a list
+                        increment_item_quantity(item.id)
                     }
 
                 button { "Remove" }
                     .. on_click {
-                        items = items.iter()
-                            .filter(|i| i.id != item.id)
-                            .cloned()
-                            .collect()
+                        // TODO: List filter operations not yet specified
+                        remove_item(item.id)
                     }
             }
         }
@@ -398,10 +395,9 @@ blueprint ShoppingCart() {
 
             button { "Apply" }
                 .. on_click {
-                    if validate_coupon(coupon_code.clone()) {
-                        apply_discount()
-                        coupon_code = ""
-                    }
+                    // Event handlers cannot contain control flow
+                    // Move validation logic to backend command
+                    apply_coupon(coupon_code)
                 }
         }
     }

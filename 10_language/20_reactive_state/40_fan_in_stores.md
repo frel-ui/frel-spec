@@ -15,8 +15,7 @@ stores). They're perfect for scenarios where state needs both reactive updates a
     `<calc_expr>` is re-evaluated when dependencies change, and the result becomes the new value.
     Must be a pure Frel expression. See [Frel Expressions](../15_expressions/10_expression_basics.md).
 - **Writes**: Fan-in stores can be modified in event handlers through:
-  - Direct assignment: `<id> = <expr2>` (in host language statement context)
-  - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
+  - Direct assignment: `<id> = <expr2>` (must be a pure Frel expression)
 - **Reactive continuation**:
     After a manual write, the store continues tracking dependencies. The next time dependencies
     change, `<calc_expr>` is re-evaluated and overwrites the manually set value.
@@ -210,9 +209,9 @@ blueprint EmailInput() {
 
     column {
         text_input { email }
-            .. on_change { new_email: String -> {
+            .. on_change { new_email: String ->
                 email = new_email
-                trigger_validation(email.clone())
+                trigger_validation(email)
             }
 
         when !is_valid {
@@ -234,24 +233,24 @@ Accumulate requests but allow manual flush:
 ```frel
 blueprint RateLimitedSearch(query: String) {
     source debounced = debounce(query, 300)  // Wait 300ms after typing stops
-    writable pending_queries: Vec<String> = vec![]
+    writable pending_queries: List<String> = []
 
-    debounced .. on_value { q: String -> {
-        pending_queries.push(q)
+    debounced .. on_value { q: String ->
+        // TODO: List append operation not yet specified
+        add_pending_query(q)
     }
 
     column {
-        text { "${pending_queries.len()} searches pending" }
+        // TODO: List .len() operation not yet specified
+        text { "Searches pending" }
 
-        when !pending_queries.is_empty() {
-            button { "Search Now" }
-                .. on_click {
-                    for query in &pending_queries {
-                        perform_search(query.clone())
-                    }
-                    pending_queries = vec![]
-                }
-        }
+        // TODO: List .is_empty() operation not yet specified
+        button { "Search Now" }
+            .. on_click {
+                // Event handlers cannot contain loops
+                // Move batch search logic to backend command
+                search_all_pending()
+            }
     }
 }
 ```
@@ -280,8 +279,11 @@ writable email = ""
 fanin selection = external.selection
 
 // For accumulation from sources - use writable + on_value
-writable log: Vec<Event> = vec![]
-events .. on_value { event -> { log.push(event) }
+writable log: List<Event> = []
+events .. on_value { event ->
+    // TODO: List append operation not yet specified
+    append_to_log(event)
+}
 ```
 
 ### Manual Override Semantics

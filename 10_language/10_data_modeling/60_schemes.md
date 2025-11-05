@@ -315,7 +315,7 @@ blueprint LoginForm() {
         button { "Log in" }
             .. enabled { credentials.is_valid() }
             .. on_click {
-                api::login(credentials.clone())
+                api::login(credentials)
             }
     }
 }
@@ -559,7 +559,7 @@ blueprint RegistrationForm() {
         button { "Register" }
             .. enabled { registration.is_valid() }
             .. on_click {
-                api::register(registration.clone())
+                api::register(registration)
             }
     }
 }

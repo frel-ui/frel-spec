@@ -18,28 +18,32 @@ scheme ListExamples {
 
 ### Operations
 
+> **Note:** List operations are currently under specification. The operations shown below represent the planned API but are not yet fully specified in the Frel language.
+
 ```frel
 let tags = List::new()
 
-// Adding elements
-tags.push("rust")           // Add to end
-tags.push("web")
-tags.insert(0, "frel")      // Insert at index
+// TODO: Adding elements - not yet specified
+// tags.push("rust")           // Add to end
+// tags.push("web")
+// tags.insert(0, "frel")      // Insert at index
 
 // Accessing elements
-tags.len()                  // -> 3
-tags.get(0)                 // -> Some("frel")
-tags.first()                // -> Some("frel")
-tags.last()                 // -> Some("web")
-tags.is_empty()             // -> false
+tags.get(0)                 // -> Option<String>
+tags.first()                // -> Option<String>
+tags.last()                 // -> Option<String>
 
-// Removing elements
-tags.remove(1)              // Remove at index
-tags.pop()                  // Remove and return last
+// TODO: Query operations - not yet specified
+// tags.len()                  // -> usize
+// tags.is_empty()             // -> bool
+// tags.contains("rust")       // Check membership
 
-// Iteration
-tags.iter()
-tags.contains("rust")       // Check membership
+// TODO: Removing elements - not yet specified
+// tags.remove(1)              // Remove at index
+// tags.pop()                  // Remove and return last
+
+// TODO: Iteration - not yet specified
+// tags.iter()
 ```
 
 ## Set - Unique Values, Unordered
@@ -184,7 +188,7 @@ Collections support fine-grained reactivity:
 
 ```frel
 blueprint TodoList() {
-    writable todos = List::new()
+    writable todos = []
 
     column {
         // Subscribes to list changes
@@ -194,8 +198,9 @@ blueprint TodoList() {
 
         button { "Add" }
             .. on_click {
-                todos.push("New item")
-                // UI automatically updates
+                // TODO: list append operation not yet specified
+                // Need to define how to add items to lists
+                add_todo("New item")
             }
     }
 }
@@ -467,14 +472,12 @@ blueprint FileTreeNode(
         // Node row
         row {
             // Expand/collapse button
-            when node.is_folder && !children.is_empty() {
+            when node.is_folder {
                 button { if is_expanded { "▼" } else { "▶" } }
                     .. on_click {
-                        if is_expanded {
-                            expanded.remove(node_id)
-                        } else {
-                            expanded.insert(node_id)
-                        }
+                        // TODO: Set toggle operation not yet specified
+                        // Need conditional add/remove for Set
+                        toggle_expanded(node_id)
                     }
             }
 
@@ -585,12 +588,11 @@ blueprint TreeNode(tree: Tree<T>, value: T) { }  // Loses tree context
 
 **Batch operations:**
 ```frel
-// Good - batch related operations
+// Good - batch related operations in backend command
 button { "Move All" } .. on_click {
-    for node_id in nodes_to_move {
-        tree.move_node(node_id, new_parent)
-    }
-    // Single reactivity update after all moves
+    // Event handlers cannot contain loops
+    // Move complex logic to backend command
+    move_all_nodes(nodes_to_move, new_parent)
 }
 ```
 

@@ -126,14 +126,16 @@ Streaming data with accumulation:
 ```frel
 blueprint LiveFeed() {
     source updates = sse(url: "/api/feed", event: "update")
-    writable messages: Vec<Message> = vec![]
+    writable messages: List<Message> = []
 
     updates .. on_value { msg: Message ->
-        messages.push(msg)
+        // TODO: List append operation not yet specified
+        add_message(msg)
     }
 
     column {
-        text { "Live Feed (${messages.len()} messages)" }
+        // TODO: List .len() operation not yet specified
+        text { "Live Feed" }
 
         scroll {
             vertical
@@ -152,7 +154,7 @@ blueprint LiveFeed() {
         }
 
         button { "Clear" }
-            .. on_click { messages = vec![] }
+            .. on_click { messages = [] }
     }
 }
 ```
@@ -167,10 +169,11 @@ blueprint Dashboard() {
     source notifications = sse(url: "/notifications")
     source health = interval_fetch(|| api::health_check(), interval_ms: 5000)
 
-    writable notif_list: Vec<Notification> = vec![]
+    writable notif_list: List<Notification> = []
 
     notifications .. on_value { notif: Notification ->
-        notif_list.push(notif)
+        // TODO: List append operation not yet specified
+        add_notification(notif)
     }
 
     column {
@@ -345,10 +348,11 @@ Bidirectional communication:
 blueprint ChatRoom(room_id: String) {
     source messages = websocket(url: "/chat/${room_id}")
     writable draft = ""
-    writable chat_history: Vec<Message> = vec![]
+    writable chat_history: List<Message> = []
 
     messages .. on_value { msg: Message ->
-        chat_history.push(msg)
+        // TODO: List append operation not yet specified
+        add_chat_message(msg)
     }
 
     column {
@@ -489,10 +493,11 @@ Use `on_value` handlers to accumulate source events:
 ```frel
 // Good - explicit accumulation
 source items = sse("/items")
-writable item_list: Vec<Item> = vec![]
+writable item_list: List<Item> = []
 
 items .. on_value { item: Item ->
-    item_list.push(item)
+    // TODO: List append operation not yet specified
+    add_item(item)
 }
 
 // Also good - use .latest() for simple derived values

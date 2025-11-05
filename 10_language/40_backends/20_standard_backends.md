@@ -153,12 +153,15 @@ Changes the active theme. All themed components will reactively update.
 ```frel
 button { "Toggle Theme" }
     .. on_click {
-        let next_theme = if workspace.active_theme == Themes.dark {
-            Themes.light
-        } else {
-            Themes.dark
-        };
-        workspace.switch_theme(next_theme);
+        // Event handlers cannot contain variable declarations
+        // Use expression directly in command call
+        workspace.switch_theme(
+            if workspace.active_theme == Themes.dark {
+                Themes.light
+            } else {
+                Themes.dark
+            }
+        )
     }
 ```
 
@@ -470,12 +473,14 @@ blueprint TodoAppShell {
             text { "Todo App" } .. font { size: 24 weight: 700 }
             button { "Toggle Theme" }
                 .. on_click {
-                    let next = if active_theme == Themes.light {
-                        Themes.dark
-                    } else {
-                        Themes.light
-                    };
-                    switch_theme(next);
+                    // Event handlers cannot contain variable declarations
+                    switch_theme(
+                        if active_theme == Themes.light {
+                            Themes.dark
+                        } else {
+                            Themes.light
+                        }
+                    )
                 }
         }
 

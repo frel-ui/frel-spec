@@ -77,15 +77,14 @@ blueprint PriceCalculator() {
 Derived stores can use any Pure HLE, including method calls and transformations:
 
 ```frel
-blueprint UserList(users: Vec<User>) {
+blueprint UserList(users: List<User>) {
     writable search = ""
 
-    decl filtered_users = users
-        .iter()
-        .filter(|u| u.name.contains(&search))
-        .collect::<Vec<_>>()
+    // TODO: List filter operation not yet specified
+    decl filtered_users = filter_users(users, search)
 
-    decl user_count = filtered_users.len()
+    // TODO: List .len() operation not yet specified
+    decl user_count = count_users(filtered_users)
     decl has_results = user_count > 0
 
     column {
@@ -146,12 +145,13 @@ blueprint TemperatureDisplay() {
 ### Collections and Aggregations
 
 ```frel
-blueprint Statistics(values: Vec<f64>) {
-    decl count = values.len()
-    decl sum = values.iter().sum::<f64>()
-    decl average = if count > 0 { sum / count as f64 } else { 0.0 }
-    decl max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
-    decl min = values.iter().cloned().fold(f64::INFINITY, f64::min)
+blueprint Statistics(values: List<f64>) {
+    // TODO: List operations for aggregation not yet specified
+    decl count = count_values(values)
+    decl sum = sum_values(values)
+    decl average = if count > 0 { sum / count } else { 0.0 }
+    decl max = max_value(values)
+    decl min = min_value(values)
 
     column {
         text { "Count: ${count}" }
@@ -210,7 +210,7 @@ Types are usually inferred, but can be explicitly annotated when needed:
 ```frel
 decl count = 0                    // Inferred as i32
 decl count: u32 = 0               // Explicit type
-decl items: Vec<String> = vec![]  // Helpful for empty collections
+decl items: List<String> = []  // Helpful for empty collections
 ```
 
 ## Best Practices
@@ -257,10 +257,11 @@ decl result = if items.iter().filter(|i| i.active).count() > 0 {
 }
 
 // Better
-decl active_items = items.iter().filter(|i| i.active).collect::<Vec<_>>()
-decl has_active = active_items.len() > 0
+// TODO: List filter operation not yet specified
+decl active_items = filter_active(items)
+decl has_active = count_items(active_items) > 0
 decl total = if has_active {
-    active_items.iter().map(|i| i.value).sum()
+    sum_values(active_items)
 } else {
     0
 }
