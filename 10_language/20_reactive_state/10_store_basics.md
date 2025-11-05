@@ -15,7 +15,7 @@ Every store has:
 
 ## Store Types
 
-Frel provides five kinds of stores, each optimized for different use cases:
+Frel provides four kinds of stores, each optimized for different use cases:
 
 | Store Type | Keyword      | Mutability | Dependencies | Use Case                             |
 |------------|--------------|------------|--------------|--------------------------------------|

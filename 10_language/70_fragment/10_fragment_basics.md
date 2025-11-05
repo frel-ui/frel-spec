@@ -13,7 +13,8 @@ A fragment definition is composed of:
 ```text
 <fragment> ::= "fragment" <name> [ "(" <param-list> ")" ] "{" <body> "}"
 <param-list> ::= <param> { "," <param> }
-<param> ::= <param-name> ":" <param-type>
+<param> ::= [<store-kind>] <param-name> ":" <param-type> [ "=" <default-expr> ]
+<store-kind> ::= "writable" | "source" | "decl" | "fanin"
 <body> ::= { <statement> }
 ```
 
@@ -33,14 +34,35 @@ a runtime instance by itself.
 
 **Definition**
 
-Each `<param>` declares an external store the fragment reads from (data it does not own).
-Parameters supply inputs and wiring for reactivity from parents into the fragment.
+Each `<param>` declares a reactive store that the fragment receives from its parent.
+Parameters enable reactive data flow and store sharing between fragments.
+
+**Store Kind**
+
+Parameters can specify what kind of store they accept. For detailed information
+see [Store Basics](../20_reactive_state/10_store_basics.md).
+
+When no store kind is specified, `decl` is assumed (read-only reactive).
+
+**Syntax Examples**
+
+```frel
+fragment UserDisplay(
+    name: String,              // Same as: decl name: String
+    writable count: i32,       // Writable store parameter
+    source user: User,         // Source store parameter
+    decl total: f64,           // Explicit read-only store
+    label: String = "Default"  // Default value
+)
+```
 
 **Rules**
 
-- `<param-name>` must be a valid host language identifier.
-- `<param-type>` must be a valid Frel type (path/type expression).
-- optional (nullable) parameters are specified by appending `?` to the type.
+- `<param-name>` must be a valid identifier
+- `<param-type>` must be a valid Frel type
+- Optional parameters use `?` suffix: `name: String?`
+- Default values must be pure Frel expressions
+- Store kind prefix is optional (defaults to `decl`)
 
 ### Body
 

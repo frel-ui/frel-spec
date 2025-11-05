@@ -8,6 +8,10 @@ Conceptually, a backend is not a single store with a value, but rather a structu
 
 ```text
 <backend> ::= "backend" <name> [ "(" <param-list> ")" ] "{" <backend-body> "}"
+<param-list> ::= <param> { "," <param> }
+<param> ::= [<store-kind>] <param-name> ":" <param-type> [ "=" <default-expr> ]
+<store-kind> ::= "writable" | "source" | "decl" | "fanin"
+
 <backend-body> ::= { <uses-clause> | <include-clause> | <store-decl> | <lifecycle-hook> | <command-decl> }
 
 <uses-clause>    ::= "uses" <contract-name>
@@ -27,6 +31,22 @@ Store declarations (`<store-decl>`) use the same syntax as in fragments. See [Re
 - **Store declarations**: Reactive stores exposed to the fragment (see [Store Types](#store-types))
 - **Lifecycle hooks**: Declarations indicating the backend has initialization/cleanup behavior (implemented in host language)
 - **Commands**: Async method signatures callable from fragment event handlers (implemented in host language)
+
+### Parameters
+
+**Definition**
+
+Each `<param>` declares a reactive store that the backend receives at construction time.
+Parameters enable reactive data flow and store sharing between backends.
+
+**Store Kind**
+
+Parameters can specify what kind of store they accept. For detailed information
+see [Store Basics](../20_reactive_state/10_store_basics.md).
+
+When no store kind is specified, `decl` is assumed (read-only reactive).
+
+All parameters are reactive - changes propagate automatically to/from the backend.
 
 ## Store Types
 
