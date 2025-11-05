@@ -73,20 +73,20 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 ### 6. Store Initialization Expressions
 
 **What needs to be designed:**
-- Rules for Pure Host Language Expressions (PHLE)
-- Compile-time validation of purity
+- How Frel expressions map to host language code
 - Type inference from initialization expressions
 - Parameter access in initializers
 - Scope and visibility rules
+- Code generation for Frel's expression language
 
 **References:**
-- [Language Overview](../00_language_overview.md#hosts) (PHLE definition)
+- [Frel Expressions](../15_expressions/10_expression_basics.md)
 - [Store Basics](../20_reactive_state/10_store_basics.md#initialization-order)
 
 ### 7. Event Handler Statements
 
 **What needs to be designed:**
-- Rules for Host Language Statements (HLS)
+- How host language statements are embedded in event handlers
 - What side effects are allowed
 - Store mutation syntax in handlers
 - Event parameter types and binding
@@ -95,7 +95,7 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 
 **References:**
 - [Event Handlers](../70_fragment/70_event_handlers.md)
-- [Language Overview](../00_language_overview.md#hosts) (HLS definition)
+- [Language Overview](../00_language_overview.md#expressions-and-statements)
 
 ### 8. Source Definition
 
@@ -192,5 +192,6 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 1. **Type Safety**: All interop should be type-safe and catch errors at compile time where possible
 2. **Ergonomics**: The host language API should feel natural and idiomatic
 3. **Performance**: Minimize overhead in the interop layer
-4. **Clarity**: Clear separation between PHLE (pure) and HLS (effectful) contexts
+4. **Clarity**: Clear separation between pure expressions and effectful statements
 5. **Composability**: Interop mechanisms should compose well with host language patterns
+6. **Portability**: Frel expressions should map cleanly to different host languages

@@ -9,9 +9,9 @@ Writable stores hold mutable state that can be updated through explicit assignme
 ## Semantics
 
 - **Kind**: Writable stores hold mutable state with no automatic subscriptions to other stores.
-- **Initializer**: `<expr>` is evaluated once at store creation. Even if it mentions other stores, there's no ongoing subscription. Must be a PHLE.
+- **Initializer**: `<expr>` is evaluated once at store creation. Even if it mentions other stores, there's no ongoing subscription. Must be a pure Frel expression. See [Frel Expressions](../15_expressions/10_expression_basics.md).
 - **Writes**: Writable stores can be modified in event handlers through:
-  - Direct assignment: `<id> = <expr2>` where `<expr2>` must be a PHLE
+  - Direct assignment: `<id> = <expr2>` (in host language statement context)
   - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
 - **Updates**: Only through explicit writes (no automatic recomputation from dependencies).
 - **Reactivity**: When the value changes, dependent stores are notified and recompute. See [Mutation Detection](10_store_basics.md#mutation-detection) for details on how the runtime detects changes.
@@ -25,7 +25,7 @@ Writable stores hold mutable state that can be updated through explicit assignme
 `<key_expr>` (Key Expression) is:
 - Required for `session` and `persistent` stores
 - String expression (literal or interpolated) that uniquely identifies the store
-- Must be a PHLE, evaluated once at store creation time
+- Must be a pure Frel expression, evaluated once at store creation time
 
 **Shorthands:**
 

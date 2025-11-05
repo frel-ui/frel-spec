@@ -34,40 +34,40 @@ fragment template.
 that is instantiated at runtime as a fragment. Its surface breaks down into a name, parameters,
 and a body of DSL statements that construct layout, state, and logic.
 
+## Expressions and Statements
+
+**[Frel Expressions](15_expressions/10_expression_basics.md):** Pure expressions that form Frel's
+own expression language. These are used throughout the DSL for store initializers, derived stores,
+conditionals, and attribute values. Frel expressions are pure by design (no side effects) and
+host-language independent.
+
+**Statement Context:** Event handlers are the only place in the Frel DSL where side effects are allowed.
+Event handlers contain store assignments and backend command calls. Backend lifecycle hooks and command
+implementations are written entirely in the host language (not in Frel DSL).
+
 ## Hosts
 
 > [!NOTE]
 >
-> While the main language of the library is Rust, the DSL is quite independent of the
-> main language. Only expressions are written in Rust, the general syntax and the control
-> statements are intentionally different from the Rust syntax. The reason behind this is
-> to avoid confusion and unambiguity.
+> Frel has its own expression language that is independent of any host language. This allows
+> the same Frel code to work with different backend implementations (Rust, TypeScript, Python, etc.)
+> The general syntax and control statements are intentionally different from host language syntax
+> to avoid confusion and maintain clear boundaries.
 >
 > Similarly, the main target platform (for now) is the web browser. However, the DSL is
 > designed to be portable to other platforms.
 >
 
-**Host Language:** The programming language that is used for expressions and statements in the DSL,
-also the target language for the generated Fragment IR. Each host language needs a compile-time
-plugin that translates the DSL into Fragment IR.
+**Host Language:** The programming language used to implement backends, commands, and complex business
+logic. Each host language needs a compiler backend that generates appropriate code from the Frel DSL.
 
-**Host Language Expression (HLE):** An expression that is written in the host language. These
-are used in the DSL to construct the fragment's logic. Expressions evaluate to a value.
-
-**Pure HLE (PHLE):** An expression that is written in the host language and does not have any
-side effects. Pure HLE expressions are allowed in the DSL body for store initializers, derived
-stores, fragment parameters, and control flow conditions.
-
-**Host Language Statement (HLS):** A statement that is written in the host language. Statements
-may have side effects (assignments, I/O, control flow, etc.). HLS are only allowed inside event
-handler bodies.
-
-**Host Platform:** The UI platform that the host language runs on. This can be "browser",
-Android, iOS, GTK, skia etc. Each host platform needs a runtime adapter that provides
+**Host Platform:** The UI platform that the application runs on. This can be "browser",
+Android, iOS, GTK, skia, etc. Each host platform needs a runtime adapter that provides
 the necessary integrations.
 
 ## Additional information
 
+- [**Expressions**](15_expressions/10_expression_basics.md)
 - [**Box Model**](70_fragment/20_box_model.md)
 - [**Standard Fragments**](70_fragment/30_standard_fragments.md)
 - [**Resources**](50_resources/10_resource_basics.md)

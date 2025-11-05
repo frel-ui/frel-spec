@@ -13,8 +13,8 @@ Conceptually, a backend is not a single store with a value, but rather a structu
 <uses-clause>    ::= "uses" <contract-name>
 <include-clause> ::= "include" <backend-name> [ "{" <include-config> "}" ]
 <include-config> ::= <name> "=" <expr> { "," <name> "=" <expr> }
-<lifecycle-hook> ::= "on_init" "{" <body> "}" | "on_cleanup" "{" <body> "}"
-<command-decl>   ::= "command" <name> "(" [ <param-list> ] ")"
+<lifecycle-hook> ::= "on_init" | "on_cleanup"
+<command-decl>   ::= "command" <name> "(" [ <param-list> ] ")" [ "->" <return-type> ]
 ```
 
 Store declarations (`<store-decl>`) use the same syntax as in fragments. See [Reactive State](../20_reactive_state/10_store_basics.md) for the complete definition.
@@ -25,8 +25,8 @@ Store declarations (`<store-decl>`) use the same syntax as in fragments. See [Re
 - **Uses**: Declares dependency on contracts (external services)
 - **Include**: Composes other backends for reusable logic
 - **Store declarations**: Reactive stores exposed to the fragment (see [Store Types](#store-types))
-- **Lifecycle hooks**: Code executed on backend creation and destruction
-- **Commands**: Methods callable from fragment event handlers
+- **Lifecycle hooks**: Declarations indicating the backend has initialization/cleanup behavior (implemented in host language)
+- **Commands**: Async method signatures callable from fragment event handlers (implemented in host language)
 
 ## Store Types
 
@@ -49,20 +49,60 @@ backend UserEditor(user_id: u32) {
 
     writable name: String = ""
     writable email: String = ""
+    writable original_name: String = ""
+    writable original_email: String = ""
 
-    // Derived state automatically updates
+    // Derived state automatically updates (pure Frel expression)
     decl has_changes = name != original_name || email != original_email
 
-    // Async data source with native status tracking
+    // Async data source
     source user_data = fetch(|| api.get_user(user_id))
 
-    on_init {
-        self.load_user();
-    }
+    // Lifecycle hooks (declarations only)
+    on_init
+    on_cleanup
 
+    // Commands (declarations only - implementation in host language)
     command load_user()
     command save()
     command cancel()
+}
+```
+
+Host language implementation (example in Rust):
+
+```rust
+#[async_trait]
+impl UserEditor for UserEditorImpl {
+    async fn on_init(&mut self) {
+        self.load_user().await;
+    }
+
+    async fn on_cleanup(&mut self) {
+        if self.has_changes.get() {
+            // Maybe prompt user to save?
+        }
+    }
+
+    async fn load_user(&mut self) {
+        let api = get_contract::<UserAPI>();
+        if let Ok(user) = api.get_user(self.user_id).await {
+            self.name.set(user.name.clone());
+            self.email.set(user.email.clone());
+            self.original_name.set(user.name);
+            self.original_email.set(user.email);
+        }
+    }
+
+    async fn save(&mut self) {
+        let api = get_contract::<UserAPI>();
+        // Implementation...
+    }
+
+    async fn cancel(&mut self) {
+        self.name.set(self.original_name.get());
+        self.email.set(self.original_email.get());
+    }
 }
 ```
 
@@ -71,8 +111,10 @@ backend UserEditor(user_id: u32) {
 - Backend names use PascalCase
 - Parameters use the same syntax as fragment parameters
 - Store type keyword (`decl`, `writable`, `fanin`, `source`) is required
+- Store initializers use pure Frel expressions
 - Type annotations can be inferred for `decl`, required for others
-- Commands declare only the signature (no implementation in DSL)
+- Commands declare only the signature (implementation in host language)
+- Lifecycle hooks are declarations only (implementation in host language)
 
 ## Store Exposure
 
@@ -116,37 +158,65 @@ fragment UserProfile(user_id: u32) {
 
 ## Lifecycle Hooks
 
+Lifecycle hooks are **declarations only** - they indicate that the backend has lifecycle behavior, but the implementation is written entirely in the host language.
+
 ### on_init
 
-Executed when the backend is created (fragment mounted):
+Declares that the backend has initialization logic (executed when fragment is mounted):
 
 ```frel
 backend UserEditor(user_id: u32) {
     writable data: User
 
-    on_init {
-        self.load_user();
-    }
+    // Declaration only - no body in Frel
+    on_init
 
     command load_user()
 }
 ```
 
+Host language implementation:
+
+```rust
+impl UserEditor {
+    async fn on_init(&mut self) {
+        self.load_user().await;
+    }
+
+    async fn load_user(&mut self) {
+        // Implementation...
+    }
+}
+```
+
 ### on_cleanup
 
-Executed when the backend is destroyed (fragment unmounted):
+Declares that the backend has cleanup logic (executed when fragment is unmounted):
 
 ```frel
 backend UserEditor(user_id: u32) {
     writable is_dirty: bool = false
 
-    on_cleanup {
-        when self.is_dirty {
-            self.save_draft();
+    // Declaration only - no body in Frel
+    on_cleanup
+
+    command save_draft()
+}
+```
+
+Host language implementation:
+
+```rust
+impl UserEditor {
+    async fn on_cleanup(&mut self) {
+        if self.is_dirty.get() {
+            self.save_draft().await;
         }
     }
 
-    command save_draft()
+    async fn save_draft(&mut self) {
+        // Implementation...
+    }
 }
 ```
 

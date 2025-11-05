@@ -9,7 +9,7 @@ Read-only stores hold immutable values that either remain constant or automatica
 ## Semantics
 
 - **Kind**: Subscribes to all stores used in `<expr>`. If no stores are referenced, it behaves as a constant.
-- **Initializer**: `<expr>` must be a Pure Host Language Expression (PHLE) - no side effects allowed.
+- **Initializer**: `<expr>` must be a pure Frel expression - no side effects allowed. See [Frel Expressions](../15_expressions/10_expression_basics.md).
 - **Writes**: Not assignable. Read-only stores cannot be modified after creation.
 - **Updates**: Automatically recomputed when any dependency changes (glitch-free; one recompute per drain cycle).
 - **Guards**: Dependency graphs must be acyclic. Cycles are detected at runtime and cause an error.

@@ -13,9 +13,9 @@ stores). They're perfect for scenarios where state needs both reactive updates a
 - **Kind**: Writable state that subscribes to all stores read by `<calc_expr>`.
 - **Calculation**:
     `<calc_expr>` is re-evaluated when dependencies change, and the result becomes the new value.
-    Must be a PHLE.
+    Must be a pure Frel expression. See [Frel Expressions](../15_expressions/10_expression_basics.md).
 - **Writes**: Fan-in stores can be modified in event handlers through:
-  - Direct assignment: `<id> = <expr2>` where `<expr2>` must be a PHLE
+  - Direct assignment: `<id> = <expr2>` (in host language statement context)
   - In-place mutation: `<id>.push(x)`, `<id>.insert(k, v)`, etc.
 - **Reactive continuation**:
     After a manual write, the store continues tracking dependencies. The next time dependencies

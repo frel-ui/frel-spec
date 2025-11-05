@@ -12,29 +12,32 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 ```text
 <event-handler> ::= <event-name> [ <parameter-clause> ] "{" <handler-body> "}"
 <parameter-clause> ::= "|" <param-name> ":" <param-type> "|"
-<handler-body> ::= <hls-statement>*
+<handler-body> ::= <handler-statement>*
+<handler-statement> ::= <store-assignment> | <command-call>
+<store-assignment> ::= <store-name> "=" <frel-expr>
+<command-call> ::= <command-name> "(" [ <frel-expr> { "," <frel-expr> } ] ")"
 ```
 
-Where `<hls-statement>` is a Host Language Statement (HLS) from the host language's syntax.
+Event handlers contain a sequence of statements that perform side effects.
 
 **Forms:**
 
 ```frel
 // Parameter-less handler
 button { "Click" } .. on_click {
-    count = count + 1           // HLS: assignment statement
+    count = count + 1           // Store mutation
 }
 
 // Handler with event parameter
 button { "Click" } .. on_click |event: PointerEvent| {
-    log("Clicked at ${event.x_dip}, ${event.y_dip}")  // HLS: function call
+    log_event("Clicked at ${event.x_dip}, ${event.y_dip}")  // Command call
 }
 
 // Multiple statements
 button { "Reset" } .. on_click {
-    count = 0                   // HLS: assignment
-    status = "idle"             // HLS: assignment
-    log("Reset complete")       // HLS: side effect
+    count = 0                   // Store mutation
+    status = "idle"             // Store mutation
+    reset_data()                // Command call
 }
 ```
 
@@ -42,14 +45,12 @@ button { "Reset" } .. on_click {
 
 ### Handler Body
 
-* The handler body contains **Host Language Statements (HLS)**, which **may have side effects**.
-* Unlike Pure Host Language Expressions (PHLE) used in the DSL body, event handlers are explicitly designed for:
-  - Store mutations (assignments)
-  - Function calls with side effects
-  - Control flow (if, match, loops in the host language)
-  - Async operations (depending on host language support)
-  - I/O operations
-* Event handlers are the **only** place in the DSL where HLS (and side effects) are allowed.
+* The handler body contains a **sequence of statements** that perform side effects.
+* Each statement is either:
+  1. **Store assignment**: `count = count + 1` - assigns a pure Frel expression to a writable store
+  2. **Command call**: `save()` - calls a backend command
+* All expressions in event handlers are **pure Frel expressions** - same as elsewhere in the DSL.
+* Event handlers are the **only** place in the Frel DSL where side effects (mutations, command calls) are allowed.
 
 ### Execution Context
 
@@ -58,17 +59,106 @@ button { "Reset" } .. on_click {
 * Multiple store writes within a handler are batched (subscribers notified once).
 * Handlers can read stores and parameters in scope.
 
-### Statements vs Expressions
+### Allowed Statements
 
-* Event handlers contain **statements** (HLS), which may include:
-  - Assignments: `store = expr`
-  - Function calls: `do_something()`
-  - Control flow: `if`, `match`, `for`, `while` (host language dependent)
-  - Return statements (if supported by host language)
-* Store assignments must use **PHLE on the right-hand side**:
-  - `count = count + 1` ✓ (PHLE on right side)
-  - `items = items.filter(|x| x > 0)` ✓ (PHLE on right side)
-  - `status = log_and_set("active")` ✗ (side effect in expression)
+Event handlers support exactly two types of statements:
+
+#### 1. Store Assignments
+
+```frel
+// Direct assignment
+count = count + 1
+name = "Alice"
+items = [1, 2, 3]
+
+// Using expressions
+total = price * quantity
+isValid = name.length > 0 && email.includes("@")
+
+// Note: collection mutations happen via reassignment
+items = items.map(x => x * 2)  // Creates new list
+```
+
+The right-hand side must be a pure Frel expression. No direct mutation of collections.
+
+#### 2. Command Calls
+
+```frel
+// No arguments
+save()
+reset()
+
+// With arguments (all must be Frel expressions)
+load_user(userId)
+update_settings(theme, fontSize)
+
+// Commands are async but appear synchronous in handlers
+validate()  // Runs asynchronously
+```
+
+### What's NOT Allowed
+
+Event handlers do **not** support:
+
+- **Control flow statements**: No `if`, `for`, `while`, `match` inside handlers
+- **Direct collection mutation**: No `.push()`, `.insert()`, `.remove()` on stores
+- **Variable declarations**: No `let` or `const` - only store assignments
+- **Host language syntax**: Handlers are pure Frel DSL
+
+### Control Flow
+
+If you need conditional logic or loops, use these patterns:
+
+**Option 1: Use Frel control flow outside the handler**
+
+```frel
+// ❌ Don't do this - no if statements in handlers
+button { "Click" } .. on_click {
+    if (count > 10) {
+        reset()
+    } else {
+        count = count + 1
+    }
+}
+
+// ✅ Do this instead - split into multiple handlers
+when count > 10 {
+    button { "Click" } .. on_click { reset() }
+}
+
+when count <= 10 {
+    button { "Click" } .. on_click { count = count + 1 }
+}
+```
+
+**Option 2: Implement logic in backend command**
+
+```frel
+// Backend declaration
+backend Counter {
+    writable count: i32 = 0
+
+    command increment_or_reset()
+}
+
+// Backend implementation (in host language)
+impl Counter {
+    async fn increment_or_reset(&mut self) {
+        if self.count.get() > 10 {
+            self.count.set(0);
+        } else {
+            self.count.set(self.count.get() + 1);
+        }
+    }
+}
+
+// Fragment - simple call
+fragment CounterView() {
+    with Counter
+
+    button { "Click" } .. on_click { increment_or_reset() }
+}
+```
 
 ### Event Parameters
 
@@ -118,39 +208,42 @@ button { "Reset" } .. on_click {
 }
 ```
 
-### Calling Host Functions
+### Calling Backend Commands
 
 ```frel
-button { "Log" } .. on_click {
-    log("Button clicked at ${timestamp()}")
-    analytics.track("button_click")
+backend Analytics {
+    command log_event(message: String)
+    command track(event_name: String)
+}
+
+fragment App() {
+    with Analytics
+
+    button { "Log" } .. on_click {
+        log_event("Button clicked")
+        track("button_click")
+    }
 }
 ```
 
 ### Keyboard Shortcuts
 
 ```frel
-fragment Editor() {
-    writable content = ""
+backend Editor {
+    writable content: String = ""
+
+    command submit()
+    command cancel()
+}
+
+fragment EditorView() {
+    with Editor
 
     column {
         text_input { content }
 
         on_enter { submit() }
         on_escape { cancel() }
-    }
-}
-```
-
-### Conditional Logic
-
-```frel
-button { "Submit" } .. on_click {
-    if valid(input) {
-        submit(input)
-        success { "Submitted!" }
-    } else {
-        error { "Invalid input" }
     }
 }
 ```
@@ -175,21 +268,30 @@ button { "Process" } .. on_click {
 
 ### Avoid Side Effects Outside Event Handlers
 
-Side effects (HLS) belong only in event handlers, not in store declarations or fragment parameters (which require PHLE):
+Side effects belong only in event handlers, not in store declarations or fragment parameters:
 
 ```frel
-// Good - side effects in event handler (HLS allowed)
-writable count = 0
-button { "Click" } .. on_click {
-    log("clicked")              // HLS: side effect OK here
-    count = count + 1           // HLS: assignment OK here
+// ✅ Good - side effects in event handler
+backend Logger {
+    command log(message: String)
 }
 
-// Bad - side effect in store declaration (PHLE required)
-decl count = log_and_return(0)  // COMPILE ERROR: side effect not allowed in PHLE
+fragment Counter() {
+    with Logger
 
-// Good - pure expression in store declaration
-decl count = 0                  // PHLE: pure expression
+    writable count = 0
+
+    button { "Click" } .. on_click {
+        log("clicked")        // Command call OK here
+        count = count + 1     // Store mutation OK here
+    }
+}
+
+// ❌ Bad - side effect in store declaration
+decl count = log_and_return(0)  // COMPILE ERROR: command calls not allowed in expressions
+
+// ✅ Good - pure expression in store declaration
+decl count = 0                  // Pure Frel expression
 ```
 
 ### Batch Updates
@@ -212,13 +314,39 @@ on_click { z = new_z }
 
 ### Error Handling
 
-Handle errors within event handlers to prevent crashes:
+Error handling is done in backend commands or through sources:
 
 ```frel
-button { "Fetch" } .. on_click {
-    match fetch_data() {
-        Ok(data) => items = data,
-        Err(e) => error { "Failed: ${e}" }
+// Backend handles errors
+backend DataLoader {
+    writable items: List<Item> = []
+    writable error: String? = null
+
+    command fetch_data()
+}
+
+impl DataLoader {
+    async fn fetch_data(&mut self) {
+        match api.fetch_items().await {
+            Ok(data) => {
+                self.items.set(data);
+                self.error.set(None);
+            }
+            Err(e) => {
+                self.error.set(Some(e.to_string()));
+            }
+        }
+    }
+}
+
+// Fragment just calls command
+fragment DataView() {
+    with DataLoader
+
+    button { "Fetch" } .. on_click { fetch_data() }
+
+    when error.is_some() {
+        text { "Error: ${error.unwrap()}" } .. color { Red }
     }
 }
 ```
