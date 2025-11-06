@@ -1,10 +1,26 @@
-# Frel Specifications and Software Designs
+# Frel
+
+Frel is a declarative DSL for building reactive, platform-independent user interfaces,
+focused on intent rather than implementation details.
+
+The **Frel Compiler** compiles Frel to multiple host languages (Rust, TypeScript, Kotlin).
+
+The **Frel Runtime** manages reactivity and renders the UI to multiple platforms (web,
+native mobile, desktop, PDF).
+
+Frel emphasizes a compact runtime footprint, deterministic rendering, and clean separation
+between declarative UI definitions and platform-specific adapters.
+
+Key features:
+
+- Declarative, reactive UI components
+- Programming language agnostic (host language independent)
+- Platform agnostic (web, mobile, desktop, documents)
+- Compact runtime with minimal overhead
+
+## Status
 
 Frel is currently in the **planning and early design** stage.
-
-The repository serves as a place to **document ideas, architecture drafts**.
-
-For actual implementations see other repositories under [frel-ui](https://github.com/frel-ui).
 
 Expect:
 
