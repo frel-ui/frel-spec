@@ -70,6 +70,42 @@ blueprint A() {
 
 Store kind defaults follow regular parameter rules: when omitted, `decl` is assumed.
 
+### Status and Error Types
+
+Frel includes built-in types for representing asynchronous operation states and errors:
+
+#### FrelError
+
+The `FrelError` type represents errors that occur during source operations, backend commands, or other runtime operations:
+
+```frel
+scheme FrelError {
+    message .. String
+    code .. String?
+    details .. Map<String, String>?
+}
+```
+
+All error conditions in Frel use this standardized error type for consistency across sources, backends, and the runtime.
+
+#### FrelStatus
+
+The `FrelStatus` enum represents the state of stores, particularly those derived from asynchronous sources:
+
+```frel
+enum FrelStatus {
+    Loading
+    Ready
+    Error(FrelError)
+}
+```
+
+- **Loading**: The store is waiting for data (e.g., source is fetching)
+- **Ready**: The store has a valid value
+- **Error**: An error occurred, with details in the `FrelError`
+
+All stores internally maintain a status. This enables automatic propagation of loading and error states through derived stores and reactive expressions.
+
 ### [Collections](30_collections.md)
 
 Platform-independent collection types with built-in reactivity:
@@ -179,6 +215,8 @@ Frel types map to native types in different host languages:
 | `Url`           | `url::Url`              | `URL`               | `urllib.parse.ParseResult` |
 | `Color`         | `Color`                 | `Color`             | `Color`                    |
 | `Blob`          | `Vec<u8>`               | `Blob`/`Uint8Array` | `bytes`                    |
+| `FrelError`     | `FrelError`             | `FrelError`         | `FrelError`                |
+| `FrelStatus`    | `FrelStatus`            | `FrelStatus`        | `FrelStatus`               |
 | `List<T>`       | `FrelList<T>`           | `FrelList<T>`       | `FrelList[T]`              |
 | `Set<T>`        | `FrelSet<T>`            | `FrelSet<T>`        | `FrelSet[T]`               |
 | `Map<K,V>`      | `FrelMap<K,V>`          | `FrelMap<K,V>`      | `FrelMap[K,V]`             |

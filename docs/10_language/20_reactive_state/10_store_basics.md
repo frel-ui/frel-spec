@@ -9,9 +9,44 @@ declarative reactive UIs.
 Every store has:
 - **Identity**: A name used to reference it within the blueprint
 - **Type**: The host language type of the value it holds
+- **Status**: Current state (`Loading`, `Ready`, or `Error`)
+- **Value**: The actual data (present only when status is `Ready`)
 - **Reactivity**: How it responds to changes in dependencies
 - **Mutability**: Whether it can be written to (and how)
 - **Lifetime**: How long the store persists
+
+### Store Status
+
+All stores internally maintain a status using the `FrelStatus` enum:
+
+```frel
+enum FrelStatus {
+    Loading
+    Ready
+    Error(FrelError)
+}
+```
+
+- **Loading**: Store is waiting for data (typically from a source)
+- **Ready**: Store has a valid value
+- **Error**: An error occurred during data fetching or computation
+
+The value is available (`data: Some(T)`) only when `status == Ready`. When the status is `Loading` or `Error`, the value is `None`.
+
+Stores can be checked for status explicitly using the `.status()` method:
+
+```frel
+source user = fetch("/api/user")
+decl user_status = user.status()
+
+select on user_status {
+    FrelStatus::Loading => spinner {}
+    FrelStatus::Ready => text { user.name }
+    FrelStatus::Error(e) => text { "Error: " + e.message }
+}
+```
+
+However, in most cases status is handled automatically by the framework (see Status Propagation below).
 
 ## Store Types
 
@@ -68,6 +103,79 @@ decl b = a + 1
 decl c = a + b  // Recomputes once when 'a' changes, not twice
 
 button { "Update" } .. on_click { a = a + 1 }
+```
+
+### Status Propagation
+
+When a store depends on other stores, its status is automatically determined by the "worst" status of its dependencies:
+
+**Propagation Rule**: `Error > Loading > Ready`
+
+- If **any** dependency has status `Error` → the store's status is `Error`
+- Else if **any** dependency has status `Loading` → the store's status is `Loading`
+- Else **all** dependencies have status `Ready` → the store's status is `Ready`
+
+When a store's status is not `Ready`, its value is `None` and any expressions depending on it cannot evaluate.
+
+#### Examples
+
+**Simple propagation:**
+```frel
+source user: User = fetch("/api/user")  // Loading initially
+decl username = user.name                // Loading (propagates from user)
+
+// When user loads successfully:
+// user: { status: Ready, data: Some(User{...}) }
+// username: { status: Ready, data: Some("Alice") }
+```
+
+**Multiple dependencies:**
+```frel
+source price: Decimal = fetch("/api/price")  // Loading initially
+writable quantity: Int = 1                    // Ready immediately
+decl total = price * quantity                 // Loading (price is Loading)
+
+// When price loads:
+// price: Ready, quantity: Ready → total: Ready
+```
+
+**Error propagation:**
+```frel
+source data: Data = fetch("/api/data")   // Error after failed fetch
+decl processed = data.value * 2          // Error (propagates from data)
+decl display = "Value: " + processed     // Error (propagates from processed)
+```
+
+**Writable store initialization:**
+```frel
+source user: User = fetch("/api/user")
+writable selected_name: String = user.name
+// selected_name starts with Loading status
+// When user loads, selected_name becomes Ready with the user's name
+```
+
+#### UI Rendering with Status
+
+Blueprint components automatically handle status when rendering:
+
+```frel
+source user: User = fetch("/api/user")
+decl username = user.name
+
+text { username }
+// When username is Loading: renders "" (empty)
+// When username is Ready: renders "Alice"
+// When username is Error: renders "" (empty)
+```
+
+For explicit status handling, use control flow:
+
+```frel
+select on user.status() {
+    FrelStatus::Loading => spinner {}
+    FrelStatus::Ready => text { "Hello, " + user.name }
+    FrelStatus::Error(e) => text { "Failed to load user: " + e.message }
+}
 ```
 
 ### Cyclic Dependencies

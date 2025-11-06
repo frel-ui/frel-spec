@@ -11,12 +11,12 @@ effectful operations that happen outside the fragment's control.
 ## Semantics
 
 - **Kind**: Producing store managed by the runtime (effectful). Not writable from fragments.
-- **Views for expressions**:
-  - `<id>.latest() → Option<T>`: Most recent value produced (if any).
-  - `<id>.status() → Status<E>`: Current status - `Loading`, `Ready`, or `Error(E)`.
-- **Event handler**: `on_value` runs each time the source produces a new value. The handler receives the unwrapped value (not `Option<T>`).
-- **As a dependency**: Sources can be read by other stores, triggering reactive updates.
-- **Typical producers**: `interval(ms)`, `fetch(|| …)`, `sse(url, event)`.
+- **Status**: All sources have a status accessible via `<id>.status() → FrelStatus`
+- **Value access**: Source values are accessed directly (e.g., `user.name`), not via `.latest()`
+- **Status states**: `Loading` (fetching), `Ready` (data available), `Error(FrelError)` (failed)
+- **Event handler**: `on_value` runs each time the source produces a new value. The handler receives the unwrapped value (not `Option<T>`)
+- **As a dependency**: Sources can be read by other stores, triggering reactive updates. Status propagates automatically.
+- **Typical producers**: `interval(ms)`, `fetch(|| …)`, `sse(url, event)`
 
 ## Lifecycle
 
@@ -37,13 +37,15 @@ effectful operations that happen outside the fragment's control.
 
 ## Status Type
 
-```rust
-enum Status<E> {
-    Loading,           // Source is fetching data
-    Ready,             // Data is available
-    Error(E),          // An error occurred
+```frel
+enum FrelStatus {
+    Loading            // Source is fetching data
+    Ready              // Data is available
+    Error(FrelError)   // An error occurred
 }
 ```
+
+See [Data Basics](../10_data_modeling/10_data_basics.md#status-and-error-types) for details on `FrelError` and `FrelStatus`.
 
 ## Examples
 
@@ -73,14 +75,15 @@ Periodic events:
 
 ```frel
 blueprint Clock() {
-    source tick = interval(ms: 1000)
+    source tick: Instant = interval(ms: 1000)
 
-    decl current_time = tick.latest()
-        .map(|_| chrono::Local::now().format("%H:%M:%S").to_string())
-        .unwrap_or_else(|| "...".to_string())
+    decl current_time = tick.format("%H:%M:%S")
 
-    text { current_time }
-        .. font { size: 32 weight: 700 }
+    select on tick.status() {
+        FrelStatus::Loading => text { "..." }
+        FrelStatus::Ready => text { current_time } .. font { size: 32 weight: 700 }
+        FrelStatus::Error(_) => text { "Error" }
+    }
 }
 ```
 
@@ -90,28 +93,22 @@ One-time data fetch:
 
 ```frel
 blueprint UserProfile(user_id: u32) {
-    source user = fetch(|| api::get_user(user_id))
+    source user: User = fetch(|| api::get_user(user_id))
 
-    decl status = user.status()
-
-    select on status {
-        Status::Loading => column {
+    select on user.status() {
+        FrelStatus::Loading => column {
             spinner { }
             text { "Loading user..." }
         }
 
-        Status::Ready => {
-            decl user_data = user.latest().unwrap()
-
-            column {
-                text { user_data.name } .. font { size: 20 weight: 700 }
-                text { user_data.email }
-                text { "Joined: ${user_data.created_at}" }
-            }
+        FrelStatus::Ready => column {
+            text { user.name } .. font { size: 20 weight: 700 }
+            text { user.email }
+            text { "Joined: " + user.created_at }
         }
 
-        Status::Error(e) => column {
-            text { "Error: ${e}" } .. font { color: Red }
+        FrelStatus::Error(e) => column {
+            text { "Error: " + e.message } .. font { color: Red }
             button { "Retry" }
                 .. on_click { /* trigger refetch */ }
         }
@@ -165,9 +162,9 @@ Combining different data sources:
 
 ```frel
 blueprint Dashboard() {
-    source stats = fetch(|| api::get_stats())
-    source notifications = sse(url: "/notifications")
-    source health = interval_fetch(|| api::health_check(), interval_ms: 5000)
+    source stats: Stats = fetch(|| api::get_stats())
+    source notifications: Notification = sse(url: "/notifications")
+    source health: HealthCheck = interval_fetch(|| api::health_check(), interval_ms: 5000)
 
     writable notif_list: List<Notification> = []
 
@@ -180,16 +177,13 @@ blueprint Dashboard() {
         gap { 16 }
 
         // Stats section
-        when stats.status() == Status::Ready {
-            decl data = stats.latest().unwrap()
-            StatsCard(data)
+        when stats.status() == FrelStatus::Ready {
+            StatsCard(stats)
         }
 
         // Health indicator
         row {
-            decl is_healthy = health.latest()
-                .map(|h| h.is_ok())
-                .unwrap_or(false)
+            decl is_healthy = health.is_ok
 
             icon { if is_healthy { "check_circle" } else { "error" } }
                 .. tint { if is_healthy { Green } else { Red } }
@@ -215,10 +209,10 @@ Fetch data based on user selection:
 
 ```frel
 blueprint PostViewer() {
-    writable selected_post_id: Option<u32> = None
+    writable selected_post_id: u32? = null
 
     // Source that re-fetches when selected_post_id changes
-    source post = fetch_when(
+    source post: Post = fetch_when(
         selected_post_id,
         |id| api::get_post(id)
     )
@@ -227,24 +221,20 @@ blueprint PostViewer() {
         // Post list
         repeat on available_posts as p {
             button { p.title }
-                .. on_click { selected_post_id = Some(p.id) }
+                .. on_click { selected_post_id = p.id }
         }
 
         // Post detail
-        when selected_post_id.is_some() {
+        when selected_post_id != null {
             select on post.status() {
-                Status::Loading => spinner { }
+                FrelStatus::Loading => spinner { }
 
-                Status::Ready => {
-                    decl post_data = post.latest().unwrap()
-
-                    column {
-                        text { post_data.title } .. font { size: 24 weight: 700 }
-                        text { post_data.content }
-                    }
+                FrelStatus::Ready => column {
+                    text { post.title } .. font { size: 24 weight: 700 }
+                    text { post.content }
                 }
 
-                Status::Error(e) => text { "Error: ${e}" } .. font { color: Red }
+                FrelStatus::Error(e) => text { "Error: " + e.message } .. font { color: Red }
             }
         }
     }
@@ -258,36 +248,35 @@ blueprint PaginatedList() {
     writable page = 0
     writable page_size = 25
 
-    source items = fetch_paginated(
+    source items: List<Item> = fetch_paginated(
         || api::get_items(page, page_size)
     )
 
-    decl status = items.status()
-    decl current_items = items.latest().unwrap_or_default()
-
     column {
-        when status == Status::Loading {
+        when items.status() == FrelStatus::Loading {
             spinner { }
         }
 
-        repeat on current_items as item {
-            ItemCard(item)
+        when items.status() == FrelStatus::Ready {
+            repeat on items as item {
+                ItemCard(item)
+            }
         }
 
         row {
             button { "Previous" }
-                .. enabled { page > 0 && status == Status::Ready }
+                .. enabled { page > 0 && items.status() == FrelStatus::Ready }
                 .. on_click { page = page - 1 }
 
-            text { "Page ${page + 1}" }
+            text { "Page " + (page + 1) }
 
             button { "Next" }
-                .. enabled { status == Status::Ready }
+                .. enabled { items.status() == FrelStatus::Ready }
                 .. on_click { page = page + 1 }
         }
 
-        when status == Status::Error(e) {
-            text { "Failed to load: ${e}" } .. font { color: Red }
+        when items.status() == FrelStatus::Error(e) {
+            text { "Failed to load: " + e.message } .. font { color: Red }
         }
     }
 }
@@ -299,42 +288,38 @@ Repeatedly fetch data at intervals:
 
 ```frel
 blueprint SystemMonitor() {
-    source metrics = poll(
+    source metrics: Metrics = poll(
         producer: || api::get_metrics(),
         interval_ms: 2000
     )
 
-    decl latest_metrics = metrics.latest()
-    decl last_update = metrics.latest()
-        .map(|_| chrono::Local::now())
-        .unwrap_or_default()
-
     column {
         text { "System Metrics" } .. font { size: 20 weight: 700 }
-        text { "Last update: ${last_update}" } .. font { color: Gray }
 
-        when metrics.status() == Status::Ready && latest_metrics.is_some() {
-            decl m = latest_metrics.unwrap()
-
+        when metrics.status() == FrelStatus::Ready {
             column {
                 gap { 8 }
 
                 row {
                     text { "CPU:" }
-                    text { "${m.cpu_percent}%" }
-                        .. font { color: if m.cpu_percent > 80 { Red } else { Green } }
+                    text { metrics.cpu_percent + "%" }
+                        .. font { color: if metrics.cpu_percent > 80 { Red } else { Green } }
                 }
 
                 row {
                     text { "Memory:" }
-                    text { "${m.memory_mb} MB" }
+                    text { metrics.memory_mb + " MB" }
                 }
 
                 row {
                     text { "Active Connections:" }
-                    text { "${m.connections}" }
+                    text { metrics.connections }
                 }
             }
+        }
+
+        when metrics.status() == FrelStatus::Loading {
+            spinner { }
         }
     }
 }
@@ -385,18 +370,17 @@ blueprint ChatRoom(room_id: String) {
         }
 
         // Connection status
-        decl status = messages.status()
         text {
-            match status {
-                Status::Loading => "Connecting...",
-                Status::Ready => "Connected",
-                Status::Error(e) => "Disconnected: ${e}",
+            match messages.status() {
+                FrelStatus::Loading => "Connecting...",
+                FrelStatus::Ready => "Connected",
+                FrelStatus::Error(e) => "Disconnected: " + e.message,
             }
         } .. font {
-            color: match status {
-                Status::Loading => Orange,
-                Status::Ready => Green,
-                Status::Error(_) => Red,
+            color: match messages.status() {
+                FrelStatus::Loading => Orange,
+                FrelStatus::Ready => Green,
+                FrelStatus::Error(_) => Red,
             }
         }
     }
@@ -409,9 +393,9 @@ Fetch with caching behavior:
 
 ```frel
 blueprint CachedData(key: String) {
-    source data = fetch_cached(
-        key: key.clone(),
-        producer: || api::get_data(key.clone()),
+    source data: Data = fetch_cached(
+        key: key,
+        producer: || api::get_data(key),
         ttl_seconds: 300  // 5 minute cache
     )
 
@@ -423,14 +407,11 @@ blueprint CachedData(key: String) {
         }
 
         select on data.status() {
-            Status::Loading => spinner { }
+            FrelStatus::Loading => spinner { }
 
-            Status::Ready => {
-                decl value = data.latest().unwrap()
-                DataView(value)
-            }
+            FrelStatus::Ready => DataView(data)
 
-            Status::Error(e) => text { "Error: ${e}" } .. font { color: Red }
+            FrelStatus::Error(e) => text { "Error: " + e.message } .. font { color: Red }
         }
     }
 }
@@ -442,31 +423,29 @@ Source that depends on another source:
 
 ```frel
 blueprint UserPosts() {
-    source user = fetch(|| api::get_current_user())
+    source user: User = fetch(|| api::get_current_user())
 
     // This source depends on user being ready
-    source posts = user.latest()
-        .map(|u| fetch(|| api::get_posts(u.id)))
-        .unwrap_or_else(|| empty_source())
+    source posts: List<Post> = fetch_when(
+        user,
+        |u| api::get_posts(u.id)
+    )
 
     column {
-        when user.status() == Status::Ready {
-            decl user_data = user.latest().unwrap()
-            text { "${user_data.name}'s Posts" }
+        when user.status() == FrelStatus::Ready {
+            text { user.name + "'s Posts" }
         }
 
         select on posts.status() {
-            Status::Loading => spinner { }
+            FrelStatus::Loading => spinner { }
 
-            Status::Ready => {
-                decl post_list = posts.latest().unwrap_or_default()
-
-                repeat on post_list as post {
+            FrelStatus::Ready => {
+                repeat on posts as post {
                     PostCard(post)
                 }
             }
 
-            Status::Error(e) => text { "Failed to load posts: ${e}" }
+            FrelStatus::Error(e) => text { "Failed to load posts: " + e.message }
         }
     }
 }
@@ -480,9 +459,9 @@ Always handle Loading, Ready, and Error states for one-time fetches:
 
 ```frel
 select on source.status() {
-    Status::Loading => spinner { }
-    Status::Ready => { /* show data */ }
-    Status::Error(e) => { /* show error */ }
+    FrelStatus::Loading => spinner { }
+    FrelStatus::Ready => { /* show data */ }
+    FrelStatus::Error(e) => { /* show error */ }
 }
 ```
 
@@ -492,16 +471,13 @@ Use `on_value` handlers to accumulate source events:
 
 ```frel
 // Good - explicit accumulation
-source items = sse("/items")
+source items: Item = sse("/items")
 writable item_list: List<Item> = []
 
 items .. on_value { item: Item ->
     // TODO: List append operation not yet specified
     add_item(item)
 }
-
-// Also good - use .latest() for simple derived values
-decl latest_item = items.latest()
 ```
 
 ### Extract Status Checks
@@ -509,27 +485,35 @@ decl latest_item = items.latest()
 For cleaner code, extract status to a derived store:
 
 ```frel
-source data = fetch(|| api::get_data())
+source data: Data = fetch(|| api::get_data())
 
-decl is_loading = data.status() == Status::Loading
-decl is_error = matches!(data.status(), Status::Error(_))
-decl is_ready = data.status() == Status::Ready
+decl is_loading = data.status() == FrelStatus::Loading
+decl is_error = matches!(data.status(), FrelStatus::Error(_))
+decl is_ready = data.status() == FrelStatus::Ready
 
 when is_loading {
     spinner { }
 }
 ```
 
-### Null Safety with Latest
+### Direct Value Access
 
-Always handle the Option from `.latest()`:
+Source values are accessed directly when status is Ready. Status propagates automatically through derived stores:
 
 ```frel
-// Good - handle None case
-decl user_name = user.latest()
-    .map(|u| u.name.clone())
-    .unwrap_or_else(|| "Unknown".to_string())
+source user: User = fetch("/api/user")
 
-// Risky - will panic if None
-decl user_name = user.latest().unwrap().name
+// Direct access - status propagates automatically
+decl username = user.name
+decl greeting = "Hello, " + username
+
+// UI handles status automatically
+text { greeting }  // Shows "" when Loading/Error, greeting when Ready
+
+// Explicit status handling when needed
+select on user.status() {
+    FrelStatus::Loading => spinner { }
+    FrelStatus::Ready => text { greeting }
+    FrelStatus::Error(e) => text { "Error: " + e.message }
+}
 ```

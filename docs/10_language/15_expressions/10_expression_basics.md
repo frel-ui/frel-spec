@@ -22,8 +22,9 @@ purity is guaranteed by the language design itself, not by validation.
 1. **Pure by design**: No assignments, I/O, or side effects possible
 2. **Host-independent**: Same expression language works with any backend implementation language
 3. **Type-safe**: Full type checking at compile time
-4. **Readable**: Clear, familiar syntax inspired by modern languages
-5. **Limited scope**: Complex logic belongs in backends, not expressions
+4. **Status-aware**: Expressions automatically propagate Loading/Error states
+5. **Readable**: Clear, familiar syntax inspired by modern languages
+6. **Limited scope**: Complex logic belongs in backends, not expressions
 
 ## Expression vs Statement Contexts
 
@@ -58,6 +59,59 @@ Event handlers contain a sequence of statements, where each statement is either:
 **No host language control flow** - use Frel's control flow constructs (`when`, `select`) outside the handler, or implement complex logic in backend commands.
 
 Note: Backend lifecycle hooks and command implementations are written entirely in the host language, not in Frel DSL.
+
+## Expression Evaluation and Status
+
+Every expression evaluation produces not just a value, but also a status (see [FrelStatus](../10_data_modeling/10_data_basics.md#status-and-error-types)):
+
+- **Status**: One of `Loading`, `Ready`, or `Error(FrelError)`
+- **Value**: Present (`Some(T)`) only when status is `Ready`, otherwise `None`
+
+When an expression depends on stores, its status is determined by the "worst" status of its dependencies:
+
+**Status Propagation Rule**: `Error > Loading > Ready`
+
+- If **any** dependency is `Error` → expression status is `Error`
+- Else if **any** dependency is `Loading` → expression status is `Loading`
+- Else all dependencies are `Ready` → expression status is `Ready`
+
+### Examples
+
+```frel
+source price: Decimal = fetch("/api/price")  // Loading initially
+writable quantity: Int = 1                    // Ready immediately
+
+// Expression status follows price status
+decl total = price * quantity
+// When price is Loading: total is Loading
+// When price is Ready: total is Ready
+// When price is Error: total is Error
+```
+
+```frel
+source user: User = fetch("/api/user")
+
+// Chained field access propagates status
+decl username = user.name
+decl greeting = "Hello, " + username
+// TODO: String methods like .toUpperCase() not yet specified
+decl upper = greeting  // All expressions inherit user's status
+```
+
+When a store's status is not `Ready`, expressions depending on it cannot evaluate (their value is `None`). This status propagates through the entire dependency graph automatically.
+
+### Assignment and Status
+
+When an expression is assigned to a store, the store inherits the expression's status:
+
+```frel
+source data: Data = fetch("/api/data")
+// TODO: .toString() method not yet specified
+writable processed: Int = data.value * 2
+// processed starts with Loading (from data)
+// When data becomes Ready, processed becomes Ready
+// When data becomes Error, processed becomes Error
+```
 
 ## What's Included
 

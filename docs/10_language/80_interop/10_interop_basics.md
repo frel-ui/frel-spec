@@ -35,7 +35,7 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 
 **What needs to be designed:**
 - How backends are represented in the host language
-- Store accessor types (`WritableStore<T>`, `ReadOnlyStore<T>`, `FanInStore<T>`, `Source<T>`)
+- Store accessor types (`FrelMutableStore<T>` for writable stores, values for read-only)
 - Parameter accessor methods
 - Lifecycle hook signatures (`on_init`, `on_cleanup`)
 - Command method signatures (async/suspend)
@@ -58,13 +58,16 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 
 ### 5. Store Access API
 
-**What needs to be designed:**
-- Reading store values from the host language
-- Writing to writable stores
-- Mutation methods for stores
-- Triggering reactive updates
-- Store subscription from host language (if needed)
-- Accessing nested scheme fields
+Commands receive store handles (`FrelMutableStore<T>`) with the following API:
+- `read() -> Option<&T>` - Read current value (None if not Ready)
+- `status() -> FrelStatus` - Get current status
+- `write(value: T)` - Set value and mark Ready
+- `set_loading()` - Mark as Loading
+- `set_error(error: FrelError)` - Mark as Error
+
+All stores internally maintain:
+- Status: `Loading`, `Ready`, or `Error(FrelError)`
+- Value: Present only when status is `Ready`
 
 **References:**
 - [Store Basics](../20_reactive_state/10_store_basics.md)
@@ -95,17 +98,20 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
 
 **References:**
 - [Event Handlers](../70_blueprint/70_event_handlers.md)
-- [Language Overview](../00_language_overview.md#expressions-and-statements)
+- [Language Overview](../00_language_overview.md)
 
 ### 8. Source Definition
 
-**What needs to be designed:**
-- Producer trait/interface
-- Status type representation (`Loading`, `Ready`, `Error(E)`)
-- Value access API (`latest() -> Option<T>`, `status() -> Status<E>`)
-- Source lifecycle (creation, dropping, cancellation semantics)
-- Built-in source implementations (fetch, interval, sse, websocket, etc.)
-- `on_value` handler mechanism
+Sources receive a `StoreKey` and `FrelRuntime` and dispatch updates via:
+- `runtime.set_store_loading(key)` - Set Loading status
+- `runtime.set_store_value(key, value)` - Set value and Ready status
+- `runtime.set_store_error(key, error)` - Set Error status
+
+Sources implement lifecycle methods:
+- `start(runtime, store_key)` - Begin producing values
+- `stop()` - Cleanup and cancel operations
+
+All sources use `FrelStatus` (not `Status<E>`) and `FrelError` for errors.
 
 **References:**
 - [Sources](../20_reactive_state/50_sources.md)
@@ -156,6 +162,13 @@ Frel is a DSL that compiles to host language code. The interop layer defines how
   - `LocalDateTime`
   - `Timezone`
   - `Duration`
+- Status and error types:
+  - `FrelStatus` (Loading, Ready, Error)
+  - `FrelError` (message, code, details)
+- Runtime interop types:
+  - `StoreKey` (opaque store reference for sources)
+  - `FrelRuntime` (runtime interface for store updates)
+  - `FrelMutableStore<T>` (store handle for commands)
 - Optional types
 
 **References:**
