@@ -8,14 +8,14 @@ When working on the language spec, treat it as documentation of what Frel IS, no
 
 Before working on the Frel language specification, read these foundational documents to understand the project:
 
-1. **Project Overview**: [README.md](../../README.md) - Understand that Frel is in early design stage
-2. **Language Overview**: [docs/10_language/00_language_overview.md](../../docs/10_language/00_language_overview.md) - Core concepts, glossary, and how components fit together
-3. **Data Modeling**: [docs/10_language/10_data_modeling/10_data_basics.md](../../docs/10_language/10_data_modeling/10_data_basics.md) - Type system, primitives, collections, enums, schemes
-4. **Expression Basics**: [docs/10_language/15_expressions/10_expression_basics.md](../../docs/10_language/15_expressions/10_expression_basics.md) - The pure expression language that forms the foundation
-5. **Store Basics**: [docs/10_language/20_reactive_state/10_store_basics.md](../../docs/10_language/20_reactive_state/10_store_basics.md) - Reactive state management semantics
-6. **Contract Basics**: [docs/10_language/30_contracts/10_contract_basics.md](../../docs/10_language/30_contracts/10_contract_basics.md) - External service interfaces
-7. **Backend Basics**: [docs/10_language/40_backends/10_backend_basics.md](../../docs/10_language/40_backends/10_backend_basics.md) - Business logic containers with stores and commands
-8. **Blueprint Basics**: [docs/10_language/70_blueprint/10_blueprint_basics.md](../../docs/10_language/70_blueprint/10_blueprint_basics.md) - UI component templates
+1. **Project Overview**: [README.md](../../../README.md) - Understand that Frel is in early design stage
+2. **Language Overview**: [docs/10_language/00_language_overview.md](00_language_overview.md) - Core concepts, glossary, and how components fit together
+3. **Data Modeling**: [docs/10_language/10_data_modeling/10_data_basics.md](10_data_modeling/10_data_basics.md) - Type system, primitives, collections, enums, schemes
+4. **Expression Basics**: [docs/10_language/15_expressions/10_expression_basics.md](15_expressions/10_expression_basics.md) - The pure expression language that forms the foundation
+5. **Store Basics**: [docs/10_language/20_reactive_state/10_store_basics.md](20_reactive_state/10_store_basics.md) - Reactive state management semantics
+6. **Contract Basics**: [docs/10_language/30_contracts/10_contract_basics.md](30_contracts/10_contract_basics.md) - External service interfaces
+7. **Backend Basics**: [docs/10_language/40_backends/10_backend_basics.md](40_backends/10_backend_basics.md) - Business logic containers with stores and commands
+8. **Blueprint Basics**: [docs/10_language/70_blueprint/10_blueprint_basics.md](70_blueprint/10_blueprint_basics.md) - UI component templates
 
 These documents define what IS available in Frel. If a feature isn't documented there, it doesn't exist yet.
 
@@ -66,7 +66,7 @@ The same `.forEach` and `println` would be WRONG in a `frel` code fence.
 
 ### 2. Respect the Minimal Expression Language
 
-The Frel expression language is pure and minimal. Read [10_language/15_expressions/10_expression_basics.md](../../docs/10_language/15_expressions/10_expression_basics.md) to understand what IS available.
+The Frel expression language is pure and minimal. Read [10_language/15_expressions/10_expression_basics.md](15_expressions/10_expression_basics.md) to understand what IS available.
 
 **Not yet specified (DO NOT USE):**
 
@@ -92,7 +92,7 @@ Examples must use ONLY Frel syntax as defined in this specification.
 
 ### 4. Store Operations Are Strictly Defined
 
-Read [10_language/20_reactive_state/10_store_basics.md](../../docs/10_language/20_reactive_state/10_store_basics.md) for complete semantics.
+Read [10_language/20_reactive_state/10_store_basics.md](20_reactive_state/10_store_basics.md) for complete semantics.
 
 - **`decl` stores**: Read-only, reactive, initialized with pure Frel expressions
 - **`writable` stores**: Can be assigned in event handlers, no automatic dependencies
@@ -101,7 +101,7 @@ Read [10_language/20_reactive_state/10_store_basics.md](../../docs/10_language/2
 
 ### 5. Data Types Are Strictly Defined
 
-Frel has a specific type system documented in [docs/10_language/10_data_modeling/](../../docs/10_language/10_data_modeling/).
+Frel has a specific type system documented in [docs/10_language/10_data_modeling/](../../docs/98_archive/10_language/10_data_modeling/).
 
 **Available types:**
 - Primitives: `i32`, `f64`, `bool`, `String`, etc.
@@ -130,7 +130,7 @@ Event handlers contain a sequence of statements. Each statement must be ONE of:
 
 For control flow, use Frel's declarative constructs (`when`, `select`) in the blueprint body, or implement complex logic as backend commands.
 
-See [docs/10_language/15_expressions/10_expression_basics.md](../../docs/10_language/15_expressions/10_expression_basics.md) section "Statement Context" for details.
+See [docs/10_language/15_expressions/10_expression_basics.md](15_expressions/10_expression_basics.md) section "Statement Context" for details.
 
 ### 7. Handle Incomplete Examples Correctly
 
@@ -155,8 +155,8 @@ new_item .. on_value { item: Item ->
 
 Before generating ANY Frel code or examples:
 
-1. Verify ALL operations are documented in [docs/10_language/15_expressions/](../../docs/10_language/15_expressions/)
-2. Verify ALL store operations match [docs/10_language/20_reactive_state/](../../docs/10_language/20_reactive_state/)
+1. Verify ALL operations are documented in [docs/10_language/15_expressions/](../../docs/98_archive/10_language/15_expressions/)
+2. Verify ALL store operations match [docs/10_language/20_reactive_state/](../../docs/98_archive/10_language/20_reactive_state/)
 3. Verify blueprint/backend/contract syntax matches the basics docs (listed in Required Context above)
 4. Verify syntax is pure Frel, not host language syntax
 5. If ANY operation is uncertain, STOP and ASK the user
@@ -235,7 +235,7 @@ button { "Process" }
 
 ## When In Doubt
 
-1. **Check the specification files** in [docs/10_language/](../../docs/10_language/)
+1. **Check the specification files** in [docs/10_language/](../../docs/98_archive/10_language/)
 2. **Search for the operation** in the expression and reactive state docs (listed in Required Context above)
 3. **If not found, ASK the user** - do not invent or assume
 
