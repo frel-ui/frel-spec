@@ -87,6 +87,7 @@ The **structural revision** increments when:
 1. **The identity of contained data changes**
 2. **New data is added to the composite**
 3. **Data is removed from the composite**
+4. **Order of contained data changes (for List and Tree)**
 
 For collections, "contained data" means the elements. For schemes, it means the field values.
 
