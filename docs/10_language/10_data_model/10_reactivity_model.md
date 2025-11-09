@@ -30,9 +30,13 @@ Conceptually (before optimization), each piece of data in Frel has these propert
 
 The key insight is that **identity and revisions depend on the type category**.
 
-## Type Categories
+## Types
 
-Frel types fall into two categories that have fundamentally different reactivity semantics:
+Frel has three type categories with different reactivity semantics:
+
+- intrinsic types
+- composite types
+- nullable types
 
 ### Intrinsic Types
 
@@ -75,6 +79,40 @@ carried revision = starts at 1, increments on carried changes
 
 **Example**: A `List<i32>` gets identity `List<i32>#42` (where `#42` is system-assigned). This
 identity remains the same whether the list contains `[1, 2, 3]` or `[5, 6, 7]`.
+
+### Nullable Types
+
+**Nullable types** allow a value to be either a valid instance of the type or `null`.
+
+A nullable type is created by adding `?` to any intrinsic or composite type:
+
+```frel
+name: String?        // nullable String
+count: i32?          // nullable i32
+items: List<Item>?   // nullable List
+user: User?          // nullable scheme
+```
+
+**Key properties:**
+
+- **`null` value**: Represents the explicit absence of a value
+- **Type safety**: A nullable type `T?` is distinct from non-nullable `T`
+- **Works with any type**: Both intrinsic types (`String?`, `i32?`) and composite types (`List<T>?`, `User?`) can be nullable
+
+**Identity and reactivity**: When a nullable field changes between `null` and a non-null value (or between different non-null values), this is treated as an identity change:
+
+```frel
+scheme User {
+    name: String
+    bio: String?
+}
+
+user.bio = null              // bio field contains null
+user.bio = "Hello world"     // bio field contains String("Hello world") - structural change
+user.bio = "Updated bio"     // bio field contains String("Updated bio") - structural change
+```
+
+**Important distinction**: `null` is different from `undefined` (when status is not Ready). See the Status section for details.
 
 ## Revision Semantics
 
@@ -124,19 +162,19 @@ The status determines whether a value is defined:
 - **Loading**: Value is undefined (not yet available)
 - **Error**: Value is undefined (error prevented availability)
 
-**Important distinction**: When status is not Ready, the value is **undefined**. This is different from an optional field being `None`:
+**Important distinction**: When status is not Ready, the value is **undefined**. This is different from a nullable field being `null`:
 
 ```
 // Value undefined due to status
 user_data with status=Loading  // value is undefined, cannot access fields
 
-// Optional field that is None
+// Nullable field that is null
 scheme User {
     name: String
-    bio: String?  // optional field
+    bio: String?  // nullable field
 }
 
-user with status=Ready, bio=None  // user is defined, bio field is explicitly None
+user with status=Ready, bio=null  // user is defined, bio field is explicitly null
 ```
 
 ### Status Propagation
