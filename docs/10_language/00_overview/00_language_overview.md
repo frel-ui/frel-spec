@@ -14,5 +14,3 @@ appropriate code from the Frel DSL.
 GTK, desktop (via Skia or similar). Each host platform needs a runtime adapter that provides the
 necessary integrations.
 
-## Core Concepts
-

@@ -8,7 +8,7 @@ Frel applications.
 
 ```
 scheme <Name> {
-    <field_name> .. <type> [.. <instruction>]*
+    <field_name> : <type> [.. <instruction>]*
     // other fields ...
 }
 ```

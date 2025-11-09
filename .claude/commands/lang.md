@@ -61,13 +61,11 @@ Before generating ANY Frel code or examples:
 
 This is wrong because:
 
-- ":" is not valid in Frel, other languages use `:` for type annotations, Frel does not
 - `Option<T>` is not valid in Frel, it is a Rust construct, not a Frel construct
-- `?` is not a valid scheme field declaration in Frel, it is valid at other places but not here
 
 ```frel
 scheme Example {
-    name : Option<String>? // <- this is a bad example
+    name : Option<String> // <- this is a bad example
 }
 ```
 
@@ -75,12 +73,11 @@ scheme Example {
 
 This is correct because:
 
-- `..` is a valid Frel syntax for scheme field type declarations
-- `.. optional` is a valid Frel syntax for optional values (values that may be absent)
+- `?` is a valid Frel syntax for scheme field type declarations
 
 ```frel
 scheme Example {
-    name .. String .. optional // <- this is a good example
+    name : String? // <- this is a good example
 }
 ```
 
@@ -106,3 +103,12 @@ This is correct because:
 items: List<Item> = []
 // TODO: list append operation not yet specified
 ```
+
+## Scope
+
+All the Frel language specification is in the `docs/10_language` directory.
+
+**CRITICAL: When working on the language specification, DO NOT USE anything outside the `docs/10_language`
+directory if not asked explicitly.**
+
+Especially ignore the content of the `docs/98_archive` directory as it contains old, archived documentation.

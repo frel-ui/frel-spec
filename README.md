@@ -13,10 +13,10 @@ between declarative UI definitions and platform-specific adapters.
 
 Key features:
 
+- [**Type-driven automatic reactivity**](docs/10_language/10_data_model/10_reactivity_model.md)
 - Declarative, reactive UI components
 - Programming language agnostic (host language independent)
 - Platform agnostic (web, mobile, desktop, documents)
-- Compact runtime with minimal overhead
 
 ## Status
 
