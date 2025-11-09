@@ -112,11 +112,59 @@ enum <Name> { <variant1> <variant2> <variant3> ... }
 
 ### Semantics
 
-- **Variants**: Space-separated identifiers representing the possible values
+- **Type Definition**: The `enum` declaration defines a new intrinsic type named `<Name>`
+- **Variants**: Space-separated identifiers representing the possible values of the enum type
+- **Ordinal Numbering**: Each variant is assigned an ordinal number (starting from 0) in declaration order
+- **Identity**: Enum values are intrinsic types where `identity = type + value`
+  - Example: `Status.Pending` has identity `Status(Pending)`, distinct from `Status.Active`
+- **Immutability**: Enum values are immutable, like all intrinsic types
 - **Scope**: Top-level declarations, available throughout the module
-- **Ordering**: Variants maintain declaration order
 - **Usage**: Can be used as types in schemes, blueprints, and function signatures
 
->> TODO Are enum variants truly intrinsic (identity = type + value)?
->> TODO How do enum values work in practice? Are they like Rust's unit variants or do they have associated data?
->> TODO What's the syntax for using enum values? (e.g., Status.Active vs Status::Active vs just Active)
+### Value Syntax
+
+Enum variants are referenced using dot notation: `<EnumName>.<VariantName>`
+
+```frel
+enum Status { Pending Active Completed Cancelled }
+
+decl current_status: Status = Status.Pending
+```
+
+### API
+
+**Type-Level API** (called on the enum type):
+
+- **`variant_count`**: Returns the number of variants (i32)
+- **`from_ordinal(n: i32)`**: Returns the variant with ordinal `n`, or `null` if out of range (returns `Status?`)
+- **`from_name(s: String)`**: Returns the variant with name `s`, or `null` if invalid (returns `Status?`)
+
+**Value-Level API** (called on enum instances):
+
+- **`to_ordinal()`**: Returns the ordinal number of this variant (i32)
+- **`to_name()`**: Returns the variant name as a String
+
+### Examples
+
+```frel
+enum Priority { Low Medium High }
+
+// Type-level API
+Priority.variant_count          // returns 3
+Priority.from_ordinal(0)        // returns Priority.Low
+Priority.from_ordinal(5)        // returns null (out of range)
+Priority.from_name("Medium")    // returns Priority.Medium
+Priority.from_name("Invalid")   // returns null
+
+// Value-level API
+decl task_priority: Priority = Priority.High
+task_priority.to_ordinal()      // returns 2
+task_priority.to_name()         // returns "High"
+
+// Usage in schemes
+scheme Task {
+    title: String
+    priority: Priority
+    status: Status
+}
+```
