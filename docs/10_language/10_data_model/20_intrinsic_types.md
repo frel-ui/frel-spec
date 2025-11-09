@@ -116,7 +116,7 @@ enum <Name> { <variant1> <variant2> <variant3> ... }
 - **Variants**: Space-separated identifiers representing the possible values of the enum type
 - **Ordinal Numbering**: Each variant is assigned an ordinal number (starting from 0) in declaration order
 - **Identity**: Enum values are intrinsic types where `identity = type + value`
-  - Example: `Status.Pending` has identity `Status(Pending)`, distinct from `Status.Active`
+  - Example: `OrderStatus.Pending` has identity `OrderStatus(Pending)`, distinct from `OrderStatus.Processing`
 - **Immutability**: Enum values are immutable, like all intrinsic types
 - **Scope**: Top-level declarations, available throughout the module
 - **Usage**: Can be used as types in schemes, blueprints, and function signatures
@@ -126,9 +126,9 @@ enum <Name> { <variant1> <variant2> <variant3> ... }
 Enum variants are referenced using dot notation: `<EnumName>.<VariantName>`
 
 ```frel
-enum Status { Pending Active Completed Cancelled }
+enum OrderStatus { Pending Processing Shipped Delivered Cancelled }
 
-decl current_status: Status = Status.Pending
+decl order_status: OrderStatus = OrderStatus.Pending
 ```
 
 ### API
@@ -136,8 +136,8 @@ decl current_status: Status = Status.Pending
 **Type-Level API** (called on the enum type):
 
 - **`variant_count`**: Returns the number of variants (i32)
-- **`from_ordinal(n: i32)`**: Returns the variant with ordinal `n`, or `null` if out of range (returns `Status?`)
-- **`from_name(s: String)`**: Returns the variant with name `s`, or `null` if invalid (returns `Status?`)
+- **`from_ordinal(n: i32)`**: Returns the variant with ordinal `n`, or `null` if out of range (returns `<EnumType>?`)
+- **`from_name(s: String)`**: Returns the variant with name `s`, or `null` if invalid (returns `<EnumType>?`)
 
 **Value-Level API** (called on enum instances):
 
@@ -165,6 +165,6 @@ task_priority.to_name()         // returns "High"
 scheme Task {
     title: String
     priority: Priority
-    status: Status
+    order_status: OrderStatus
 }
 ```

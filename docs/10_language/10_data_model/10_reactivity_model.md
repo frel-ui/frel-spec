@@ -23,7 +23,7 @@ Conceptually (before optimization), each piece of data in Frel has these propert
 | **Type**                | The Frel type (e.g., `i32`, `String`, `List<User>`, `scheme Todo`) |
 | **Value**               | The actual data content                                            |
 | **Identity**            | What uniquely identifies this piece of data                        |
-| **Status**              | The availability state (Loading/Ready/Error)                       |
+| **Availability**        | The availability state (Loading/Ready/Error)                       |
 | **Structural Revision** | Increments when the identities of contained data change            |
 | **Carried Revision**    | Increments when changes propagate from contained data              |
 | **Metadata**            | Validation rules, constraints, etc. (not relevant to reactivity)   |
@@ -139,34 +139,34 @@ The **carried revision** increments when:
 In other words, carried revision tracks "changes propagated from within", while structural revision
 tracks "which pieces are present".
 
-## Status
+## Availability
 
-Every piece of data in Frel has an associated status that represents its availability state, one of:
+Every piece of data in Frel has an associated availability that represents its availability state, one of:
 
 - **Loading**: Data is being fetched or computed but not yet available
 - **Ready**: Data is available and can be used
 - **Error**: An error occurred; data is not available
 
-### Status and Revisions
+### Availability and Revisions
 
-Status transitions are treated as **structural changes**:
+Availability transitions are treated as **structural changes**:
 
-- When status changes (e.g., `Loading` → `Ready`, `Ready` → `Error`), the structural revision increments
+- When availability changes (e.g., `Loading` → `Ready`, `Ready` → `Error`), the structural revision increments
 - This ensures subscribers are notified when data becomes available or encounters errors
 
 ### Value Availability
 
-The status determines whether a value is defined:
+The availability determines whether a value is defined:
 
 - **Ready**: Value is defined and accessible
 - **Loading**: Value is undefined (not yet available)
 - **Error**: Value is undefined (error prevented availability)
 
-**Important distinction**: When status is not Ready, the value is **undefined**. This is different from a nullable field being `null`:
+**Important distinction**: When availability is not Ready, the value is **undefined**. This is different from a nullable field being `null`:
 
 ```
-// Value undefined due to status
-user_data with status=Loading  // value is undefined, cannot access fields
+// Value undefined due to availability
+user_data with availability=Loading  // value is undefined, cannot access fields
 
 // Nullable field that is null
 scheme User {
@@ -174,22 +174,22 @@ scheme User {
     bio: String?  // nullable field
 }
 
-user with status=Ready, bio=null  // user is defined, bio field is explicitly null
+user with availability=Ready, bio=null  // user is defined, bio field is explicitly null
 ```
 
-### Status Propagation
+### Availability Propagation
 
-Status propagates through data dependencies using the rule: **Error > Loading > Ready**
+Availability propagates through data dependencies using the rule: **Error > Loading > Ready**
 
-- If ANY dependency has status `Error` → result status is `Error`
-- Else if ANY dependency has status `Loading` → result status is `Loading`
-- Else if ALL dependencies have status `Ready` → result status is `Ready`
+- If ANY dependency has availability `Error` → result availability is `Error`
+- Else if ANY dependency has availability `Loading` → result availability is `Loading`
+- Else if ALL dependencies have availability `Ready` → result availability is `Ready`
 
-When status propagates to `Loading` or `Error`, the dependent's structural revision increments (due to status change), and its value becomes undefined.
+When availability propagates to `Loading` or `Error`, the dependent's structural revision increments (due to availability change), and its value becomes undefined.
 
 ## Propagation Examples
 
-### Example 1: Status Transition and Primitive Value Change
+### Example 1: Availability Transition and Primitive Value Change
 
 ```frel
 scheme Counter {
@@ -203,7 +203,7 @@ decl counter: Counter  // fetched from API
 **Initial state (loading)**:
 
 - `counter` identity: `Counter#1`
-- `counter` status: `Loading`
+- `counter` availability: `Loading`
 - `counter` value: undefined
 - `counter` structural revision: 1
 - `counter` carried revision: 1
@@ -215,9 +215,9 @@ decl counter: Counter  // fetched from API
 ```
 
 - `counter` identity: `Counter#1` (unchanged)
-- `counter` status: `Ready` (**changed** - status transition)
+- `counter` availability: `Ready` (**changed** - availability transition)
 - `counter.count` identity: `i32(5)`
-- `counter` structural revision: 2 (**incremented** - status change)
+- `counter` structural revision: 2 (**incremented** - availability change)
 - `counter` carried revision: 2 (**incremented**)
 
 **Later, replace `count` field with a different value**:
@@ -227,7 +227,7 @@ counter.count = 7
 ```
 
 - `counter` identity: `Counter#1` (unchanged)
-- `counter` status: `Ready` (unchanged)
+- `counter` availability: `Ready` (unchanged)
 - `counter.count` identity: `i32(7)` (**replaced** - different intrinsic!)
 - `counter` structural revision: 3 (**incremented** - contained identity changed)
 - `counter` carried revision: 3 (**incremented** - structural change carried upward)
