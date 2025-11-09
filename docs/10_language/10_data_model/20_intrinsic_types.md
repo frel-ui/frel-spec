@@ -99,6 +99,24 @@ Signed and unsigned integers of various sizes:
   units (nanoseconds, microseconds, milliseconds, seconds, minutes, hours, days, weeks) and
   arithmetic operations.
 
-### Enums
+## Enums
 
->> TODO
+Enums define a fixed set of named variants, providing type-safe alternatives to string constants
+or numeric codes. They are commonly used for state machines, status values, and categorical data.
+
+### Syntax
+
+```
+enum <Name> { <variant1> <variant2> <variant3> ... }
+```
+
+### Semantics
+
+- **Variants**: Space-separated identifiers representing the possible values
+- **Scope**: Top-level declarations, available throughout the module
+- **Ordering**: Variants maintain declaration order
+- **Usage**: Can be used as types in schemes, blueprints, and function signatures
+
+>> TODO Are enum variants truly intrinsic (identity = type + value)?
+>> TODO How do enum values work in practice? Are they like Rust's unit variants or do they have associated data?
+>> TODO What's the syntax for using enum values? (e.g., Status.Active vs Status::Active vs just Active)

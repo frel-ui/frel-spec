@@ -24,6 +24,11 @@ scheme <Name> {
 
 ### Common Validation
 
+>> TODO When does validation trigger automatically? (on field change? on form submit? manual only?)
+>> TODO What's the reactivity behavior of is_valid() and errors()? Do they subscribe to field changes?
+>> TODO How do cross-field validations work? (e.g., "end_date must be after start_date")
+>> TODO What's the syntax for custom validation functions?
+
 #### String Validation
 
 - **`min_len`**: Minimum length
@@ -53,17 +58,6 @@ scheme <Name> {
 - **`each`**: Apply validation to each element
 - **`key_pattern`**: Regex for Map keys (string keys)
 
-### Optional Fields
-
-Fields are required by default. Use the `.. optional` instruction to make a field nullable.
-
-**Optional field semantics:**
-
-- Maps to `Option<T>` in Rust, `T | null` in TypeScript, `Optional[T]` in Python
-- Can be absent (`null`/`None`) or present with a value
-- Validation rules only apply when value is present
-- Optional fields can have defaults, but default is not required
-
 ### Default Values
 
 Default values are evaluated at instance creation. Use the `.. default { value }` instruction to
@@ -79,9 +73,9 @@ timestamps, IDs, and other immutable data.
 Schemes generate validation methods automatically:
 
 - **`is_valid()`**: Check if all fields are valid (returns bool)
-- **`errors()`**: Get all validation errors (returns list of FieldError)
+- **`errors()`**: Get all validation errors (returns a list of FieldError)
 - **`field.is_valid()`**: Check specific field validity
-- **`field.error()`**: Get error for specific field (returns Option)
+- **`field.error()`**: Get error for specific field (returns FieldError?)
 - **`validate()`**: Manually trigger validation
 
 ### FieldError Structure
