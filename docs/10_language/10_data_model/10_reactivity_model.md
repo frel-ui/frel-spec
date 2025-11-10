@@ -114,6 +114,74 @@ user.bio = "Updated bio"     // bio field contains String("Updated bio") - struc
 
 **Important distinction**: `null` is different from `undefined` (when status is not Ready). See the Status section for details.
 
+### Draft Types
+
+**Draft types** are editable copies of scheme instances, primarily used for form editing and
+temporary data manipulation. A draft type is created by adding the `draft` modifier to a scheme
+type.
+
+**Purpose**: Draft types solve the form editing problem by providing an isolated, editable copy of
+data that:
+
+- Has its own reactive identity (separate from the original)
+- Can be validated without affecting the original
+- Can be discarded or committed back to the original
+- Lives only as long as its containing backend
+
+**Syntax**:
+
+```frel
+backend UserEditorBackend {
+    original : User                          // Reference to arena instance
+    user : draft User = original             // Draft copy for editing
+}
+```
+
+**Key properties:**
+
+- **Separate identity**: `draft#456 User#123` has a different reactive identity than `User#123`,
+  preventing arena updates from affecting the draft
+- **Independent validation**: Validation rules apply to drafts, but errors don't block editing 
+  (non-blocking validation)
+- **Explicit lifecycle**: Drafts exist only within their backend scope and are automatically cleaned
+  up when the backend is destroyed
+- **Mutability**: Draft instances are mutable, following Frel's general mutability philosophy
+
+**Common operations**:
+
+```frel
+// Create draft from original
+user : draft User = original
+```
+
+**Identity and reactivity**:
+
+* Each draft gets a unique identity
+* Identity is stable for the draft's lifetime
+* Identity is independent of the original's identity
+
+The type modifier is part of the reactive identity:
+
+- `User#123` - Arena instance with identity `User#123`
+- `draft#456 User#123` - Draft instance with identity `draft#456 User#123`
+
+This ensures that:
+
+- Changes to the arena instance don't propagate to the draft
+- Changes to the draft don't propagate to the arena
+- Each has independent reactive subscribers
+
+**Relationship with arenas**:
+
+Draft types work seamlessly with arenas for the common pattern of "edit and save back":
+
+1. User selects an entity from an arena (read-only display)
+2. Backend creates a draft copy for editing
+3. User edits the draft in a form
+4. Validation runs on the draft
+5. If valid, draft is committed back to the original, which updates the arena
+6. Arena propagates the update to all subscribers
+
 ## Revision Semantics
 
 Both revision types track different kinds of changes to composite data:
