@@ -32,11 +32,13 @@ The key insight is that **identity and revisions depend on the type category**.
 
 ## Types
 
-Frel has three type categories with different reactivity semantics:
+Frel has several type categories with different reactivity semantics:
 
 - intrinsic types
 - composite types
 - nullable types
+- reference types
+- draft types
 
 ### Intrinsic Types
 
@@ -113,6 +115,83 @@ user.bio = "Updated bio"     // bio field contains String("Updated bio") - struc
 ```
 
 **Important distinction**: `null` is different from `undefined` (when status is not Ready). See the Status section for details.
+
+### Reference Types
+
+**Reference types** represent references to scheme instances that exist in arenas. A reference type
+is created by adding the `ref` modifier before a scheme type.
+
+**Syntax**:
+
+```frel
+scheme Thermometer {
+    id : UUID .. identity
+    location : ref Location    // Reference to Location scheme
+    name : String
+}
+```
+
+**Key properties:**
+
+- **Arena resolution**: References are resolved by looking up the referenced entity in its arena
+- **Identity storage**: A `ref T` field stores the identity value of the referenced entity (e.g.,
+  the UUID)
+- **Transitive access**: Fields and virtual fields of the referenced entity can be accessed directly
+  through the reference
+- **Type requirement**: The referenced type must have an identity field (marked with `.. identity`)
+
+**Availability semantics:**
+
+When accessing a referenced entity, availability is determined by the arena lookup:
+
+- **Ready**: The referenced entity exists in the arena and is ready
+- **Loading**: The referenced entity is not yet loaded in the arena
+- **Error**: The referenced entity does not exist or failed to load
+
+**Example**:
+
+```frel
+scheme Location {
+    id : UUID .. identity
+    name : String
+}
+
+scheme Thermometer {
+    id : UUID .. identity
+    location : ref Location
+
+    virtual locationName : String = location.name
+}
+
+// When accessing thermometer.locationName:
+// 1. Resolve thermometer.location reference via LocationArena
+// 2. Access the name field of the resolved Location
+// 3. Propagate availability if location is Loading or Error
+```
+
+**Reactivity:**
+
+>> TODO these reactivity rules are probably wrong, too easy to create circular references
+>> actually, circular references are quite normal in data structures
+>> we should probably not propagate changes in references, but we should subscribe
+>> driectly from virtual fields
+
+- Changing a reference field (e.g., `thermometer.location = newLocationId`) is a **structural change**
+- Changes to the referenced entity (e.g., updating `location.name`) propagate as **carried changes**
+  through virtual fields that depend on the reference
+- The reactive system automatically tracks dependencies across arena boundaries
+
+**Nullable references:**
+
+References can be nullable:
+
+```frel
+location : ref Location?    // Optional reference
+```
+
+When a nullable reference is `null`, its availability is `Ready` (the field is defined, its value is
+explicitly `null`). This is different from a non-null reference that cannot be resolved (which has
+availability `Error` or `Loading`).
 
 ### Draft Types
 

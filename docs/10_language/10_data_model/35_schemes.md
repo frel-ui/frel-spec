@@ -85,3 +85,59 @@ Contains:
 - **`field`**: Field name
 - **`message`**: Error message
 - **`code`**: Error code (e.g., "min_len", "pattern")
+
+## Virtual Fields
+
+Virtual fields are computed properties that are derived from other fields and evaluated reactively.
+They are not stored as part of the scheme's data but are calculated on-demand based on their
+dependencies.
+
+### Syntax
+
+```frel
+scheme <Name> {
+    <field_name> : <type> [.. <instruction>]*
+    virtual <virtual_field_name> : <type> = <expression>
+}
+```
+
+### Example
+
+```frel
+scheme User {
+    id : UUID .. identity
+    firstName : String
+    lastName : String
+
+    virtual fullName : String = firstName + " " + lastName
+}
+```
+
+### Behavior
+
+- **Not stored**: Virtual fields are computed, not persisted
+- **Reactive**: Virtual fields automatically recompute when their dependencies change
+- **Dependencies**: The compiler tracks which fields a virtual field depends on and subscribes to
+  those fields
+- **Availability**: Virtual fields propagate availability from their dependencies according to the
+  rule: `Error > Loading > Ready`
+- **Composition**: Virtual fields can reference other virtual fields in the same scheme
+
+### Cross-Arena References
+
+Virtual fields can resolve references across arenas:
+
+```frel
+scheme Thermometer {
+    id : UUID .. identity
+    location : ref Location
+
+    virtual locationName : String = location.name
+}
+```
+
+When accessing `location.name`, the reference is resolved through the arena, and availability is
+propagated if the referenced entity is loading or missing.
+
+For detailed semantics on identity, reactivity, and availability propagation, see
+the [Reactivity Model](10_reactivity_model.md) documentation.
