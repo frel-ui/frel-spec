@@ -26,21 +26,28 @@ compile-time safety and automatic string conversion.
 validation, constraints, and metadata. Schemes define the shape of data with typed fields and
 validation rules, supporting automatic form generation and data binding.
 
+**Field**: A typed data declaration within a scheme, backend, resource, theme or blueprint.
+Fields have a name and type, and may include constraints, default values, or metadata annotations.
+
+**Arena**: A collection type for scheme instances that provides identity-based storage and lookup. 
+Arenas enable references to resolve scheme instances by their identity and can be bound to external
+APIs via contracts to manage background tasks and maintain data synchronization.
+
 **Contract**: Declaration of an interface to external services and remote APIs.
 Contracts define available operations without implementation details (URLs, authentication,
 transport), which are bound at runtime.
 
-**Backend**: Declaration of a reactive state container with behavior.
-Backends encapsulate related stores (decl, writable, fanin, source) along with commands and lifecycle hooks
-that operate on those stores. They separate business logic from UI declarations and compose with other backends.
+**Backend**: Declaration of a reactive state container with behavior. Backends encapsulate related 
+data along with commands and lifecycle hooks that operate on those data. They separate business 
+logic from UI declarations and compose with other backends.
 
-**Command**: An async method declared in a backend that can be
-called from event handlers. Commands are implemented in the host language and are the primary way to trigger
-complex business logic with side effects.
+**Command**: An async method declared in a backend that can be called from event handlers. Commands
+are implemented in the host language and are the primary way to trigger complex business logic with
+side effects.
 
-**Theme**: A reusable styling configuration to be used in a blueprint.
-
-**Resource**: A reusable UI asset to be used in a blueprint.
+**Theme**: A reusable styling configuration to be used in a blueprint. Themes contain both computed
+styling values (like dimensions and layout parameters) and resource fields for externally-loaded UI
+assets such as colors, strings, and graphics.
 
 **Blueprint**: Declaration of a reusable UI component template. A blueprint
 has a name, parameters, and a body containing stores, UI elements, and event handlers. Blueprints are
@@ -79,7 +86,7 @@ scheme User {
 
 scheme Message {
     id      : UUID .. identity
-    sender  : User
+    sender  : ref User
     content : String .. blank { false } 
     sentAt  : Instant
 }
@@ -95,28 +102,25 @@ arena MessageArena {
 backend MessageBackend {
     use MessageAPI
     
-    theme : MessageTheme
+    theme : ref MessageTheme
     new_message : String
     
     command send_message()
 }
 
-resource Colors {
-    self_background
-    received_background
-}
-
-resource Strings {
-    new_message
-}
-
-resource Graphics {
-    send
-}
+// Color, String and Graphics declared in themes are **resources**
+// Resources are loaded by the resource loader, hence no initial value provided
 
 theme MessageTheme {
-
-    corner_radius = 10
+    
+    self_background : resource Color
+    received_background : resource Color
+    
+    new_message : resource String
+    
+    send : resource Graphics
+    
+    corner_radius : u32 = 10
 
     group message_container {
         corner_radius { corner_radius }
@@ -146,8 +150,8 @@ blueprint MessageList {
             }
         }
         row {
-            text_editor { new_message }
-            icon { Graphics.send } .. on_click { send_message }
+            text_editor { theme.new_message }
+            icon { theme.send } .. on_click { theme.send_message }
         }
     }
 }

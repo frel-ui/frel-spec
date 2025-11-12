@@ -60,6 +60,11 @@ Signed and unsigned integers of various sizes:
 
 - **`Color`**: Color values for styling and theming.
 
+### Graphics
+
+- **`Graphics`**: SVG graphics for icons and vector images. Supports scalable vector graphics that can
+  be styled and rendered at any resolution.
+
 ## Binary Data
 
 ### Blob

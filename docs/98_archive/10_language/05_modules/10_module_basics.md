@@ -106,7 +106,7 @@ Declarations can be referenced using their fully qualified module path without i
 ```frel
 module frel.app
 
-blueprint MainScreen() {
+blueprint MainScreen {
     column {
         // Use fully qualified paths
         frel.ui.buttons.PrimaryButton("Save")
@@ -203,7 +203,7 @@ Private/internal declarations are not supported in this version. If you need to 
 module myapp.a
 use myapp.b.BlueprintB
 
-blueprint BlueprintA() {
+blueprint BlueprintA {
     BlueprintB()  // Can reference B
 }
 ```
@@ -213,7 +213,7 @@ blueprint BlueprintA() {
 module myapp.b
 use myapp.a.BlueprintA  // ✓ Allowed - modules can reference each other
 
-blueprint BlueprintB() {
+blueprint BlueprintB {
     BlueprintA()  // Can reference A
 }
 ```

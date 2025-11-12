@@ -146,7 +146,10 @@ and scalability.
 
 > > TODO Tree will be specified later
 
-## Schemes
+## User Defined Types
 
-Schemes define structured data types with validation and metadata. See [Schemes](35_schemes.md) for
-details.
+- [**Schemes**](35_schemes.md)
+- **Arenas**
+- **Backend**
+- **Themes**
+- **Blueprints**

@@ -39,13 +39,14 @@ Frel has several type categories with different reactivity semantics:
 - nullable types
 - reference types
 - draft types
+- resource types
 
 ### Intrinsic Types
 
 **Intrinsic types** are atomic values where identity is determined by type and value:
 
 - **Primitives**: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`
-- **Specialized primitives**: `String`, `Uuid`, `Url`, `Decimal`, `Color`, `Secret`, `Blob`
+- **Specialized primitives**: `String`, `Uuid`, `Url`, `Decimal`, `Color`, `Graphics`, `Secret`, `Blob`
 - **Temporal types**: `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `Timezone`, `Duration`
 - **Enums**: All enum variants
 
@@ -62,12 +63,14 @@ carried revision = constant 1
 **Example**: The intrinsic `i32(5)` has identity `i32(5)`. The intrinsic `i32(7)` has identity
 `i32(7)`. These are two different, immutable values with different identities.
 
+For more information see [Intrinsic Types](20_intrinsic_types.md).
+
 ### Composite Types
 
 **Composite types** are containers that hold other pieces of data:
 
 - **Collections**: `List<T>`, `Set<T>`, `Map<K,V>`, `Tree<T>`
-- **Schemes**: User-defined structured types
+- **User-defined types**: Schemes, Arenas, Backends, Themes, Blueprints
 
 For composite types:
 
@@ -81,6 +84,8 @@ carried revision = starts at 1, increments on carried changes
 
 **Example**: A `List<i32>` gets identity `List<i32>#42` (where `#42` is system-assigned). This
 identity remains the same whether the list contains `[1, 2, 3]` or `[5, 6, 7]`.
+
+For more information see [Composite Types](30_composite_types.md).
 
 ### Nullable Types
 
@@ -260,6 +265,71 @@ Draft types work seamlessly with arenas for the common pattern of "edit and save
 4. Validation runs on the draft
 5. If valid, draft is committed back to the original, which updates the arena
 6. Arena propagates the update to all subscribers
+
+### Resource Types
+
+**Resource types** are externally-loaded values that represent UI assets such as colors, strings,
+and graphics. A resource type is created by adding the `resource` modifier to an intrinsic type.
+
+**Purpose**: Resource types solve the asset loading problem by:
+
+- Decoupling semantic names from actual file names
+- Supporting asynchronous loading with availability tracking
+- Enabling theme-based resource organization
+- Allowing platform-specific resource resolution
+
+**Syntax**:
+
+```frel
+theme MessageTheme {
+    self_background : resource Color      // Resource-loaded color
+    new_message : resource String         // Resource-loaded localized string
+    send : resource Graphics              // Resource-loaded icon/image
+    corner_radius : u32 = 10              // Computed value (not a resource)
+}
+```
+
+**Key properties:**
+
+- **No initial value**: Resource fields cannot have initial values (they are loaded externally)
+- **Availability semantics**: Resources have Loading/Ready/Error states during the loading process
+- **Semantic binding**: The field name represents semantic usage (e.g., `send`), while the actual
+  resource file is bound separately (e.g., `ic_arrow_forward_24dp.png`)
+- **Type requirement**: Resources typically use intrinsic types suitable for assets (Color, String,
+  Graphics, etc.)
+
+**Availability semantics:**
+
+When accessing a resource field, availability reflects the loading state:
+
+- **Loading**: The resource is being loaded asynchronously
+- **Ready**: The resource has been successfully loaded and is available
+- **Error**: The resource failed to load (file not found, invalid format, etc.)
+
+**Example**:
+
+```frel
+theme AppTheme {
+    primary_color : resource Color
+    app_name : resource String
+    logo : resource Graphics
+
+    padding : u32 = 16  // Not a resource, just a computed value
+}
+
+// When accessing theme.primary_color:
+// 1. Resource loader resolves the semantic name to actual file
+// 2. File is loaded asynchronously
+// 3. Availability propagates through dependent expressions
+// 4. Once loaded, color value becomes available
+```
+
+**Reactivity:**
+
+- Resource fields do not change once loaded (they represent immutable assets)
+- Switching themes (changing a `theme : ref Theme` field) is a structural change that triggers
+  reloading of all resource fields
+- Resource loading does not affect structural or carried revisions, only availability
 
 ## Revision Semantics
 
