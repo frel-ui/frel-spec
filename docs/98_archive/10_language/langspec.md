@@ -13,7 +13,7 @@ Before working on the Frel language specification, read these foundational docum
 3. **Data Modeling**: [docs/10_language/10_data_modeling/10_data_basics.md](10_data_modeling/10_data_basics.md) - Type system, primitives, collections, enums, schemes
 4. **Expression Basics**: [docs/10_language/15_expressions/10_expression_basics.md](15_expressions/10_expression_basics.md) - The pure expression language that forms the foundation
 5. **Store Basics**: [docs/10_language/20_reactive_state/10_store_basics.md](20_reactive_state/10_store_basics.md) - Reactive state management semantics
-6. **Contract Basics**: [docs/10_language/30_contracts/10_contract_basics.md](30_contracts/10_contract_basics.md) - External service interfaces
+6. **Contract Basics**: [docs/10_language/30_contracts/10_contract_basics.md](../../10_language/30_contract/10_contracts.md) - External service interfaces
 7. **Backend Basics**: [docs/10_language/40_backends/10_backend_basics.md](40_backends/10_backend_basics.md) - Business logic containers with stores and commands
 8. **Blueprint Basics**: [docs/10_language/70_blueprint/10_blueprint_basics.md](70_blueprint/10_blueprint_basics.md) - UI component templates
 

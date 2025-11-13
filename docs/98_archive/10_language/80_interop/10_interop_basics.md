@@ -129,7 +129,7 @@ All sources use `FrelStatus` (not `Status<E>`) and `FrelError` for errors.
 - Error type (`ServiceError` or custom)
 
 **References:**
-- [Contracts](../30_contracts/10_contract_basics.md)
+- [Contracts](../../../10_language/30_contract/10_contracts.md)
 
 ### 10. Collection Wrapper Types
 

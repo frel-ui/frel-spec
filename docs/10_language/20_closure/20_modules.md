@@ -1,15 +1,28 @@
 # Module Basics
 
-Frel source code is organized using a simple module system. Modules provide namespacing for declarations (blueprints, backends, contracts, schemes, enums) and control which declarations are accessible from other parts of the application.
+Frel source code is organized using a simple module system. Modules provide namespacing for
+top-level declarations and control which declarations are accessible from other parts of 
+the application.
+
+Top-level declarations:
+
+- `blueprint`
+- `backend`
+- `contract`
+- `scheme`
+- `enum`
+- `theme`
+- `arena`
 
 ## Overview
 
 - **Files**: Frel source code is stored in files with `.frel` extension
 - **Modules**: Logical namespaces declared with the `module` keyword
-- **Imports**: Declarations from other modules are imported with the `use` keyword
+- **Imports**: Declarations from other modules are imported with the `import` keyword
 - **Qualified Paths**: Declarations can be referenced using their fully qualified module path
 
-**Important**: Files are **not** organizational units from a structural point of view—they are just the place where the code is stored. The module system defines the actual namespace structure.
+**Important**: Files are **not** organizational units from a structural point of view—they are just
+the place where the code is stored. The module system defines the actual namespace structure.
 
 ## Syntax
 
@@ -17,7 +30,7 @@ Frel source code is organized using a simple module system. Modules provide name
 <module-decl> ::= "module" <module-path>
 <module-path> ::= <identifier> { "." <identifier> }
 
-<use-statement> ::= "use" <module-path> "." <identifier>
+<import-statement> ::= "import" <module-path> "." <identifier>
 
 <qualified-path> ::= <module-path> "." <identifier>
 ```
@@ -54,14 +67,15 @@ enum ButtonSize { small medium large } // frel.ui.buttons.ButtonSize
 
 ## Import Statements
 
-The `use` keyword imports declarations from other modules, making them available without qualification:
+The `import` keyword imports declarations from other modules, making them available without
+qualification:
 
 ```frel
 module frel.app
 
-use frel.ui.buttons.PrimaryButton
-use frel.ui.themes.DarkTheme
-use frel.data.Color
+import frel.ui.buttons.PrimaryButton
+import frel.ui.themes.DarkTheme
+import frel.data.Color
 
 blueprint MainScreen() {
     // Can use PrimaryButton, DarkTheme, Color directly
@@ -71,9 +85,9 @@ blueprint MainScreen() {
 
 **Rules:**
 
-- `use` statements must appear after the `module` declaration
-- `use` statements must appear before any other declarations
-- Each `use` imports a single declaration
+- `import` statements must appear after the `module` declaration
+- `import` statements must appear before any other declarations
+- Each `import` imports a single declaration
 - Imports are file-scoped (do not affect other files)
 
 ### Example File Structure
@@ -83,10 +97,10 @@ blueprint MainScreen() {
 module frel.app.screens
 
 // Imports
-use frel.ui.components.Button
-use frel.ui.components.TextInput
-use frel.backends.UserBackend
-use frel.data.schemes.User
+import frel.ui.components.Button
+import frel.ui.components.TextInput
+import frel.backends.UserBackend
+import frel.data.schemes.User
 
 // Declarations
 blueprint LoginScreen() {
@@ -130,32 +144,45 @@ blueprint MainScreen {
 When the compiler encounters an identifier, it resolves it in this order:
 
 1. **Local declarations** in the current file
-2. **Imported declarations** via `use` statements
+2. **Imported declarations** via `import` statements
 3. **Qualified paths** (e.g., `frel.ui.Button`)
 
 ### Name Conflicts
 
-If an imported name conflicts with a local declaration, the local declaration takes precedence. The imported declaration must be accessed via its fully qualified path:
+**Shadowing is forbidden in Frel.** If an imported name conflicts with a local declaration, the compiler will reject the code.
+
+**Invalid example** (rejected by compiler):
 
 ```frel
 module frel.app
 
-use frel.ui.Button
+import frel.ui.Button
 
-// Local declaration shadows import
+// ✗ ERROR: Local declaration shadows imported Button
 blueprint Button() {
-    // This is the local Button
-}
-
-blueprint Example() {
-    Button()  // Refers to local Button
-
-    // Must use qualified path for imported Button
-    frel.ui.Button("External")
+    // This is rejected by the compiler
 }
 ```
 
-**Best practice**: Avoid naming conflicts by choosing distinct names for local declarations.
+**Valid alternative** - use distinct names:
+
+```frel
+module frel.app
+
+import frel.ui.Button
+
+// ✓ Use a distinct name for the local blueprint
+blueprint AppButton() {
+    // Local blueprint with distinct name
+}
+
+blueprint Example() {
+    Button()     // ✓ Refers to imported Button
+    AppButton()  // ✓ Refers to local blueprint
+}
+```
+
+**Required**: All names within a file's scope must be unique. Choose distinct names for local declarations to avoid conflicts with imports and module-level declarations.
 
 ## Multiple Files, Same Module
 
@@ -177,31 +204,35 @@ blueprint SecondaryButton() { ... }
 blueprint SecondaryIconButton() { ... }
 ```
 
-Both files contribute declarations to the `frel.ui.buttons` module. All declarations are available to importers:
+Both files contribute declarations to the `frel.ui.buttons` module. All declarations are available
+to importers:
 
 ```frel
-use frel.ui.buttons.PrimaryButton
-use frel.ui.buttons.SecondaryButton
+import frel.ui.buttons.PrimaryButton
+import frel.ui.buttons.SecondaryButton
 ```
 
 ## Visibility and Access Control
 
 **Current design**: All declarations in a module are **public** and accessible to other modules.
 
-Private/internal declarations are not supported in this version. If you need to hide implementation details, use naming conventions (e.g., prefix with `_`) or organize code into separate modules.
+Private/internal declarations are not supported in this version. If you need to hide implementation
+details, use naming conventions (e.g., prefix with `_`) or organize code into separate modules.
 
 ## Module-to-Filesystem Mapping
 
-**Flexible**: The module system does not enforce a specific directory structure. Modules are logical namespaces independent of file locations.
+**Flexible**: The module system does not enforce a specific directory structure. Modules are logical
+namespaces independent of file locations.
 
 ## Circular Dependencies
 
-**Allowed at module level**: Circular dependencies between modules are permitted. Modules can import from each other without restriction.
+**Allowed at module level**: Circular dependencies between modules are permitted. Modules can import
+from each other without restriction.
 
 ```frel
 // File A
 module myapp.a
-use myapp.b.BlueprintB
+import myapp.b.BlueprintB
 
 blueprint BlueprintA {
     BlueprintB()  // Can reference B
@@ -211,22 +242,23 @@ blueprint BlueprintA {
 ```frel
 // File B
 module myapp.b
-use myapp.a.BlueprintA  // ✓ Allowed - modules can reference each other
+import myapp.a.BlueprintA  // ✓ Allowed - modules can reference each other
 
 blueprint BlueprintB {
     BlueprintA()  // Can reference A
 }
 ```
 
-**Backend-level restrictions**: While module-level circular dependencies are allowed, circular dependencies between specific declarations (like backends) may have restrictions. See [Backend Basics](../40_backends/10_backend_basics.md) for details on backend composition rules.
+**Backend-level restrictions**: While module-level circular dependencies are allowed, circular
+dependencies between specific declarations (like backends) may have restrictions.
 
 ## Future Extensions
 
 The following features are **not** currently supported but may be added in future versions:
 
-- **Import aliases**: `use frel.ui.Button as UIButton`
-- **Grouped imports**: `use frel.ui.{ Button, TextInput, Panel }`
-- **Wildcard imports**: `use frel.ui.*`
+- **Import aliases**: `import frel.ui.Button as UIButton`
+- **Grouped imports**: `import frel.ui.{ Button, TextInput, Panel }`
+- **Wildcard imports**: `import frel.ui.*`
 - **Re-exports**: Making imported declarations available to importers
 - **Private declarations**: Hiding implementation details within a module
 - **Conditional compilation**: Platform-specific module resolution

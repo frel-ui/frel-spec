@@ -33,7 +33,7 @@ Fields have a name and type, and may include constraints, default values, or met
 Arenas enable references to resolve scheme instances by their identity and can be bound to external
 APIs via contracts to manage background tasks and maintain data synchronization.
 
-**Contract**: Declaration of an interface to external services and remote APIs.
+[**Contract**](../30_contract/10_contracts.md): Declaration of an interface to external services and remote APIs.
 Contracts define available operations without implementation details (URLs, authentication,
 transport), which are bound at runtime.
 

@@ -14,7 +14,7 @@ appropriate code from the Frel DSL.
 GTK, desktop (via Skia or similar). Each host platform needs a runtime adapter that provides the
 necessary integrations.
 
-[**Module**](05_modules/10_module_basics.md): A logical namespace for organizing Frel declarations.
+[**Module**](../../10_language/20_closure/20_modules.md): A logical namespace for organizing Frel declarations.
 Each `.frel` file must declare its module (e.g., `module frel.ui.components`), and declarations from
 other modules are imported with `use` statements. Modules provide structure and prevent naming conflicts.
 
@@ -38,7 +38,7 @@ compile-time safety and automatic string conversion.
 validation, constraints, and metadata. Schemes define the shape of data with typed fields and
 validation rules, supporting automatic form generation and data binding.
 
-[**Contract**](30_contracts/10_contract_basics.md): Declaration of an interface to external services and remote APIs.
+[**Contract**](../../10_language/30_contract/10_contracts.md): Declaration of an interface to external services and remote APIs.
 Contracts define available operations without implementation details (URLs, authentication,
 transport), which are bound at runtime.
 
