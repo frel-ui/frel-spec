@@ -112,3 +112,7 @@ All the Frel language specification is in the `docs/10_language` directory.
 directory if not asked explicitly.**
 
 Especially ignore the content of the `docs/98_archive` directory as it contains old, archived documentation.
+
+## File operations
+
+**CRITICAL: when moving files, use `git mv` to keep repository information.**

@@ -58,8 +58,8 @@ All top-level declarations in a file belong to the declared module:
 module frel.ui.buttons
 
 // All of these are in the frel.ui.buttons namespace:
-blueprint PrimaryButton() { ... }     // frel.ui.buttons.PrimaryButton
-blueprint SecondaryButton() { ... }   // frel.ui.buttons.SecondaryButton
+blueprint PrimaryButton { ... }     // frel.ui.buttons.PrimaryButton
+blueprint SecondaryButton { ... }   // frel.ui.buttons.SecondaryButton
 backend ButtonState { ... }          // frel.ui.buttons.ButtonState
 scheme ButtonConfig { ... }          // frel.ui.buttons.ButtonConfig
 enum ButtonSize { small medium large } // frel.ui.buttons.ButtonSize
@@ -77,7 +77,7 @@ import frel.ui.buttons.PrimaryButton
 import frel.ui.themes.DarkTheme
 import frel.data.Color
 
-blueprint MainScreen() {
+blueprint MainScreen {
     // Can use PrimaryButton, DarkTheme, Color directly
     PrimaryButton("Click me")
 }
@@ -103,7 +103,7 @@ import frel.backends.UserBackend
 import frel.data.schemes.User
 
 // Declarations
-blueprint LoginScreen() {
+blueprint LoginScreen {
     with UserBackend()
 
     column {
@@ -159,7 +159,7 @@ module frel.app
 import frel.ui.Button
 
 // ✗ ERROR: Local declaration shadows imported Button
-blueprint Button() {
+blueprint Button {
     // This is rejected by the compiler
 }
 ```
@@ -176,7 +176,7 @@ blueprint AppButton() {
     // Local blueprint with distinct name
 }
 
-blueprint Example() {
+blueprint Example {
     Button()     // ✓ Refers to imported Button
     AppButton()  // ✓ Refers to local blueprint
 }
@@ -192,16 +192,16 @@ Multiple files can declare the same module to split large modules across files:
 // File: buttons/primary.frel
 module frel.ui.buttons
 
-blueprint PrimaryButton() { ... }
-blueprint PrimaryIconButton() { ... }
+blueprint PrimaryButton { ... }
+blueprint PrimaryIconButton { ... }
 ```
 
 ```frel
 // File: buttons/secondary.frel
 module frel.ui.buttons
 
-blueprint SecondaryButton() { ... }
-blueprint SecondaryIconButton() { ... }
+blueprint SecondaryButton { ... }
+blueprint SecondaryIconButton { ... }
 ```
 
 Both files contribute declarations to the `frel.ui.buttons` module. All declarations are available

@@ -14,15 +14,15 @@ appropriate code from the Frel DSL.
 GTK, desktop (via Skia or similar). Each host platform needs a runtime adapter that provides the
 necessary integrations.
 
-[**Type System**](../10_data_model/10_reactivity_model.md): Frel has a static type system with type inference.
+[**Type System**](../20_data_model/10_reactivity_model.md): Frel has a static type system with type inference.
 Types include primitives (i32, f64, bool, String), collections (Set<T>, List<T>, Map<K,V>, Tree<T>),
 optional types (T?), enums, schemes. The type system ensures safety while remaining host-language independent.
 
-[**Enum**](../10_data_model/20_intrinsic_types.md#enums): Declaration of a fixed set of named variants for type-safe
+[**Enum**](../20_data_model/20_intrinsic_types.md#enums): Declaration of a fixed set of named variants for type-safe
 categorical data. Used for state machines, status values, and configuration options. Enums provide
 compile-time safety and automatic string conversion.
 
-[**Scheme**](../10_data_model/35_schemes.md): Declaration of a structured data type with built-in
+[**Scheme**](../20_data_model/35_schemes.md): Declaration of a structured data type with built-in
 validation, constraints, and metadata. Schemes define the shape of data with typed fields and
 validation rules, supporting automatic form generation and data binding.
 
@@ -33,7 +33,7 @@ Fields have a name and type, and may include constraints, default values, or met
 Arenas enable references to resolve scheme instances by their identity and can be bound to external
 APIs via contracts to manage background tasks and maintain data synchronization.
 
-[**Contract**](../30_contract/10_contracts.md): Declaration of an interface to external services and remote APIs.
+[**Contract**](../40_contract/10_contracts.md): Declaration of an interface to external services and remote APIs.
 Contracts define available operations without implementation details (URLs, authentication,
 transport), which are bound at runtime.
 
