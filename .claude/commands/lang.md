@@ -7,7 +7,8 @@ are applied to all files in that directory.
 
 The most important files in the specification are:
 
-- [Reactivity model](../../docs/10_language/10_data_model/10_reactivity_model.md)
+- [Reactivity model](../../docs/10_language/20_data_model/10_reactivity_model.md)
+- [Top-level declarations](../../docs/10_language/10_organization/10_top_level.md)
 
 ## Naming
 

@@ -1,10 +1,12 @@
 # Top-Level Declarations
 
-Frel source code is organized using top-level declarations. A top-level declaration is any declaration that appears directly within a module, not nested inside another declaration.
+Frel source code is organized using top-level declarations. A top-level declaration is any
+declaration that appears directly within a module, not nested inside another declaration.
 
 ## What is a Top-Level Declaration?
 
-A **top-level declaration** is a named entity defined at the module level in a `.frel` file. These declarations:
+A **top-level declaration** is a named entity defined at the module level in a `.frel` file. These
+declarations:
 
 - Must appear after the `module` statement and any `import` statements
 - Cannot be nested inside other declarations
@@ -168,7 +170,8 @@ blueprint HomeScreen {
 
 ### Shadowing
 
-Top-level declarations cannot shadow imported declarations. See [Scope](30_scope.md#shadowing) for details.
+Top-level declarations cannot shadow imported declarations. See [Scope](30_scope.md#shadowing) for
+details.
 
 ## Order Independence
 
@@ -189,7 +192,8 @@ backend ButtonBackend {
 }
 ```
 
-This works because the compiler processes all top-level declarations in a module before checking references.
+This works because the compiler processes all top-level declarations in a module before checking
+references.
 
 ## Multiple Files, Same Module
 

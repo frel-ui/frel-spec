@@ -1,12 +1,16 @@
 # Runtime Closures
 
-Runtime closures are created dynamically as fragments are instantiated from blueprints. Unlike [scopes](../10_organization/30_scope.md) which exist at compile time, runtime closures exist during program execution and bind names to actual reactive data.
+Runtime closures are created dynamically as fragments are instantiated from blueprints.
+Unlike [scopes](../10_organization/30_scope.md) which exist at compile time, runtime closures exist
+during program execution and bind names to actual reactive data.
 
 ## Overview
 
-When a blueprint is instantiated, the Frel runtime creates a **fragment** with its own **fragment closure**. The fragment closure:
+When a blueprint is instantiated, the Frel runtime creates a **fragment** with its own **fragment
+closure**. The fragment closure:
 
-- Binds each name to a **reactive identity** (see [Reactivity Model](../20_data_model/10_reactivity_model.md))
+- Binds each name to a **reactive identity** (
+  see [Reactivity Model](../20_data_model/10_reactivity_model.md))
 - Tracks dependencies between reactive computations
 - Enables automatic updates when data changes
 - Lives as long as the fragment exists
@@ -100,4 +104,5 @@ Runtime closures are fundamental to Frel's reactivity model:
 3. **Automatic Updates**: The UI automatically updates when reactive data changes
 4. **Fine-Grained Reactivity**: Each binding can have independent subscribers
 
-For more details on how reactivity works, see the [Reactivity Model](../20_data_model/10_reactivity_model.md) documentation.
+For more details on how reactivity works, see
+the [Reactivity Model](../20_data_model/10_reactivity_model.md) documentation.
