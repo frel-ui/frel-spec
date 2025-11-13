@@ -185,5 +185,5 @@ makes code more explicit and prevents confusion about which declaration is being
 ## Relationship to Runtime Closures
 
 Scope determines what *can* be referenced at compile time. At
-runtime, [closures](../30_runtime/10_closures.md) bind these names to actual reactive identities,
+runtime, [closures](../80_runtime/10_closures.md) bind these names to actual reactive identities,
 enabling Frel's reactive system to track dependencies and propagate changes.

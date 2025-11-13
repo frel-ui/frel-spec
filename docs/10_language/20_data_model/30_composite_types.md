@@ -128,8 +128,8 @@ Remove:
 - `clear()`
 
 Query:
-- `length()`
-- `is_empty()`
+- `length`
+- `is_empty`
 - `contains(id)`
 
 ## Map - Key-Value Pairs
