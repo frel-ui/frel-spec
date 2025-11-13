@@ -1,6 +1,8 @@
 # Backend Basics
 
-Backends in Frel provide stateful data management and host language integration. They serve as the bridge between Frel's declarative UI layer and imperative computation in your host language (Rust, TypeScript, etc.).
+Backends in Frel provide stateful data management and host language integration. They serve as the
+bridge between Frel's declarative UI layer and imperative computation in your host language (Rust,
+TypeScript, etc.).
 
 ## Backend Declaration
 
@@ -15,6 +17,18 @@ backend MessageBackend {
     command send_message()
 }
 ```
+
+Backends can also compose other backends using `include`:
+
+```frel
+backend ComposedBackend {
+    include BaseBackend
+
+    // Additional members...
+}
+```
+
+See [Backend Composition](#backend-composition) for details.
 
 ## Backend Components
 
@@ -33,6 +47,7 @@ backend Counter {
 ```
 
 **Field properties:**
+
 - Must have explicit type annotation
 - Can have default values (literals or expressions)
 - Participate in reactive system
@@ -73,6 +88,7 @@ backend Analytics {
 ```
 
 **Method properties:**
+
 - Declared with `method` keyword
 - Must specify return type
 - Can take parameters with explicit types
@@ -105,6 +121,7 @@ backend TodoBackend {
 ```
 
 **Command properties:**
+
 - Declared with `command` keyword
 - Can take parameters with explicit types
 - Do **not** have return types (implicitly void)
@@ -118,6 +135,189 @@ backend TodoBackend {
 ```frel
 command command_name()
 command command_name(param1: Type1, param2: Type2)
+```
+
+## Backend Composition
+
+Backends can be composed using the `include` keyword. This creates a flat union of all fields,
+methods, and commands from the included backend.
+
+### Syntax
+
+```frel
+backend BaseBackend {
+    field1 : Type1 = value1
+    method base_method() : ReturnType
+    command base_command()
+}
+
+backend ComposedBackend {
+    include BaseBackend
+
+    field2 : Type2 = value2
+    method composed_method() : ReturnType
+    command composed_command()
+}
+```
+
+### Behavior
+
+When a backend is included:
+
+- All fields are added to the including backend
+- All methods are added to the including backend
+- All commands are added to the including backend
+- Members are added **flat** - as if they were declared directly in the including backend
+- No namespacing or qualification needed
+
+### Example: Authentication Composition
+
+```frel
+backend AuthBackend {
+    currentUser : User? = null
+    isLoggedIn : bool = currentUser != null
+
+    method has_permission(permission: String) : bool
+    method is_admin() : bool
+
+    command login(email: String, password: String)
+    command logout()
+}
+
+backend UserProfileBackend {
+    include AuthBackend
+
+    // Fields from AuthBackend are available: currentUser, isLoggedIn
+    profileData : ProfileData? = null
+    canEdit : bool = is_admin()  // Can call included methods
+
+    method get_display_name() : String
+
+    command update_profile(data: ProfileData)
+    command delete_account()
+}
+```
+
+**Usage in blueprint:**
+
+```frel
+blueprint UserProfile {
+    with UserProfileBackend
+
+    // Access fields from both backends
+    userName : String = currentUser?.name ?: "Guest"
+    isAdmin : bool = is_admin()
+    canEditProfile : bool = canEdit
+
+    // Call methods from both backends
+    displayName : String = get_display_name()
+    hasAdminAccess : bool = has_permission("admin")
+
+    // Call commands from both backends
+    button { "Update" }
+        .. on_click { update_profile(newData) }
+
+    button { "Logout" }
+        .. on_click { logout() }
+}
+```
+
+### Multiple Includes
+
+A backend can include multiple backends:
+
+```frel
+backend ValidationBackend {
+    errors : List<String> = []
+    method is_valid() : bool
+    command clear_errors()
+}
+
+backend LoadingBackend {
+    isLoading : bool = false
+    method can_submit() : bool
+    command start_loading()
+    command stop_loading()
+}
+
+backend FormBackend {
+    include ValidationBackend
+    include LoadingBackend
+
+    formData : FormData = FormData::default()
+
+    // Can use members from both included backends
+    canSave : bool = is_valid() && !isLoading
+
+    command save_form()
+}
+```
+
+### Composition Rules
+
+**Flat Union:**
+
+```frel
+backend A {
+    fieldA : i32 = 0
+    method methodA() : i32
+}
+
+backend B {
+    include A
+
+    fieldB : String = ""
+    method methodB() : String
+}
+
+// Backend B has:
+// - fieldA : i32
+// - fieldB : String
+// - methodA() : i32
+// - methodB() : String
+```
+
+**Name Conflicts:**
+
+If two included backends have members with the same name, it's a compilation error:
+
+```frel
+backend A {
+    value : i32 = 0
+}
+
+backend B {
+    value : String = ""
+}
+
+backend C {
+    include A
+    include B  // Error: 'value' is defined in both A and B
+}
+```
+
+**Diamond Problem:**
+
+If the same backend is included multiple times through different paths, it's included only once:
+
+```frel
+backend Base {
+    field : i32 = 0
+}
+
+backend A {
+    include Base
+}
+
+backend B {
+    include Base
+}
+
+backend Combined {
+    include A
+    include B
+    // Base is included once, not twice
+}
 ```
 
 ## Method vs Command
@@ -136,6 +336,7 @@ The key distinction between methods and commands:
 ### When to Use Methods
 
 Use methods for:
+
 - Computing derived values from state
 - Filtering or transforming data
 - Complex calculations that need host language
@@ -161,6 +362,7 @@ backend ShoppingCart {
 ### When to Use Commands
 
 Use commands for:
+
 - User-triggered actions
 - Modifying backend state
 - Calling external APIs
