@@ -508,5 +508,5 @@ blueprint TodoAppShell {
 ### See Also
 
 - [Backend Basics](10_backend_basics.md) - Understanding backend definitions
-- [Standard Blueprints](../70_blueprint/30_standard_blueprints.md) - Built-in UI components
+- [Standard Blueprints](../../../10_language/70_blueprints/30_standard_blueprints.md) - Built-in UI components
 - [Standard Sources](../20_reactive_state/60_standard_sources.md) - Built-in reactive data sources

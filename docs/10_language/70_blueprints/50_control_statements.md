@@ -2,7 +2,7 @@
 
 The DSL provides three core control statements that allow conditional rendering,
 iteration, and branching logic within blueprint definitions. These statements integrate
-with the reactive store system, ensuring that the UI automatically reacts to state changes.
+with the reactive system, ensuring that the UI automatically reacts to state changes.
 
 | Statement  | Purpose                             | Typical Use                            |
 |------------|-------------------------------------|----------------------------------------|
@@ -21,15 +21,9 @@ when <bool-expr> <statement>
 
 ### Semantics
 
-* Evaluates a **pure**, side-effect-free `<bool-expr>`.
-* Compiles to a **derived store** that re-evaluates reactively.
+* Evaluates a **pure**, side-effect-free `<bool-expr>` (reactively).
 * Switches between branches (`when` / `else`) as the condition changes.
 * Cleans up the inactive branch automatically.
-
-### Notes
-
-* `<bool-expr>` must be a Rust-subset expression returning `bool`.
-* Re-evaluation occurs once per drain cycle for consistency.
 
 ## `repeat` Statement
 
@@ -111,37 +105,5 @@ select on <enum-expr> {
   VariantA(x) => { ... }
   VariantB { id, .. } => { ... }
   else => { ... }
-}
-```
-
-### Semantics
-
-* Subscribes to all stores in the expressions.
-* Evaluates branches in order; **first match wins**.
-* When no `else` is present and none of the conditions match: emits an anchor node.
-
-## `<bool-expr>` Definition
-
-**Goal:** Seamless Rust integration while preserving reactivity and purity.
-
-**Allowed constructs:**
-
-* Literals, identifiers (stores/locals), field access.
-* Method calls on immutable data.
-* Boolean operators: `! && || == != < <= > >=`
-* Option helpers: `.is_some()`, `.is_none()`, `.map(...)`.
-* Collection helpers: `.is_empty()`, `.len()`, `.contains(&x)`.
-* No side effects (no mutation or impure calls).
-
-**Reactive behavior:**
-
-* Compiles to a derived store tracking dependencies automatically.
-* Re-evaluated during each runtime drain cycle.
-
-**Example:**
-
-```frel
-when user.is_some() && !notifications.is_empty() {
-  show_notifications()
 }
 ```

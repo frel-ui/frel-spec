@@ -54,15 +54,15 @@ complex business logic with side effects.
 
 [**Resource**](50_resources/10_resource_basics.md): A reusable UI asset to be used in a blueprint.
 
-[**Blueprint**](70_blueprint/10_blueprint_basics.md): Declaration of a reusable UI component template. A blueprint
+[**Blueprint**](../../10_language/70_blueprints/10_blueprint_basics.md): Declaration of a reusable UI component template. A blueprint
 has a name, parameters, and a body containing stores, UI elements, and event handlers. Blueprints are
 written in the Frel language and define how to build fragments.
 
-[**Fragment**](70_blueprint/10_blueprint_basics.md): The runtime instance of a blueprint that contains stores,
+[**Fragment**](../../10_language/70_blueprints/10_blueprint_basics.md): The runtime instance of a blueprint that contains stores,
 child fragments, and rendered UI elements. Fragments are created from blueprints and compose to build the
 complete user interface.
 
-[**Event Handler**](70_blueprint/70_event_handlers.md): A callback that executes in response to user
+[**Event Handler**](../../10_language/70_blueprints/70_event_handlers.md): A callback that executes in response to user
 interactions or system events. Event handlers are the only place in Frel where side effects are allowed -
 they can mutate stores and call backend commands.
 

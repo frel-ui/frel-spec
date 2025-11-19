@@ -12,7 +12,7 @@
 
 **Node**: A part of the ART that can be added/removed/updated.
 
-[**Container**](../10_language/70_blueprint/30_standard_blueprints.md#containers) : A node that can contain other nodes.
+[**Container**](../../10_language/70_blueprints/30_standard_blueprints.md#containers) : A node that can contain other nodes.
 
 **Positional Container** : A container in which the children are placed at pre-defined positions.
 

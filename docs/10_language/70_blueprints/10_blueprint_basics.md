@@ -13,8 +13,7 @@ A blueprint is composed of:
 ```text
 <blueprint> ::= "blueprint" <name> [ "(" <param-list> ")" ] "{" <body> "}"
 <param-list> ::= <param> { "," <param> }
-<param> ::= [<store-kind>] <param-name> ":" <param-type> [ "=" <default-expr> ]
-<store-kind> ::= "writable" | "source" | "decl" | "fanin"
+<param> ::= <param-name> ":" <param-type> [ "=" <default-expr> ]
 <body> ::= { <statement> }
 ```
 
@@ -34,31 +33,25 @@ a runtime fragment instance by itself.
 
 **Definition**
 
-Each `<param>` declares a reactive store that the fragment receives from its parent.
-Parameters enable reactive data flow and store sharing between fragments.
-
-**Store Kind**
-
-Parameters can specify what kind of store they accept. For detailed information
-see [Store Basics](../20_reactive_state/10_store_basics.md).
-
-When no store kind is specified, `decl` is assumed (read-only reactive).
+Each `<param>` declares a reactive value that the fragment receives from its parent.
+Parameters enable reactive data flow and between fragments.
 
 **Syntax Examples**
 
 ```frel
 blueprint UserDisplay(
-    name: String,              // Same as: decl name: String
-    writable count: i32,       // Writable store parameter
-    source user: User,         // Source store parameter
-    decl total: f64,           // Explicit read-only store
-    label: String = "Default"  // Default value
+    name: String,
+    count: i32,
+    user: ref User,
+    total: f64,
+    label: String = "Default"
 )
 ```
 
 **Blueprint Parameters**
 
-Parameters can also accept blueprints using the `Blueprint<P1,...Pn>` type. This enables higher-order blueprints that accept other blueprints as children:
+Parameters can also accept blueprints using the `Blueprint<P1,...Pn>` type. This enables
+higher-order blueprints that accept other blueprints as children:
 
 ```frel
 blueprint Container(
@@ -71,11 +64,12 @@ blueprint TextWrapper(
 
 blueprint Editor(
     header: Blueprint<String, bool>,      // Multiple parameters
-    renderer: Blueprint<writable String>  // With explicit store kind
+    renderer: Blueprint<String>
 )
 ```
 
-Blueprint parameters automatically capture their closure environment, allowing nested fragments to access parent stores. See [Fragment Creation](40_fragment_creation.md) for details on how blueprint parameters work and how type inference determines the `Blueprint<...>` type for anonymous blueprints.
+During runtime `Blueprint` parameters automatically capture their closure environment, allowing
+nested fragments to access parent closure.
 
 **Rules**
 
@@ -83,8 +77,6 @@ Blueprint parameters automatically capture their closure environment, allowing n
 - `<param-type>` must be a valid Frel type (including `Blueprint<...>`)
 - Optional parameters use `?` suffix: `name: String?`
 - Default values must be pure Frel expressions
-- Store kind prefix is optional (defaults to `decl`)
-- For `Blueprint<...>` parameters, store kinds in the type signature default to `decl` when omitted
 
 ### Body
 
@@ -95,13 +87,13 @@ Blueprint parameters automatically capture their closure environment, allowing n
 **Rules**
 
 - The body may be empty.
-- When present, statements must conform to the DSL’s statement categories and their respective semantics (reactive/pure expression constraints, etc.).
+- When present, statements must conform to the DSL’s statement categories and their respective
+  semantics (reactive/pure expression constraints, etc.).
 
 **Statements**
 
 - [**Backend binding**](#backend-binding) - Connect fragment to backend state
-- [**Store declarations**](../20_reactive_state/10_store_basics.md)
-- [**Data modeling**](../10_data_modeling/60_schemes.md) - Schemes and enums
+- **Local declarations**
 - [**Fragment creation**](40_fragment_creation.md)
 - [**Control statements**](50_control_statements.md)
 - [**Instructions**](60_instructions.md)
@@ -123,8 +115,10 @@ Blueprint parameters automatically capture their closure environment, allowing n
 
 The `with` keyword declares the backend state for a fragment. It serves two purposes:
 
-1. **Instantiates or references a backend**: Either creates a new backend instance or references a backend parameter
-2. **Imports backend namespace**: Makes all backend state fields and commands directly accessible without qualification
+1. **Instantiates or references a backend**: Either creates a new backend instance or references a
+   backend parameter
+2. **Imports backend namespace**: Makes all backend state fields and commands directly accessible
+   without qualification
 
 **Rules:**
 
@@ -196,13 +190,14 @@ blueprint UserProfile(user_id: u32) {
 }
 ```
 
-This pattern maintains the "one backend per blueprint" rule while allowing composition at the backend definition level.
+This pattern maintains the "one backend per blueprint" rule while allowing composition at the
+backend definition level.
 
 ## Example
 
 ```frel
 blueprint Counter(label: String) {
-    decl count = 0
+    count = 0
 
     column {
         padding { 16 } .. border { Red, 1 }

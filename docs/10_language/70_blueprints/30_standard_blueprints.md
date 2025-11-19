@@ -30,7 +30,7 @@ text { "Hello, World!" }
 text { "Title" } .. font { size: 24 weight: 700 color: Black }
 
 // Reactive text
-decl count = 0
+count : u32 = 0
 text { "Count: ${count}" }
 
 // Multi-line with wrapping
@@ -127,7 +127,7 @@ icon { "save" }
     .. on_click { /* save action */ }
 
 // Dynamic icon from state
-decl icon_name = if is_playing { "pause" } else { "play" }
+icon_name = is_playing ? "pause" : "play"
 icon { icon_name } .. width { 32 } .. height { 32 } .. tint { Blue }
 ```
 

@@ -26,7 +26,7 @@ compile-time safety and automatic string conversion.
 validation, constraints, and metadata. Schemes define the shape of data with typed fields and
 validation rules, supporting automatic form generation and data binding.
 
-**Field**: A typed data declaration within a scheme, backend, resource, theme or blueprint.
+**Field**: A typed data declaration within a scheme, backend, asset, theme or blueprint.
 Fields have a name and type, and may include constraints, default values, or metadata annotations.
 
 **Arena**: A collection type for scheme instances that provides identity-based storage and lookup. 
@@ -46,7 +46,7 @@ are implemented in the host language and are the primary way to trigger complex 
 side effects.
 
 **Theme**: A reusable styling configuration to be used in a blueprint. Themes contain both computed
-styling values (like dimensions and layout parameters) and resource fields for externally-loaded UI
+styling values (like dimensions and layout parameters) and asset fields for externally-loaded UI
 assets such as colors, strings, and graphics.
 
 **Blueprint**: Declaration of a reusable UI component template. A blueprint
@@ -108,18 +108,18 @@ backend MessageBackend {
     command send_message()
 }
 
-// Color, String and Graphics declared in themes are **resources**
-// Resources are loaded by the resource loader, hence no initial value provided
+// Color, String and Graphics declared in themes are **assets**
+// Assets are loaded by the asset loader, hence no initial value provided
 
 theme MessageTheme {
-    
-    self_background : resource Color
-    received_background : resource Color
-    
-    new_message : resource String
-    
-    send : resource Graphics
-    
+
+    self_background : asset Color
+    received_background : asset Color
+
+    new_message : asset String
+
+    send : asset Graphics
+
     corner_radius : u32 = 10
 
     group message_container {
@@ -146,7 +146,7 @@ blueprint MessageList {
         column {
             repeat on MessageArena { message ->
                 text { message.content }
-                 .. if message.user.is_self { theme.self_container } else { theme.received_container }               
+                 .. message.user.is_self ? theme.self_container : theme.received_container
             }
         }
         row {

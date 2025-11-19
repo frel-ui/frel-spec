@@ -85,7 +85,7 @@ check6 : bool = true == false  // false
 
 // Enums
 enum Priority { Low, Medium, High }
-check7 : bool = Priority::Low < Priority::High  // true
+check7 : bool = Priority.Low < Priority.High  // true
 ```
 
 ## Logical Operators
@@ -263,19 +263,19 @@ shouldShow : bool = count > 0 && (isAdmin || isOwner)
 
 Complete precedence from highest to lowest:
 
-| Level | Operators           | Description              | Associativity |
-|-------|---------------------|--------------------------|---------------|
-| 1     | `()`                | Grouping                 | Left-to-right |
-| 2     | `!` `-` `+`         | Unary                    | Right-to-left |
-| 3     | `**`                | Exponentiation           | Right-to-left |
-| 4     | `*` `/` `%`         | Multiplicative           | Left-to-right |
-| 5     | `+` `-`             | Additive                 | Left-to-right |
-| 6     | `<` `<=` `>` `>=`   | Relational               | Left-to-right |
-| 7     | `==` `!=`           | Equality                 | Left-to-right |
-| 8     | `&&`                | Logical AND              | Left-to-right |
-| 9     | `||`                | Logical OR               | Left-to-right |
-| 10    | `?:`                | Null coalescing (Elvis)  | Right-to-left |
-| 11    | `? :`               | Ternary conditional      | Right-to-left |
+| Level | Operators         | Description              | Associativity |
+|-------|-------------------|--------------------------|---------------|
+| 1     | `()`              | Grouping                 | Left-to-right |
+| 2     | `!` `-` `+`       | Unary                    | Right-to-left |
+| 3     | `**`              | Exponentiation           | Right-to-left |
+| 4     | `*` `/` `%`       | Multiplicative           | Left-to-right |
+| 5     | `+` `-`           | Additive                 | Left-to-right |
+| 6     | `<` `<=` `>` `>=` | Relational               | Left-to-right |
+| 7     | `==` `!=`         | Equality                 | Left-to-right |
+| 8     | `&&`              | Logical AND              | Left-to-right |
+| 9     | `\|\|`            | Logical OR               | Left-to-right |
+| 10    | `?:`              | Null coalescing (Elvis)  | Right-to-left |
+| 11    | `? :`             | Ternary conditional      | Right-to-left |
 
 ## Type Compatibility
 

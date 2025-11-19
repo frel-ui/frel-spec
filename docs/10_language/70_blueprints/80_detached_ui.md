@@ -1,7 +1,9 @@
 # Detached UI
 
+**IMPORTANT: This file contains invalid syntax and invalid Rust interop examples. The concepts are valid, but the implementation will change.**
+
 Detached UI elements are special constructs for creating UI that renders outside the main
-blueprint hierarchy in separate channels.
+fragment hierarchy in separate channels.
 
 Unlike normal fragments that are children of their parent, detached UI elements:
 
@@ -10,14 +12,6 @@ Unlike normal fragments that are children of their parent, detached UI elements:
 - Are managed automatically by the runtime
 - Don't affect the layout of their parent
 - Are automatically positioned in the viewport/scene
-
-## Overview
-
-| Element   | Form             | Channel   | Lifecycle          |
-|-----------|------------------|-----------|--------------------|
-| `modal!`  | Macro            | `modal`   | Until dismissed    |
-| `toast!`  | Macro            | `toast`   | Auto-timeout       |
-| `tooltip` | Slot (not macro) | `tooltip` | Auto-hide on leave |
 
 ## Modal
 

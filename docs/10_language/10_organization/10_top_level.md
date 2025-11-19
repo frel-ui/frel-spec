@@ -104,8 +104,8 @@ Declares a reusable styling configuration for blueprints.
 
 ```frel
 theme DarkTheme {
-    background : resource Color
-    foreground : resource Color
+    background : asset Color
+    foreground : asset Color
     padding : u32 = 16
 }
 ```

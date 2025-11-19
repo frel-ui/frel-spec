@@ -244,7 +244,7 @@ backend FormBackend {
     include ValidationBackend
     include LoadingBackend
 
-    formData : FormData = FormData::default()
+    formData : FormData = FormData()
 
     // Can use members from both included backends
     canSave : bool = is_valid() && !isLoading

@@ -238,7 +238,7 @@ enum Status {
     Error
 }
 
-currentStatus : Status = Status::Loading
+currentStatus : Status = Status.Loading
 ```
 
 ### Scheme Construction

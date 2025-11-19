@@ -15,7 +15,7 @@ Before working on the Frel language specification, read these foundational docum
 5. **Store Basics**: [docs/10_language/20_reactive_state/10_store_basics.md](20_reactive_state/10_store_basics.md) - Reactive state management semantics
 6. **Contract Basics**: [docs/10_language/30_contracts/10_contract_basics.md](../../10_language/30_contract/10_contracts.md) - External service interfaces
 7. **Backend Basics**: [docs/10_language/40_backends/10_backend_basics.md](40_backends/10_backend_basics.md) - Business logic containers with stores and commands
-8. **Blueprint Basics**: [docs/10_language/70_blueprint/10_blueprint_basics.md](70_blueprint/10_blueprint_basics.md) - UI component templates
+8. **Blueprint Basics**: [docs/10_language/70_blueprint/10_blueprint_basics.md](../../10_language/70_blueprints/10_blueprint_basics.md) - UI component templates
 
 These documents define what IS available in Frel. If a feature isn't documented there, it doesn't exist yet.
 

@@ -9,8 +9,7 @@ during program execution and bind names to actual reactive data.
 When a blueprint is instantiated, the Frel runtime creates a **fragment** with its own **fragment
 closure**. The fragment closure:
 
-- Binds each name to a **reactive identity** (
-  see [Reactivity Model](../20_data_model/10_reactivity_model.md))
+- Binds each name to a **reactive identity** (see [Reactivity Model](../20_data_model/10_reactivity_model.md))
 - Tracks dependencies between reactive computations
 - Enables automatic updates when data changes
 - Lives as long as the fragment exists

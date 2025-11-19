@@ -38,11 +38,11 @@ contract UserAPI {
 
 ## Usage in Backends
 
-Contracts are declared as dependencies in backends using the `uses` keyword:
+Contracts may be declared as in backends using the `use` keyword:
 
 ```frel
 backend UserManagement(user_id: u32) {
-    uses UserAPI
+    use UserAPI
 
     user_data: User
 
@@ -50,6 +50,12 @@ backend UserManagement(user_id: u32) {
     command save_user()
 }
 ```
+
+When declared with `use` the contract functions are imported into the backend namespace, 
+so backend commands and fragments can call them directly.
+
+>> TODO specify how can commands and fragments use the contract directly
+>> TODO add examples
 
 ## Usage in Fragments
 

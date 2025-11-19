@@ -982,5 +982,5 @@ blueprint TextInput(value: String, error: Option<String>) {
 
 - [Resources](60_resources.md) - Resource system overview
 - [Standard Sources](../20_reactive_state/60_standard_sources.md#environment) - Environment source for theme qualification
-- [Instructions](../70_blueprint/60_instructions.md) - Available styling instructions
+- [Instructions](../../../10_language/70_blueprints/60_instructions.md) - Available styling instructions
 - [Store Declarations](../20_reactive_state/10_store_basics.md#data-source) - Source system

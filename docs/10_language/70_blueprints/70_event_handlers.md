@@ -14,8 +14,8 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 <param-list> ::= <param-spec> | <param-spec> { "," <param-spec> }
 <param-spec> ::= <param-name> [ ":" <param-type> ]
 <handler-body> ::= <handler-statement>*
-<handler-statement> ::= <store-assignment> | <command-call>
-<store-assignment> ::= <store-name> "=" <frel-expr>
+<handler-statement> ::= <assignment> | <command-call>
+<assignment> ::= <name> "=" <frel-expr>
 <command-call> ::= <command-name> "(" [ <frel-expr> { "," <frel-expr> } ] ")"
 ```
 
@@ -31,7 +31,7 @@ Event handlers contain a sequence of statements that perform side effects.
 ```frel
 // Parameter-less handler
 button { "Click" } .. on_click {
-    count = count + 1           // Store mutation
+    count = count + 1           // Mutation
 }
 
 // Handler with event parameter (explicit name)
@@ -51,8 +51,8 @@ button { "Click" } .. on_click { event ->
 
 // Multiple statements
 button { "Reset" } .. on_click {
-    count = 0                   // Store mutation
-    status = "idle"             // Store mutation
+    count = 0                   // Mutation
+    status = "idle"             // Mutation
     reset_data()                // Command call
 }
 ```
@@ -63,7 +63,7 @@ button { "Reset" } .. on_click {
 
 * The handler body contains a **sequence of statements** that perform side effects.
 * Each statement is either:
-  1. **Store assignment**: `count = count + 1` - assigns a pure Frel expression to a writable store
+  1. **assignment**: `count = count + 1` - assigns a pure Frel expression to a binding
   2. **Command call**: `save()` - calls a backend command
 * All expressions in event handlers are **pure Frel expressions** - same as elsewhere in the DSL.
 * Event handlers are the **only** place in the Frel DSL where side effects (mutations, command calls) are allowed.
@@ -71,15 +71,15 @@ button { "Reset" } .. on_click {
 ### Execution Context
 
 * Handlers execute synchronously when the event fires.
-* Store writes trigger reactive updates (drain cycle runs after handler completes).
-* Multiple store writes within a handler are batched (subscribers notified once).
-* Handlers can read stores and parameters in scope.
+* Writes trigger reactive updates (drain cycle runs after handler completes).
+* Multiple writes within a handler are batched (subscribers notified once).
+* Handlers can read values and parameters in scope.
 
 ### Allowed Statements
 
 Event handlers support exactly two types of statements:
 
-#### 1. Store Assignments
+#### 1. Assignments
 
 ```frel
 // Direct assignment
@@ -117,8 +117,8 @@ validate()  // Runs asynchronously
 Event handlers do **not** support:
 
 - **Control flow statements**: No `if`, `for`, `while`, `match` inside handlers
-- **Direct collection mutation**: No `.push()`, `.insert()`, `.remove()` on stores
-- **Variable declarations**: No `let` or `const` - only store assignments
+- **Direct collection mutation**: No `.push()`, `.insert()`, `.remove()`
+- **Local declarations**: No `count : u32 = 0` - only assignments
 - **Host language syntax**: Handlers are pure Frel DSL
 
 ### Control Flow
@@ -152,7 +152,7 @@ when count <= 10 {
 ```frel
 // Backend declaration
 backend Counter {
-    writable count: i32 = 0
+    count: i32 = 0
 
     command increment_or_reset()
 }
@@ -188,7 +188,7 @@ blueprint CounterView() {
 
 ```frel
 blueprint Counter() {
-    writable count = 0
+    count = 0
 
     button {
         text { "Increment" }
@@ -201,7 +201,7 @@ blueprint Counter() {
 
 ```frel
 blueprint ColorPicker() {
-    writable hue = 0.0
+    hue = 0.0
 
     box {
         width { 300 }
@@ -214,7 +214,7 @@ blueprint ColorPicker() {
 
 // Or using default 'it' parameter
 blueprint ColorPicker() {
-    writable hue = 0.0
+    hue = 0.0
 
     box {
         width { 300 }
@@ -226,7 +226,7 @@ blueprint ColorPicker() {
 }
 ```
 
-### Multiple Store Updates (Batched)
+### Multiple Updates (Batched)
 
 ```frel
 button { "Reset" } .. on_click {
@@ -259,7 +259,7 @@ blueprint App() {
 
 ```frel
 backend Editor {
-    writable content: String = ""
+    content: String = ""
 
     command submit()
     command cancel()
@@ -297,7 +297,7 @@ button { "Process" } .. on_click {
 
 ### Avoid Side Effects Outside Event Handlers
 
-Side effects belong only in event handlers, not in store declarations or blueprint parameters:
+Side effects belong only in event handlers, not in local declarations or blueprint parameters:
 
 ```frel
 // ✅ Good - side effects in event handler
@@ -308,24 +308,24 @@ backend Logger {
 blueprint Counter() {
     with Logger
 
-    writable count = 0
+    count = 0
 
     button { "Click" } .. on_click {
         log("clicked")        // Command call OK here
-        count = count + 1     // Store mutation OK here
+        count = count + 1     // Mutation OK here
     }
 }
 
-// ❌ Bad - side effect in store declaration
-decl count = log_and_return(0)  // COMPILE ERROR: command calls not allowed in expressions
+// ❌ Bad - side effect in declaration
+count = log_and_return(0)  // COMPILE ERROR: command calls not allowed in expressions
 
-// ✅ Good - pure expression in store declaration
-decl count = 0                  // Pure Frel expression
+// ✅ Good - pure expression in declaration
+count = 0                  // Pure Frel expression
 ```
 
 ### Batch Updates
 
-Group related store updates in a single handler for efficiency:
+Group related updates in a single handler for efficiency:
 
 ```frel
 // Good - batched
@@ -348,8 +348,8 @@ Error handling is done in backend commands or through sources:
 ```frel
 // Backend handles errors
 backend DataLoader {
-    writable items: List<Item> = []
-    writable error: String? = null
+    items: List<Item> = []
+    error: String? = null
 
     command fetch_data()
 }
@@ -383,5 +383,4 @@ blueprint DataView() {
 ## See Also
 
 - [Instructions](60_instructions.md) - Event handler syntax and available events
-- [Store Declarations](../20_reactive_state/10_store_basics.md) - Store mutations in handlers
 - [Detached UI](80_detached_ui.md) - Using handlers with modals and toasts

@@ -97,7 +97,7 @@ All stores internally maintain:
 - Error handling in handlers
 
 **References:**
-- [Event Handlers](../70_blueprint/70_event_handlers.md)
+- [Event Handlers](../../../10_language/70_blueprints/70_event_handlers.md)
 - [Language Overview](../00_language_overview.md)
 
 ### 8. Source Definition
@@ -198,7 +198,7 @@ All sources use `FrelStatus` (not `Status<E>`) and `FrelError` for errors.
 - Return value handling (for modals with results)
 
 **References:**
-- [Detached UI](../70_blueprint/80_detached_ui.md)
+- [Detached UI](../../../10_language/70_blueprints/80_detached_ui.md)
 
 ## Design Principles
 

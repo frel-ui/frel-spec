@@ -39,7 +39,7 @@ Frel has several type categories with different reactivity semantics:
 - nullable types
 - reference types
 - draft types
-- resource types
+- asset types
 
 ### Intrinsic Types
 
@@ -266,59 +266,59 @@ Draft types work seamlessly with arenas for the common pattern of "edit and save
 5. If valid, draft is committed back to the original, which updates the arena
 6. Arena propagates the update to all subscribers
 
-### Resource Types
+### Asset Types
 
-**Resource types** are externally-loaded values that represent UI assets such as colors, strings,
-and graphics. A resource type is created by adding the `resource` modifier to an intrinsic type.
+**Asset types** are externally-loaded values that represent UI assets such as colors, strings,
+and graphics. An asset type is created by adding the `asset` modifier to an intrinsic type.
 
-**Purpose**: Resource types solve the asset loading problem by:
+**Purpose**: Asset types solve the asset loading problem by:
 
 - Decoupling semantic names from actual file names
 - Supporting asynchronous loading with availability tracking
-- Enabling theme-based resource organization
-- Allowing platform-specific resource resolution
+- Enabling theme-based asset organization
+- Allowing platform-specific asset resolution
 
 **Syntax**:
 
 ```frel
 theme MessageTheme {
-    self_background : resource Color      // Resource-loaded color
-    new_message : resource String         // Resource-loaded localized string
-    send : resource Graphics              // Resource-loaded icon/image
-    corner_radius : u32 = 10              // Computed value (not a resource)
+    self_background : asset Color      // Asset-loaded color
+    new_message : asset String         // Asset-loaded localized string
+    send : asset Graphics              // Asset-loaded icon/image
+    corner_radius : u32 = 10              // Computed value (not an asset)
 }
 ```
 
 **Key properties:**
 
-- **No initial value**: Resource fields cannot have initial values (they are loaded externally)
-- **Availability semantics**: Resources have Loading/Ready/Error states during the loading process
+- **No initial value**: Asset fields cannot have initial values (they are loaded externally)
+- **Availability semantics**: Assets have Loading/Ready/Error states during the loading process
 - **Semantic binding**: The field name represents semantic usage (e.g., `send`), while the actual
-  resource file is bound separately (e.g., `ic_arrow_forward_24dp.png`)
-- **Type requirement**: Resources typically use intrinsic types suitable for assets (Color, String,
+  asset file is bound separately (e.g., `ic_arrow_forward_24dp.png`)
+- **Type requirement**: Assets typically use intrinsic types suitable for assets (Color, String,
   Graphics, etc.)
 
 **Availability semantics:**
 
-When accessing a resource field, availability reflects the loading state:
+When accessing an asset field, availability reflects the loading state:
 
-- **Loading**: The resource is being loaded asynchronously
-- **Ready**: The resource has been successfully loaded and is available
-- **Error**: The resource failed to load (file not found, invalid format, etc.)
+- **Loading**: The asset is being loaded asynchronously
+- **Ready**: The asset has been successfully loaded and is available
+- **Error**: The asset failed to load (file not found, invalid format, etc.)
 
 **Example**:
 
 ```frel
 theme AppTheme {
-    primary_color : resource Color
-    app_name : resource String
-    logo : resource Graphics
+    primary_color : asset Color
+    app_name : asset String
+    logo : asset Graphics
 
-    padding : u32 = 16  // Not a resource, just a computed value
+    padding : u32 = 16  // Not an asset, just a computed value
 }
 
 // When accessing theme.primary_color:
-// 1. Resource loader resolves the semantic name to actual file
+// 1. Asset loader resolves the semantic name to actual file
 // 2. File is loaded asynchronously
 // 3. Availability propagates through dependent expressions
 // 4. Once loaded, color value becomes available
@@ -326,10 +326,10 @@ theme AppTheme {
 
 **Reactivity:**
 
-- Resource fields do not change once loaded (they represent immutable assets)
+- Asset fields do not change once loaded (they represent immutable assets)
 - Switching themes (changing a `theme : ref Theme` field) is a structural change that triggers
-  reloading of all resource fields
-- Resource loading does not affect structural or carried revisions, only availability
+  reloading of all asset fields
+- Asset loading does not affect structural or carried revisions, only availability
 
 ## Revision Semantics
 

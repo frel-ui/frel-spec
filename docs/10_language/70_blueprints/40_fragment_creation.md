@@ -1,7 +1,8 @@
 # Fragment Creation
 
 Fragment creation statements instantiate child fragments during instantiation.
-A **block** following a blueprint name is an **inline blueprint**, conceptually a small anonymous blueprint.
+A **block** following a blueprint name is an **inline blueprint**, conceptually a small anonymous
+blueprint.
 Blocks may bind to the **default content slot** or to **named slots**.
 
 ## Surface Forms
@@ -50,26 +51,26 @@ Notes:
 # Blueprint parameter types
 <blueprint-type> ::= "Blueprint" [ "<" <blueprint-params> ">" ]
 <blueprint-params> ::= <blueprint-param> { "," <blueprint-param> }
-<blueprint-param> ::= [<store-kind>] <type>
-<store-kind> ::= "writable" | "source" | "decl" | "fanin"
+<blueprint-param> ::= <type>
 ```
 
 ## Semantics
 
 ### 1. Normal Parameters
 
-* Are representing reactive stores.
+* Are representing reactive values.
 * Supplied only inside `(...)`.
-* Parentheses are **optional** when there are no parameters (e.g., `Counter { }` is equivalent to `Counter() { }`).
+* Parentheses are **optional** when there are no parameters (e.g., `Counter { }` is equivalent to
+  `Counter() { }`).
 * May be passed **positionally** or by **name**:
-  - Positional: `SomeFragment(12, "text")`
-  - Named: `SomeFragment(width = 12, label = "text")`
-  - Mixed: `SomeFragment(12, label = "text")` — positional arguments must come before named ones
+    - Positional: `SomeFragment(12, "text")`
+    - Named: `SomeFragment(width = 12, label = "text")`
+    - Mixed: `SomeFragment(12, label = "text")` — positional arguments must come before named ones
 * Once a named argument is used, all subsequent arguments must also be named.
 * Missing required parameters or extra parameters are compile-time errors.
 * Named arguments may appear in any order (after positional ones).
 * `<expr>` must be a pure host language expression (no side effects).
-* Reactive dependencies from stores are tracked automatically.
+* Reactive dependencies are tracked automatically.
 
 ### 2. Blueprint Parameters (Default Slot & Named Slots)
 
@@ -91,7 +92,7 @@ blueprint Container(content: Blueprint) {
 }
 
 blueprint TextWrapper(content: Blueprint<String>) {
-    decl hw = "Hello World!"
+    hw = "Hello World!"
     content(hw)  // Must pass a String
 }
 
@@ -127,7 +128,8 @@ blueprint MyTextBlueprint(text: String) {
 
 ### 3. Desugaring and Type Inference
 
-Each inline block is desugared into a compiler-synthesized **anonymous blueprint** and passed by name.
+Each inline block is desugared into a compiler-synthesized **anonymous blueprint** and passed by
+name.
 
 **Basic Example:**
 
@@ -144,11 +146,12 @@ column { at content: __anon_1 }
 
 **Type Inference for Anonymous Blueprints:**
 
-The compiler infers the `Blueprint<...>` type for anonymous blueprints based on the expected parameter type:
+The compiler infers the `Blueprint<...>` type for anonymous blueprints based on the expected
+parameter type:
 
 ```frel
 blueprint TextWrapper(content: Blueprint<String>) {
-    decl hw = "Hello World!"
+    hw = "Hello World!"
     content(hw)
 }
 
@@ -171,6 +174,7 @@ TextWrapper { at content: __anon_1 }
 **Anonymous Blueprint Parameter Syntax:**
 
 When an anonymous blueprint has parameters, you can use:
+
 - **Named parameters** with the arrow syntax `{ param1, param2 -> ... }`
 - **Default `it` parameter** for single-parameter blueprints (omit parameter list)
 - **Positional references** `$0`, `$1`, etc. (less common, named parameters preferred)
@@ -207,6 +211,7 @@ ItemRenderer {
 ```
 
 **Style Guidelines:**
+
 - Prefer `it` for single parameters when the meaning is clear from context
 - Use explicit names when `it` would be unclear or when working with multiple nested scopes
 - Prefer named parameters over positional references (`$0`, `$1`) for better readability
@@ -214,21 +219,23 @@ ItemRenderer {
 **Unified Parameter Syntax:**
 
 This parameter syntax (`{ param1, param2 -> ... }` with default `it`) is **unified across Frel**:
+
 - Anonymous blueprint parameters use it (as shown above)
 - Event handler parameters use the same syntax (see [Event Handlers](70_event_handlers.md))
 - This consistency makes the language more predictable and easier to learn
 
 **Closure Capture:**
 
-* Anonymous blueprints close over their lexical scope (capture visible stores reactively).
+* Anonymous blueprints close over their lexical scope (capture visible values reactively).
 * Each inline block produces a unique synthesized blueprint.
-* Captured stores remain reactive - changes propagate to fragments created from the anonymous blueprint automatically.
+* Captured values remain reactive - changes propagate to fragments created from the anonymous
+  blueprint automatically.
 
 **Example with Closure:**
 
 ```frel
 blueprint A() {
-    decl i = 1
+    i = 1
 
     column {
         row {
@@ -242,7 +249,7 @@ Desugars to:
 
 ```frel
 blueprint A() {
-    decl i = 1
+    i = 1
 
     blueprint __anon_row() {
         b(i)  // 'i' captured from parent scope
@@ -256,7 +263,9 @@ blueprint A() {
 }
 ```
 
-The anonymous blueprints capture `i` reactively. When `i` changes in the runtime fragment, the child fragments created from `b(i)` automatically receive the updated value. The intermediate blueprints (`column` and `row`) don't need to know about `i` - it's automatically carried in the closure.
+The anonymous blueprints capture `i` reactively. When `i` changes in the runtime fragment, the child
+fragments created from `b(i)` automatically receive the updated value. The intermediate blueprints (
+`column` and `row`) don't need to know about `i` - it's automatically carried in the closure.
 
 ### 4. Instructions: Inner vs Postfix Syntax
 
@@ -273,8 +282,10 @@ Both forms are semantically identical and apply to the created fragment's root n
 - Postfix instructions are applied after inner instructions.
 - When the same instruction is applied multiple times, the last one wins.
 - For multi-parameter instructions parameters are **added**. For example:
-  - `padding { top : 16 } .. padding { bottom : 16 }` is equivalent to `padding { top : 16, bottom : 16 }`
-  - `padding { top : 16, bottom : 16 } .. padding { bottom : 32 }` is equivalent to `padding { top : 16, bottom : 32 }`
+    - `padding { top : 16 } .. padding { bottom : 16 }` is equivalent to
+      `padding { top : 16, bottom : 16 }`
+    - `padding { top : 16, bottom : 16 } .. padding { bottom : 32 }` is equivalent to
+      `padding { top : 16, bottom : 32 }`
 
 **Instruction Chaining:**
 
@@ -296,6 +307,7 @@ box {
 **Style Guidelines:**
 
 Use **inner syntax**:
+
 - When the blueprint has a content block with child elements
 - **Convention:** Place instructions before child elements for better readability
 
@@ -317,6 +329,7 @@ box {
 ```
 
 Use **postfix syntax**:
+
 - For single-line declarations to keep code compact
 - When the blueprint has no content block (empty `{ }`)
 - When adding instructions to a blueprint reference (required)
@@ -328,13 +341,15 @@ CustomComponent() .. padding { 16 }
 ```
 
 **General principles:**
+
 - Prefer inner syntax by default, use postfix for special cases and one-liners
-- Place instructions before children when using inner syntax (not mandatory, but improves readability)
+- Place instructions before children when using inner syntax (not mandatory, but improves
+  readability)
 - Choose the style that maximizes readability for the specific context
 
 ### 5. Lifetime and Reactivity
 
-* Child fragments subscribe to stores used in value parameters or captured by inline blueprints.
+* Child fragments subscribe to values used in parameters or captured by inline blueprints.
 * All subscriptions are cleaned up automatically when the parent fragment is destroyed.
 
 ## Error Conditions
@@ -353,7 +368,6 @@ CustomComponent() .. padding { 16 }
 | Non-blueprint value in slot                   | Compile-time | Slot expects a blueprint.                             |
 | Blueprint parameter arity mismatch            | Compile-time | Anonymous blueprint parameters don't match signature. |
 | Blueprint parameter type mismatch             | Compile-time | Anonymous blueprint parameter types incompatible.     |
-| Blueprint store kind mismatch                 | Compile-time | Blueprint parameter store kind less restrictive.      |
 
 ## Examples
 
@@ -413,7 +427,7 @@ Container {
 
 // Blueprint expecting a String parameter
 blueprint TextWrapper(content: Blueprint<String>) {
-    decl hw = "Hello World!"
+    hw : String = "Hello World!"
     content(hw)
 }
 
@@ -429,7 +443,7 @@ TextWrapper {
 
 // Closure capture example
 blueprint Parent() {
-    decl count = 0
+    count : u32 = 0
 
     Container {
         // Anonymous blueprint captures 'count' from parent scope
@@ -464,24 +478,13 @@ Layout {
     }
 }
 
-// Blueprint with writable store parameter
-blueprint Editor(renderer: Blueprint<writable String>) {
-    writable text = "Initial"
-    renderer(text)
-}
-
-// Usage - pass writable store to blueprint
-Editor { writable_text ->
-    text_editor { writable_text }
-}
-
 // Complex closure example
 blueprint ListManager() {
-    decl items = ["A", "B", "C"]
+    items : List<String> = ["A", "B", "C"]
     writable selected = 0
 
     column {
-        // Nested anonymous blueprints all capture parent stores
+        // Nested anonymous blueprints all capture parent values
         repeat on items by $0 as item {
             button {
                 // This anonymous blueprint captures both 'item' and 'selected'
@@ -515,6 +518,7 @@ button {
 ```
 
 The tooltip automatically:
+
 - Renders in the `tooltip` channel
 - Shows on hover with 500ms delay
 - Hides when pointer leaves
