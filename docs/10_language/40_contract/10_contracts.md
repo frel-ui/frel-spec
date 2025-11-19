@@ -36,30 +36,9 @@ contract UserAPI {
 - Return types are optional
 - All methods are async (no explicit `async` keyword needed)
 
-## Usage in Backends
-
-Contracts may be declared as in backends using the `use` keyword:
-
-```frel
-backend UserManagement(user_id: u32) {
-    use UserAPI
-
-    user_data: User
-
-    command load_user()
-    command save_user()
-}
-```
-
-When declared with `use` the contract functions are imported into the backend namespace, 
-so backend commands and fragments can call them directly.
-
->> TODO specify how can commands and fragments use the contract directly
->> TODO add examples
-
 ## Usage in Fragments
 
-Contracts can be called directly from fragment scope to create reactive sources:
+Contracts can be called directly from the fragment scope to declare values:
 
 ```frel
 blueprint UserProfile(user_id: u32) {

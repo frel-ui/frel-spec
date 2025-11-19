@@ -100,11 +100,9 @@ arena MessageArena {
 }
 
 backend MessageBackend {
-    use MessageAPI
-    
     theme : ref MessageTheme
     new_message : String
-    
+
     command send_message()
 }
 
