@@ -80,7 +80,7 @@ blueprint Chat(
 ) {
     count = names.length
 
-    if message.is_not_empty {
+    when message.is_not_empty {
         column {
             repeat on names { name ->
                 text { "$message $name!" }

@@ -613,7 +613,7 @@ scheme TodoItem {
 decl items: List<TodoItem> = load_todos()
 decl item_count: i32 = items.length
 
-text { "You have " + item_count + " items" }
+text { "You have ${item_count} items" }
 ```
 
 **Subscription**: `items` identity with "structural" selector
@@ -650,8 +650,8 @@ scheme User {
     email: String
 }
 
-decl user: User = fetch_user()
-decl greeting: String = "Hello, " + user.name
+user: User = fetch_user()
+greeting: String = "Hello, ${user.name}"
 
 text { greeting }
 ```

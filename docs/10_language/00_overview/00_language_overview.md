@@ -45,17 +45,17 @@ logic from UI declarations and compose with other backends.
 are implemented in the host language and are the primary way to trigger complex business logic with
 side effects.
 
-**Theme**: A reusable styling configuration to be used in a blueprint. Themes contain both computed
-styling values (like dimensions and layout parameters) and asset fields for externally-loaded UI
+[**Theme**](../60_themes/10_theme_basics.md): A reusable styling configuration to be used in a blueprint. Themes contain styling 
+values (like dimensions and layout parameters) and asset fields for externally-loaded UI
 assets such as colors, strings, and graphics.
 
-**Blueprint**: Declaration of a reusable UI component template. A blueprint
-has a name, parameters, and a body containing stores, UI elements, and event handlers. Blueprints are
-written in the Frel language and define how to build fragments.
+[**Blueprint**](../70_blueprints/10_blueprint_basics.md): Declaration of a reusable UI component 
+template. A blueprint has a name, parameters, and a body containing stores, UI elements, and event 
+handlers. Blueprints are written in the Frel language and define how to build fragments.
 
-**Fragment**: The runtime instance of a blueprint that contains stores,
-child fragments, and rendered UI elements. Fragments are created from blueprints and compose to build the
-complete user interface.
+**Fragment**: The runtime instance of a blueprint that contains fields, child fragments, and 
+rendered UI elements. Fragments are created from blueprints and compose to build the complete
+user interface.
 
 **Event Handler**: A callback that executes in response to user
 interactions or system events. Event handlers are the only place in Frel where side effects are allowed -
@@ -120,21 +120,24 @@ theme MessageTheme {
 
     corner_radius : u32 = 10
 
-    group message_container {
+    set message_container {
         corner_radius { corner_radius }
         width { container }
     }
 
-    group self_container {
+    set self_container {
         background { color: self_background }
         align_self_left
     }
     
-    group received_container { 
+    set received_container { 
         background { color: received_background }
         align_self_right
     }
     
+    variant ImportantMessage {
+        received_background = 0xff0000
+    }    
 }
 
 blueprint MessageList {

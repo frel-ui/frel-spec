@@ -375,15 +375,13 @@ blueprint CalculatorUI {
     button { "Calculate Sum" }
         .. on_click {
             // Call method in event handler
-            sum : f64 = compute_sum()
-            save_result(sum)
+            save_result(compute_sum())
         }
 
     button { "Calculate Product" }
         .. on_click {
             // Call method and use result
-            product : f64 = compute_product()
-            result = product
+            result = compute_product()
         }
 }
 ```

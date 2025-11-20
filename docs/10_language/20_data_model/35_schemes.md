@@ -109,7 +109,7 @@ scheme User {
     firstName : String
     lastName : String
 
-    virtual fullName : String = firstName + " " + lastName
+    virtual fullName : String = "${firstName} ${lastName}"
 }
 ```
 

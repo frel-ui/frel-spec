@@ -441,11 +441,8 @@ blueprint FormSubmit {
 
     button { "Calculate and Save" }
         .. on_click {
-            // Call method to compute value
-            score : f64 = calculate_score(0.8)
-
             // Use the result in a command
-            save_score(score)
+            save_score(calculate_score(0.8))
         }
 }
 ```

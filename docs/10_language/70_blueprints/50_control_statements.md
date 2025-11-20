@@ -35,32 +35,21 @@ repeat on <iterable> [as <item>] [by <key-expr>] <statement>
 
 ### Semantics
 
-* Iterates over `<iterable>` which must resolve to something implementing `IntoIterator<Item = T>`.
+* Iterates over `<iterable>` which must be a collection or an arena.
 * Each iteration produces a child reactive scope.
 * Incremental updates are performed via **keyed diffing**:
 
     * Insert new keys → create new item views
     * Remove missing keys → dispose old item views
     * Moved keys → reorder without re-creation
-    * Changed items → update via `PartialEq` or `changed(&old, &new)`
+    * Changed items → no action (reactivity will take care)
 
 ### Keys and Identity
 
 * Use `by <key-expr>` to specify item identity.
-* `<key-expr>` must yield a `Key: Eq + Hash + Clone`.
 * If omitted:
-
-    * Use `item.key()` if the item implements the `Keyed` trait.
-    * Otherwise, index-based diffing is used (reorders become remove+insert).
-
-**Trait support:**
-
-```rust
-pub trait Keyed {
-    type Key: Eq + std::hash::Hash + Clone;
-    fn key(&self) -> Self::Key;
-}
-```
+  * If the type to iterate over is a scheme with identity, that identity field is used.
+  * Othewise index-based diffing is used (reorders become remove+insert).
 
 ### Iteration Locals
 
@@ -79,12 +68,6 @@ repeat on users by user.id as user {
   }
 }
 ```
-
-### `<iterable>` Definition
-
-* Any reactive expression returning a container implementing `IntoIterator`.
-* Common examples: `Vec<T>`, `&[T]`, `Arc<[T]>`, `BTreeMap<K, V>`.
-* For streaming data, connect to a `fanin` maintaining a reactive `Vec<T>`.
 
 ## `select` Statement
 
