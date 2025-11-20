@@ -1,34 +1,8 @@
 # Reactivity Model
 
-This document describes Frel's foundational reactivity model. Understanding this model helps explain
-how changes are tracked, when updates propagate, and how subscriptions work at a conceptual level.
-
-## Overview
-
-Frel's reactivity is built on three core concepts:
-
-- **Identity**: What uniquely identifies a piece of data
-- **Revisions**: When and how data changes
-- **Subscriptions**: What kinds of changes we care about
-
-These concepts work together to enable fine-grained reactivity - reacting only to the changes that
-matter for a given use case.
-
-## Data Properties
-
-Conceptually (before optimization), each piece of data in Frel has these properties:
-
-| Property                | Description                                                        |
-|-------------------------|--------------------------------------------------------------------|
-| **Type**                | The Frel type (e.g., `i32`, `String`, `List<User>`, `scheme Todo`) |
-| **Value**               | The actual data content                                            |
-| **Identity**            | What uniquely identifies this piece of data                        |
-| **Availability**        | The availability state (Loading/Ready/Error)                       |
-| **Structural Revision** | Increments when the identities of contained data change            |
-| **Carried Revision**    | Increments when changes propagate from contained data              |
-| **Metadata**            | Validation rules, constraints, etc. (not relevant to reactivity)   |
-
-The key insight is that **identity and revisions depend on the type category**.
+This document describes Frel's foundational reactivity model, building on the foundational concepts
+introduced in [Datum](01_datum.md). Understanding this model helps explain how changes are tracked,
+when updates propagate, and how subscriptions work at a conceptual level.
 
 ## Types
 
@@ -40,6 +14,7 @@ Frel has several type categories with different reactivity semantics:
 - reference types
 - draft types
 - asset types
+- closure-bound types
 
 ### Intrinsic Types
 
@@ -67,7 +42,7 @@ For more information see [Intrinsic Types](20_intrinsic_types.md).
 
 ### Composite Types
 
-**Composite types** are containers that hold other pieces of data:
+**Composite types** are containers that hold other data:
 
 - **Collections**: `List<T>`, `Set<T>`, `Map<K,V>`, `Tree<T>`
 - **User-defined types**: Schemes, Arenas, Backends, Themes, Blueprints
@@ -344,7 +319,7 @@ The **structural revision** increments when:
 3. **Data is removed from the composite**
 4. **Order of contained data changes (for List and Tree)**
 
-For collections, "contained data" means the elements. For schemes, it means the field values.
+For collections, "contained data" means the elements. For schemes, it means the field payloads.
 
 ### Carried Revision
 
@@ -358,7 +333,7 @@ tracks "which pieces are present".
 
 ## Availability
 
-Every piece of data in Frel has an associated availability that represents its availability state, one of:
+Every datum in Frel has an associated availability that represents its availability state, one of:
 
 - **Loading**: Data is being fetched or computed but not yet available
 - **Ready**: Data is available and can be used
@@ -371,19 +346,19 @@ Availability transitions are treated as **structural changes**:
 - When availability changes (e.g., `Loading` → `Ready`, `Ready` → `Error`), the structural revision increments
 - This ensures subscribers are notified when data becomes available or encounters errors
 
-### Value Availability
+### Payload Availability
 
-The availability determines whether a value is defined:
+The availability determines whether a payload is defined:
 
-- **Ready**: Value is defined and accessible
-- **Loading**: Value is undefined (not yet available)
-- **Error**: Value is undefined (error prevented availability)
+- **Ready**: Payload is defined and accessible
+- **Loading**: Payload is undefined (not yet available)
+- **Error**: Payload is undefined (error prevented availability)
 
-**Important distinction**: When availability is not Ready, the value is **undefined**. This is different from a nullable field being `null`:
+**Important distinction**: When availability is not Ready, the payload is **undefined**. This is different from a nullable field being `null`:
 
 ```
-// Value undefined due to availability
-user_data with availability=Loading  // value is undefined, cannot access fields
+// Payload undefined due to availability
+user_data with availability=Loading  // payload is undefined, cannot access fields
 
 // Nullable field that is null
 scheme User {
@@ -402,7 +377,7 @@ Availability propagates through data dependencies using the rule: **Error > Load
 - Else if ANY dependency has availability `Loading` → result availability is `Loading`
 - Else if ALL dependencies have availability `Ready` → result availability is `Ready`
 
-When availability propagates to `Loading` or `Error`, the dependent's structural revision increments (due to availability change), and its value becomes undefined.
+When availability propagates to `Loading` or `Error`, the dependent's structural revision increments (due to availability change), and its payload becomes undefined.
 
 ## Propagation Examples
 
@@ -421,7 +396,7 @@ decl counter: Counter  // fetched from API
 
 - `counter` identity: `Counter#1`
 - `counter` availability: `Loading`
-- `counter` value: undefined
+- `counter` payload: undefined
 - `counter` structural revision: 1
 - `counter` carried revision: 1
 
