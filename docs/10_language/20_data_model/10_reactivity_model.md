@@ -1,7 +1,7 @@
 # Reactivity Model
 
 This document describes Frel's foundational reactivity model, building on the foundational concepts
-introduced in [Datum](01_datum.md). Understanding this model helps explain how changes are tracked,
+introduced in [Data model basics](01_data_model_basics.md). Understanding this model helps explain how changes are tracked,
 when updates propagate, and how subscriptions work at a conceptual level.
 
 ## Types
@@ -18,7 +18,7 @@ Frel has several type categories with different reactivity semantics:
 
 ### Intrinsic Types
 
-**Intrinsic types** are atomic values where identity is determined by type and value:
+**Intrinsic types** are immutable values where identity is determined by type and value:
 
 - **Primitives**: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`
 - **Specialized primitives**: `String`, `Uuid`, `Url`, `Decimal`, `Color`, `Graphics`, `Secret`, `Blob`
@@ -42,10 +42,10 @@ For more information see [Intrinsic Types](20_intrinsic_types.md).
 
 ### Composite Types
 
-**Composite types** are containers that hold other data:
+**Composite types** are mutable types that contain other data through fields or items:
 
-- **Collections**: `List<T>`, `Set<T>`, `Map<K,V>`, `Tree<T>`
-- **User-defined types**: Schemes, Arenas, Backends, Themes, Blueprints
+- **Field-based composite types**: Schemes, Arenas, Backends, Themes, Blueprints
+- **Collection types**: `List<T>`, `Set<T>`, `Map<K,V>`, `Tree<T>`
 
 For composite types:
 
@@ -94,7 +94,7 @@ user.bio = "Hello world"     // bio field contains String("Hello world") - struc
 user.bio = "Updated bio"     // bio field contains String("Updated bio") - structural change
 ```
 
-**Important distinction**: `null` is different from `undefined` (when status is not Ready). See the Status section for details.
+**Important distinction**: `null` is different from `undefined` (when availability is not Ready).
 
 ### Reference Types
 
@@ -319,7 +319,7 @@ The **structural revision** increments when:
 3. **Data is removed from the composite**
 4. **Order of contained data changes (for List and Tree)**
 
-For collections, "contained data" means the elements. For schemes, it means the field payloads.
+For collection types, "contained data" means the items. For field-based composite types, it means the field payloads.
 
 ### Carried Revision
 

@@ -68,6 +68,33 @@ specify default values for fields.
 Use `.. readonly { true }` to mark fields that should not be modified after creation. Useful for
 timestamps, IDs, and other immutable data.
 
+### Identifier Fields
+
+The `.. identifier` instruction marks a field as the unique identifier for the scheme instance. This
+identifier is used for:
+
+- Arena lookup and storage
+- Reference resolution (when using `ref T` types)
+- Cross-arena references
+
+**Requirements:**
+
+- Only one field per scheme can be marked with `.. identifier`
+- The field type must be intrinsic (typically `UUID`, but can be other types like `String`, `i32`, etc.)
+- The field is typically marked as `.. readonly` to prevent modification after creation
+
+**Example:**
+
+```frel
+scheme User {
+    id : UUID .. identifier .. readonly
+    name : String
+}
+```
+
+**Note:** The identifier field (user-defined business ID) is different from datum identity 
+(system-assigned reactive identifier used internally for change tracking).
+
 ## Validation API
 
 Schemes generate validation methods automatically:
@@ -105,7 +132,7 @@ scheme <Name> {
 
 ```frel
 scheme User {
-    id : UUID .. identity
+    id : UUID .. identifier
     firstName : String
     lastName : String
 
@@ -129,7 +156,7 @@ Virtual fields can resolve references across arenas:
 
 ```frel
 scheme Thermometer {
-    id : UUID .. identity
+    id : UUID .. identifier
     location : ref Location
 
     virtual locationName : String = location.name
