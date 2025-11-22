@@ -17,6 +17,7 @@ Conceptually (before optimization), each **datum** has these properties:
 | **Availability**        | The availability state (Loading/Ready/Error).                      |
 | **Structural Revision** | Increments when the identities of contained data change.           |
 | **Carried Revision**    | Increments when changes propagate from the payload.                |
+| **Owner**               | The identity of the owning datum, or `null` for root datums.       |
 | **Derivation**          | The function that can derive the datum from its dependencies.      |
 | **Subscriptions**       | Identities of dependent data.                                      |
 | **Metadata**            | Validation rules, constraints, etc. (not relevant to reactivity).  |

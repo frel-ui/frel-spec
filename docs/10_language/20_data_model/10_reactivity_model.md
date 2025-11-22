@@ -201,18 +201,38 @@ backend UserEditorBackend {
 
 - **Separate identity**: `draft#456 User#123` has a different reactive identity than `User#123`,
   preventing arena updates from affecting the draft
-- **Independent validation**: Validation rules apply to drafts, but errors don't block editing 
+- **Independent validation**: Validation rules apply to drafts, but errors don't block editing
   (non-blocking validation)
 - **Explicit lifecycle**: Drafts exist only within their backend scope and are automatically cleaned
   up when the backend is destroyed
 - **Mutability**: Draft instances are mutable, following Frel's general mutability philosophy
+- **Ownership**: Drafts are owned by their declaring closure (scope-bound), not by field assignments
 
-**Common operations**:
+**Assignment semantics:**
+
+When a draft is assigned to a field or used in a scheme constructor:
+
+1. A **deep copy** is created of the entire draft structure
+2. The copy becomes a **non-draft** composite datum
+3. The original draft remains **unchanged and usable**
 
 ```frel
-// Create draft from original
-user : draft User = original
+blueprint FormBackend {
+    addr : draft Address = Address { street = "Main St" }
+
+    // Assignment creates deep copy, addr remains usable
+    user : User = User {
+        name = "Alice",
+        address = addr  // Deep copy of addr, becomes non-draft Address
+    }
+
+    // addr can still be edited
+    addr.street = "Oak Ave"  // Does not affect user.address
+}
 ```
+
+This enables **iterative editing with controlled commits** - you can assign a draft multiple
+times while continuing to edit it.
 
 **Identity and reactivity**:
 
@@ -388,7 +408,7 @@ Accessor implementations carry:
 
 ```frel
 blueprint example(original : User) {
-    user : draft User = draft original
+    user : draft User = original
     text_editor { user.personal.name.family_name }
 }
 ```
@@ -427,6 +447,123 @@ scheme Fragment {
     closure : Closure<u32,String>
 }
 ```
+
+## Ownership and Assignment
+
+Frel enforces controlled isolation through strict ownership and assignment rules. These rules prevent
+ambiguous ownership and ensure data flows are explicit and intentional.
+
+### Ownership Tree Structure
+
+Each composite datum has an **owner field** that establishes a tree structure:
+
+- **Value**: `null` for root datums, or the identity of the owning datum
+- **Invariant**: Each composite datum has at most one owner
+- **Purpose**: Enables carried revision propagation and prevents ownership ambiguity
+
+**When ownership is established:**
+
+- **Scheme field contains composite type** → field value is owned by the scheme datum
+- **Collection contains composite items** → each item is owned by the collection datum
+- **Reference types (`ref T`)** → do NOT establish ownership (refs are intrinsic)
+- **Draft types** → owned by their declaring closure (scope-bound)
+
+**Example ownership relationships:**
+
+```frel
+scheme User {
+    name : String           // String is intrinsic, no ownership
+    address : Address       // Address datum owned by this User
+    location : ref Location // ref is intrinsic, Location not owned by User
+}
+
+items : List<TodoItem>      // Each TodoItem owned by the list
+```
+
+**Ownership prevents cycles:**
+
+Since ownership forms a tree structure (no datum can own itself, directly or indirectly),
+carried revision propagation is guaranteed to terminate. Cycles in the data graph are
+possible through reference types, but those do not establish ownership relationships.
+
+### Assignment Rules
+
+Frel restricts which types can be assigned to prevent implicit sharing of composite datums.
+
+**Allowed assignments:**
+
+1. **Intrinsic types** (including `ref T`) - Can be assigned freely
+2. **Draft types** - Assignment creates a deep copy (see below)
+
+**Forbidden assignments:**
+
+3. **Non-draft composite types** - Cannot be assigned directly (compile error)
+
+**Rationale**: Direct assignment of composite types would create ownership ambiguity.
+The following example is **forbidden**:
+
+```frel
+// ❌ COMPILE ERROR - direct composite assignment forbidden
+addr : Address = Address { }
+user : User = User { address = addr }  // Error: cannot assign non-draft composite type
+```
+
+To fix this, use either `draft` (for mutable copies) or `ref` (for shared access):
+
+```frel
+// ✅ CORRECT - draft creates controlled copy
+addr : draft Address = Address { }
+user : User = User { address = addr }  // Deep copy, addr remains usable
+
+// ✅ CORRECT - ref for shared access
+addr : Address = Address { }
+user : User = User { address = ref addr }  // Shared reference, no ownership
+```
+
+### Draft Assignment Semantics
+
+When a draft datum is assigned to a field:
+
+1. **Deep copy is created** - All nested composite datums are recursively copied
+2. **Copy becomes non-draft** - The assigned value is a regular (non-draft) composite datum
+3. **Original draft unchanged** - The draft datum remains usable for further edits
+4. **Draft owned by closure** - Drafts are owned by their declaring closure, not by field assignments
+
+**Example:**
+
+```frel
+blueprint UserEditorBackend {
+    original : User
+
+    // Create draft for editing
+    userDraft : draft User = original
+
+    // Assign draft to field - creates deep copy, userDraft still usable
+    updated : User = User {
+        name = "Updated",
+        profile = userDraft.profile  // Deep copy of profile, becomes non-draft
+    }
+
+    // userDraft can still be edited
+    userDraft.name = "Another edit"
+}
+```
+
+**Benefits of this model:**
+
+- **No ownership ambiguity** - Compiler prevents multiple owners
+- **Explicit data flow** - `draft` and `ref` make intent clear
+- **Controlled isolation** - Mutations happen only in drafts
+- **Iterative editing** - Draft remains usable after assignment for multiple commits
+
+### Carried Revision Propagation
+
+When a datum's structural or carried revision changes, the runtime walks up the ownership
+chain (following owner fields) and increments each ancestor's carried revision. This
+continues until reaching root datums (where owner is `null`).
+
+This propagation mechanism ensures that changes deep in a data structure are visible to
+subscribers at higher levels.
 
 ## Revision Semantics
 
@@ -511,7 +648,7 @@ scheme Counter {
 }
 
 // Initially loading from API
-decl counter: Counter  // fetched from API
+counter: Counter  // fetched from API
 ```
 
 **Initial state (loading)**:
@@ -551,7 +688,7 @@ counter.count = 7
 ### Example 2: List of Primitives
 
 ```frel
-decl numbers: List<i32> = [1, 2, 3]
+numbers: List<i32> = [1, 2, 3]
 ```
 
 Initial state:
@@ -586,7 +723,7 @@ scheme TodoItem {
     done: bool
 }
 
-decl items: List<TodoItem> = [
+items: List<TodoItem> = [
     TodoItem { text: "Buy milk", done: false },
     TodoItem { text: "Walk dog", done: false }
 ]
@@ -627,7 +764,7 @@ scheme User {
     friends: List<UserId>
 }
 
-decl user: User = User {
+user: User = User {
     name: "Alice",
     friends: [uuid1, uuid2]
 }
@@ -707,8 +844,8 @@ scheme TodoItem {
     done: bool
 }
 
-decl items: List<TodoItem> = load_todos()
-decl item_count: i32 = items.length
+items: List<TodoItem> = load_todos()
+item_count: i32 = items.length
 
 text { "You have ${item_count} items" }
 ```

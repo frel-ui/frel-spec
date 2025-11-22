@@ -59,28 +59,7 @@ The meaning of fields is described in these documents:
 - [Data Model Basics](/docs/10_language/20_data_model/01_data_model_basics.md)
 - [Reactivity Model](/docs/10_language/20_data_model/10_reactivity_model.md)
 
-### Ownership Field
-
-The `owner` field establishes a tree structure for datum ownership:
-
-- **Value**: `null` for root datums, or the `identityId` of the owning datum
-- **Invariant**: Each composite datum has at most one owner
-- **Purpose**: Separates structural ownership from reactive subscriptions
-
-**When ownership is established:**
-- Scheme field contains composite type → field value's owner = scheme datum
-- Collection contains composite items → each item's owner = collection datum
-- Reference types (`ref T`) do NOT establish ownership
-
-**Carried revision propagation:**
-When a datum's structural or carried revision changes, the runtime walks up the ownership
-chain (following `owner` fields) and increments each ancestor's carried revision. This
-continues until reaching root datums (where `owner` is `null`).
-
-**Ownership prevents cycles:**
-Since ownership forms a tree structure (no datum can own itself, directly or indirectly),
-the carried revision propagation is guaranteed to terminate. Cycles in the data graph
-are possible through reference types, but those do not establish ownership relationships.
+For information about ownership semantics, see the [Ownership and Assignment](../20_data_model/10_reactivity_model.md#ownership-and-assignment) section in the Reactivity Model.
 
 ## 2. Schemes: Mixed Intrinsic and Composite Fields
 

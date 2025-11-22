@@ -11,6 +11,10 @@ The most important files in the specification are:
 - [Reactivity model](../../docs/10_language/20_data_model/10_reactivity_model.md)
 - [Top-level declarations](../../docs/10_language/10_organization/10_top_level.md)
 
+## Status
+
+The Frel language is in early design state, do not take backward compatibility into account.
+
 ## Naming
 
 The Frel project considers naming one of the utmost important aspects of its design.
