@@ -142,7 +142,7 @@ blueprint UserDisplay(userId: u32) {
 }
 ```
 
-See [Reactivity Model](../20_data_model/10_reactivity_model.md#availability-propagation) for details.
+See [Reactivity Model](../20_data_model/03_reactivity.md#availability-propagation) for details.
 
 ## Reference Fields
 
@@ -168,7 +168,7 @@ blueprint ThermometerCard(thermo: Thermometer) {
 - Availability tracks arena resolution
 - Field access chains through references transparently
 
-See [Reactivity Model - Reference Types](../20_data_model/10_reactivity_model.md#reference-types) for details.
+See [Reactivity Model - Reference Types](../20_data_model/03_reactivity.md#reference-types) for details.
 
 ## Examples
 

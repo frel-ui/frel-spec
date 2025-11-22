@@ -8,8 +8,10 @@ are applied to all files in that directory.
 The most important files in the specification are:
 
 - [Language overview](../../docs/10_language/00_overview/00_language_overview.md)
-- [Reactivity model](../../docs/10_language/20_data_model/10_reactivity_model.md)
 - [Top-level declarations](../../docs/10_language/10_organization/10_top_level.md)
+- [Data model basics](../../docs/10_language/20_data_model/01_data_model_basics.md)
+- [Type system](../../docs/10_language/20_data_model/02_type_system.md)
+- [Reactivity](../../docs/10_language/20_data_model/03_reactivity.md)
 
 ## Status
 

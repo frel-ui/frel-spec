@@ -166,5 +166,4 @@ scheme Thermometer {
 When accessing `location.name`, the reference is resolved through the arena, and availability is
 propagated if the referenced entity is loading or missing.
 
-For detailed semantics on identity, reactivity, and availability propagation, see
-the [Reactivity Model](10_reactivity_model.md) documentation.
+For detailed semantics on identity, type qualifiers, and reference types, see the [Type System](02_type_system.md) documentation. For availability propagation and subscription behavior, see [Reactivity](03_reactivity.md).

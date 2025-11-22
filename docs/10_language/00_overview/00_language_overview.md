@@ -14,7 +14,7 @@ appropriate code from the Frel DSL.
 GTK, desktop (via Skia or similar). Each host platform needs a runtime adapter that provides the
 necessary integrations.
 
-[**Type System**](../20_data_model/10_reactivity_model.md): Frel has a static type system with type inference.
+[**Type System**](../20_data_model/02_type_system.md): Frel has a static type system with type inference.
 Types include primitives (i32, f64, bool, String), collections (Set<T>, List<T>, Map<K,V>, Tree<T>),
 optional types (T?), enums, schemes. The type system ensures safety while remaining host-language independent.
 

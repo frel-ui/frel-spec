@@ -183,7 +183,7 @@ blueprint UserSearch {
 
 **Key behaviors:**
 - Contract calls are reactive - they re-execute when parameters change
-- Results have availability states (see [Reactivity Model](../20_data_model/10_reactivity_model.md))
+- Results have availability states (see [Reactivity Model](../20_data_model/03_reactivity.md))
 
 ## Examples
 

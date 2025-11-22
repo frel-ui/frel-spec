@@ -47,7 +47,7 @@ theme AppTheme {
 }
 ```
 
-See [Reactivity Model - Asset Types](../20_data_model/10_reactivity_model.md#asset-types) for details.
+See [Asset Types](../20_data_model/02_type_system.md#asset-types) for details.
 
 ### 3. Instruction Sets
 

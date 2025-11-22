@@ -57,9 +57,9 @@ the full datum structure. This is an optimization that is possible because:
 The meaning of fields is described in these documents:
 
 - [Data Model Basics](/docs/10_language/20_data_model/01_data_model_basics.md)
-- [Reactivity Model](/docs/10_language/20_data_model/10_reactivity_model.md)
+- [Reactivity Model](/docs/10_language/20_data_model/03_reactivity.md)
 
-For information about ownership semantics, see the [Ownership and Assignment](../20_data_model/10_reactivity_model.md#ownership-and-assignment) section in the Reactivity Model.
+For information about ownership semantics, see the [Ownership and Assignment](../20_data_model/02_type_system.md#ownership-and-assignment) section in the Reactivity Model.
 
 ## 2. Schemes: Mixed Intrinsic and Composite Fields
 

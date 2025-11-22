@@ -45,11 +45,10 @@ remove+insert).
 
 **Identity-anchored operations**: All positional operations use identity anchors (not numeric
 indices). This provides stable references that work correctly with reactivity subscriptions. Numeric
-indices are intentionally not supported (see Reactivity Model: Why Lists Don't Support Positional
-Keys).
+indices are intentionally not supported (see [Why Lists Don't Support Positional Keys](03_reactivity.md#why-lists-dont-support-positional-keys)).
 
 **Reactivity**: Query operations (length, is_empty, contains) react to structural changes (
-add/remove/replace). See Reactivity Model for subscription semantics.
+add/remove/replace). See [Reactivity: Subscriptions](03_reactivity.md#subscriptions) for subscription semantics.
 
 **Reordering and reactivity**: Reordering operations (`move_*`) increment the structural revision
 because they change the list's order, which is part of its structure. The set of contained
@@ -116,7 +115,7 @@ criteria).
 
 **Reactivity**: Query operations (`length`, `is_empty`, `contains`) react to structural changes (
 add/remove). Since Set
-is unordered, there are no reordering operations. See Reactivity Model for subscription semantics.
+is unordered, there are no reordering operations. See [Reactivity: Subscriptions](03_reactivity.md#subscriptions) for subscription semantics.
 
 ### API
 

@@ -184,8 +184,7 @@ Every expression has an availability state:
 - **Ready**: Data is available
 - **Error**: An error occurred
 
-See [Reactivity Model](../20_data_model/10_reactivity_model.md#availability-propagation) for
-details.
+See [Reactivity Model](../20_data_model/02_type_system.md#availability-propagation) for details.
 
 ### Example
 
