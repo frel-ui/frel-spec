@@ -481,7 +481,7 @@ Layout {
 // Complex closure example
 blueprint ListManager() {
     items : List<String> = ["A", "B", "C"]
-    writable selected = 0
+    selected = 0
 
     column {
         // Nested anonymous blueprints all capture parent values

@@ -1,7 +1,40 @@
 # Runtime Data Model
 
-This document explores how the Frel reactive system is represented as data structures in a
-runtime, focusing on **what the data looks like at a given moment**.
+1. The application state is represented by a (possibly high) number of datum.
+2. Reactive connections between datum are represented by subscriptions.
+3. `Datum` = the sole source of truth.
+4. Change propagation is push: when a datum changes, it notifies subscribers.
+5. Value access is pull: subscribers decide when to get data from the datum (might be immediate, but could be deferred).
+
+Core tenets:
+
+- **Single abstraction**: `Datum`.
+- **One promise**: “You’ll be notified when the truth might have changed.”
+- **One action**: “Call `get` when you care.”
+
+**Notes**
+
+One single thread manages the state of the application, no multi-thread synchronization is needed.
+
+## Subscriptions
+
+Subscriptions describe what happens when a datum changes.
+
+| Property            | Description                                          |
+|---------------------|------------------------------------------------------|
+| **Subscription Id** | A unique identifier of this **subscription**.        |
+| **Datum Identity**  | The datum this subscription belongs to.              |
+| **Selector**        | Selects which changes should trigger a notification. |
+| **Callback Id**     | Id of the function that handles the notification.    |
+
+```javascript
+subscriptions[1001] = {
+    subscription_id: 1001,
+    datum_id: 2001,
+    selector: "Everything",
+    callback_id: 3001
+}
+```
 
 ## 1. Core Storage Strategy
 
@@ -17,11 +50,11 @@ the full datum structure. This is an optimization that is possible because:
 - Identity is the value itself
 - Change tracking is provided by the datum that contains the intrinsic datum
 
-```json
-{
-    "count": 42,
-    "name": "Alice",
-    "isActive": true
+```javascript
+fields = {
+    count: 42,
+    name: "Alice",
+    is_active: true
 }
 ```
 
@@ -31,26 +64,24 @@ the full datum structure. This is an optimization that is possible because:
 
 **Datum structure for composite types:**
 
-```json
-{
-    "identityId": 2001,
-    "type": "User",
-    "structuralRev": 0,
-    "carriedRev": 5,
-    "availability": "Ready",
-    "error": null,
-    "owner": null,
-    "fields": {
-        "id": 100,
-        "name": "Alice",
-        "profile": 3001
-    },
-    "items": null,
-    "entries": null,
-    "subscribers": [
-        {"subscriberId": 10, "selector": "Everything"},
-        {"subscriberId": 11, "selector": "Key:name"}
-    ]
+```javascript
+datum[2001] = {
+  identity_id: 2001,
+  type: "User",
+  structural_rev: 0,
+  carried_rev: 5,
+  set_generation: 0,
+  availability: "Ready",
+  error: null,
+  owner: null,
+  fields: {
+    id: 100,
+    name: "Alice",
+    profile: 3001
+  },
+  items: null,
+  entries: null,
+  subscriptions: [ 10, 11 ]
 }
 ```
 
@@ -73,23 +104,24 @@ scheme UserWithProfile {
 
 **UserWithProfile instance:**
 
-```json
-{
-    "identityId": 2001,
-    "type": "UserWithProfile",
-    "structuralRev": 0,
-    "carriedRev": 0,
-    "availability": "Ready",
-    "error": null,
-    "owner": null,
-    "fields": {
-        "name": "Alice",
-        "age": 30,
-        "profile": 3001
-    },
-    "items": null,
-    "entries": null,
-    "subscribers": []
+```javascript
+datum[2001] = {
+  identity_id: 2001,
+  type: "UserWithProfile",
+  structural_rev: 0,
+  carried_rev: 0,
+  set_generation: 0,
+  availability: "Ready",
+  error: null,
+  owner: null,
+  fields: {
+    name: "Alice",
+    age: 30,
+    profile: 3001
+  },
+  items: null,
+  entries: null,
+  subscriptions: []
 }
 ```
 
@@ -100,22 +132,23 @@ scheme UserWithProfile {
 
 **The Profile scheme (separate datum):**
 
-```json
-{
-    "identityId": 3001,
-    "type": "Profile",
-    "structuralRev": 0,
-    "carriedRev": 0,
-    "availability": "Ready",
-    "error": null,
-    "owner": 2001,
-    "fields": {
-        "bio": "Software engineer",
-        "avatar": "https://..."
-    },
-    "items": null,
-    "entries": null,
-    "subscribers": []
+```javascript
+datum[3001] = {
+  identity_id: 3001,
+  type: "Profile",
+  structural_rev: 0,
+  carried_rev: 0,
+  set_generation: 0,
+  availability: "Ready",
+  error: null,
+  owner: 2001,
+  fields: {
+    bio: "Software engineer",
+    avatar: "https://..."
+  },
+  items: null,
+  entries: null,
+  subscriptions: []
 }
 ```
 
@@ -125,19 +158,24 @@ scheme UserWithProfile {
 
 **List<i32> with values [10, 20, 30]:**
 
-```json
-{
-    "identityId": 3001,
-    "type": "List<i32>",
-    "structuralRev": 0,
-    "carriedRev": 0,
-    "availability": "Ready",
-    "error": null,
-    "owner": null,
-    "fields": null,
-    "items": [10, 20, 30],
-    "entries": null,
-    "subscribers": []
+```javascript
+datum[3001] = {
+  identity_id: 3001,
+  type: "List<i32>",
+  structural_rev: 0,
+  carried_rev: 0,
+  set_generation: 0,
+  availability: "Ready",
+  error: null,
+  owner: null,
+  fields: null,
+  items: [
+    10,
+    20,
+    30
+  ],
+  entries: null,
+  subscriptions: []
 }
 ```
 
@@ -146,56 +184,26 @@ scheme UserWithProfile {
 
 **List<User> with composite items:**
 
-```json
-{
-    "identityId": 3002,
-    "type": "List<User>",
-    "structuralRev": 0,
-    "carriedRev": 0,
-    "availability": "Ready",
-    "error": null,
-    "owner": null,
-    "fields": null,
-    "items": [2001, 2002, 2003],
-    "entries": null,
-    "subscribers": []
+```javascript
+datum[3002] = {
+  identity_id: 3002,
+  type: "List<User>",
+  structural_rev: 0,
+  carried_rev: 0,
+  set_generation: 0,
+  availability: "Ready",
+  error: null,
+  owner: null,
+  fields: null,
+  items: [
+    2001,
+    2002,
+    2003
+  ],
+  entries: null,
+  subscriptions: []
 }
 ```
 
 - `items`: identityIds of User datums (each User datum has `owner: 3002`)
 - `owner`: null (root datum)
-
-## 4. Fragment Structure
-
-Fragments form a parent-child hierarchy, each representing an instantiated blueprint.
-
-```json
-{
-    "fragmentId": 100,
-    "blueprintName": "UserCard",
-    "parentFragmentId": 50,
-    "childFragmentIds": [101, 102, 103],
-    "closureId": 1000
-}
-```
-
-## 5. Closure Storage
-
-Each fragment has a closure that binds names to values (intrinsic) or identityIds (composite).
-
-```json
-{
-    "closureId": 1000,
-    "fragmentId": 100,
-    "blueprintName": "UserCard",
-    "closure": {
-        "userId": 100,
-        "displayName": "Alice",
-        "user": 2001,
-        "$anon_0": 42,
-        "count": 0,
-        "doubled": 0
-    },
-    "parentClosure": null
-}
-```

@@ -433,7 +433,7 @@ Categories:
 Closures are synthetic schemes. Each defines what is accessible at a given point of
 a fragment.
 
-See [Closures](../80_runtime/10_closures.md) for more information.
+See [Closures](../80_runtime/30_fragments_and_closures.md) for more information.
 
 ### Fragment
 

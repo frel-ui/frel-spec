@@ -20,6 +20,7 @@ Conceptually (before optimization), each **datum** has these properties:
 | **Owner**               | The identity of the owning datum, or `null` for root datums.       |
 | **Derivation**          | The function that can derive the datum from its dependencies.      |
 | **Subscriptions**       | Identities of dependent data.                                      |
+| **Set Generation**      | Last runtime generation when this datum has been changed.          |
 | **Metadata**            | Validation rules, constraints, etc. (not relevant to reactivity).  |
 
 ### Core tenets
