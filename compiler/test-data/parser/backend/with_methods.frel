@@ -1,0 +1,11 @@
+module test
+
+backend Analytics {
+    rawData : List<i32> = []
+    threshold : f64 = 0.8
+
+    method calculate_score(weight: f64) : f64
+    method aggregate_totals() : i32
+    method filter_above_threshold() : List<i32>
+    method is_empty() : bool
+}

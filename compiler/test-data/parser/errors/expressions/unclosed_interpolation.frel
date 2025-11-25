@@ -1,0 +1,6 @@
+module test
+
+blueprint Bad {
+    x : i32 = 5
+    y : String = "value: ${x"
+}

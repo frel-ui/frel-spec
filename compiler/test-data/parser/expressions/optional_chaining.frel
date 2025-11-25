@@ -1,0 +1,19 @@
+module test
+
+scheme Avatar {
+    url : String
+    size : i32
+}
+
+scheme Profile {
+    avatar : Avatar?
+}
+
+scheme User {
+    profile : Profile?
+}
+
+blueprint OptionalChaining(user: User) {
+    avatarUrl : String? = user?.profile?.avatar?.url
+    avatarSize : i32? = user?.profile?.avatar?.size
+}

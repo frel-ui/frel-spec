@@ -1,0 +1,16 @@
+module test
+
+blueprint LayoutGap {
+    column {
+        gap { 16 }
+        text { "Item 1" }
+        text { "Item 2" }
+        text { "Item 3" }
+    }
+
+    row {
+        gap { width: 8 height: 4 }
+        text { "A" }
+        text { "B" }
+    }
+}

@@ -1,0 +1,12 @@
+module test
+
+scheme Location {
+    id : Uuid .. identity
+    name : String
+}
+
+scheme Thermometer {
+    id : Uuid .. identity
+    location : ref Location
+    name : String
+}

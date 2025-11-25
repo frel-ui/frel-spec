@@ -1,0 +1,13 @@
+module test
+
+blueprint TextStyling {
+    column {
+        text { "Normal" }
+        text { "With line height" } .. line_height { 24 }
+        text { "No select" } .. no_select
+        text { "Underlined" } .. underline
+        text { "Small caps" } .. small_caps
+        text { "Letter spacing" } .. letter_spacing { 2.0 }
+        text { "Tight spacing" } .. letter_spacing { -0.5 }
+    }
+}

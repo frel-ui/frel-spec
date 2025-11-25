@@ -1,0 +1,15 @@
+module test
+
+backend A {
+    x : i32 = 0
+}
+
+backend B {
+    y : i32 = 0
+}
+
+blueprint Test {
+    with A
+    with B
+    text { "hello" }
+}

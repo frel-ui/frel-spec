@@ -1,0 +1,18 @@
+module test
+
+blueprint ChainedInstructions {
+    text { "Styled" }
+        .. font { size: 18 weight: 700 color: Black }
+        .. padding { 12 }
+        .. background { color: 0xF0F0F0 }
+        .. corner_radius { 4 }
+        .. border { 0xCCCCCC 1 }
+
+    box {
+        width { 300 } .. height { 200 } .. padding { 16 }
+        background { color: White } .. corner_radius { 8 }
+        shadow { color: 0x00000040 offset_x: 0 offset_y: 2 blur: 8 }
+
+        text { "Card content" }
+    }
+}

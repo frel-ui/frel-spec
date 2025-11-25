@@ -1,0 +1,8 @@
+module test
+
+backend Collections {
+    emptyList : List<i32> = []
+    numbers : List<i32> = [1, 2, 3, 4, 5]
+    strings : List<String> = ["a", "b", "c"]
+    nested : List<List<i32>> = [[1, 2], [3, 4]]
+}

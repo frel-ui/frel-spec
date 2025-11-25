@@ -1,0 +1,21 @@
+module test
+
+backend EventBackend {
+    lastX : f32 = 0.0
+    lastY : f32 = 0.0
+
+    command log_event(msg: String)
+}
+
+blueprint EventHandlerIt {
+    with EventBackend
+
+    box {
+        width { 200 }
+        height { 200 }
+        on_click {
+            lastX = it.x_dip
+            lastY = it.y_dip
+        }
+    }
+}

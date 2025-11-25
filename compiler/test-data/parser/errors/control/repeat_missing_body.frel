@@ -1,0 +1,11 @@
+module test
+
+backend ListBackend {
+    items : List<String> = []
+}
+
+blueprint Bad {
+    with ListBackend
+
+    repeat on items as item
+}

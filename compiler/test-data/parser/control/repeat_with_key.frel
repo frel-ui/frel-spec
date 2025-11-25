@@ -1,0 +1,24 @@
+module test
+
+scheme Todo {
+    id : Uuid .. identity
+    text : String
+    done : bool
+}
+
+backend TodoBackend {
+    todos : List<Todo> = []
+}
+
+blueprint RepeatWithKey {
+    with TodoBackend
+
+    column {
+        repeat on todos by todo.id as todo {
+            row {
+                checkbox { todo.done }
+                text { todo.text }
+            }
+        }
+    }
+}

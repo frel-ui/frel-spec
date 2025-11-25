@@ -1,0 +1,29 @@
+module test
+
+enum ViewMode { List Grid Detail }
+
+blueprint SelectWithBlocks {
+    mode : ViewMode = ViewMode.Grid
+
+    select on mode {
+        List => {
+            column {
+                text { "List View" }
+                text { "Item 1" }
+                text { "Item 2" }
+            }
+        }
+        Grid => {
+            row {
+                text { "Grid" }
+                text { "View" }
+            }
+        }
+        Detail => {
+            column {
+                text { "Detail View" }
+                text { "Full information here" }
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+module test
+
+scheme User {
+    id : Uuid .. identity
+    firstName : String
+    lastName : String
+
+    virtual fullName : String = "${firstName} ${lastName}"
+}

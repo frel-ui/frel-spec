@@ -1,0 +1,11 @@
+module test
+
+blueprint StringLiterals {
+    empty : String = ""
+    simple : String = "hello"
+    withSpaces : String = "hello world"
+    withEscapes : String = "line1\nline2\ttab"
+    withQuotes : String = "She said \"hello\""
+    withBackslash : String = "path\\to\\file"
+    unicode : String = "Hello, 世界! 🌍"
+}

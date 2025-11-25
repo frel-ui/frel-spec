@@ -1,0 +1,27 @@
+module test
+
+blueprint Layout(
+    header: Blueprint<String>,
+    content: Blueprint,
+    footer: Blueprint<i32, bool>
+) {
+    column {
+        header("My App")
+        content()
+        footer(42, true)
+    }
+}
+
+blueprint App {
+    Layout {
+        at header: { title ->
+            text { title }
+        }
+        at content: {
+            text { "Main content" }
+        }
+        at footer: { count, isActive ->
+            text { "Items: ${count}, Active: ${isActive}" }
+        }
+    }
+}

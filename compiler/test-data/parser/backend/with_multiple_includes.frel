@@ -1,0 +1,26 @@
+module test
+
+backend ValidationBackend {
+    errors : List<String> = []
+
+    method is_valid() : bool
+    command clear_errors()
+}
+
+backend LoadingBackend {
+    isLoading : bool = false
+
+    method can_submit() : bool
+    command start_loading()
+    command stop_loading()
+}
+
+backend FormBackend {
+    include ValidationBackend
+    include LoadingBackend
+
+    formData : String = ""
+    canSave : bool = is_valid()
+
+    command save_form()
+}

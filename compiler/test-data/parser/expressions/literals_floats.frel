@@ -1,0 +1,11 @@
+module test
+
+blueprint FloatLiterals {
+    zero : f64 = 0.0
+    positive : f64 = 3.14159
+    negative : f64 = -2.718
+    scientific : f64 = 1.0e10
+    scientificNeg : f64 = 1.5e-5
+    noFraction : f64 = 1e10
+    smallDecimal : f64 = 0.001
+}

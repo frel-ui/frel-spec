@@ -1,0 +1,15 @@
+module test
+
+blueprint WithBlueprintTypes(
+    noParams: Blueprint,
+    oneParam: Blueprint<String>,
+    twoParams: Blueprint<String, i32>,
+    threeParams: Blueprint<String, i32, bool>,
+    complexParam: Blueprint<List<String>>
+) {
+    noParams()
+    oneParam("hello")
+    twoParams("hello", 42)
+    threeParams("hello", 42, true)
+    complexParam(["a", "b", "c"])
+}

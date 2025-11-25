@@ -1,0 +1,4 @@
+module test
+
+backend Counter {
+    count : i32 = 0

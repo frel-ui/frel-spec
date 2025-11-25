@@ -1,0 +1,5 @@
+module test
+
+theme {
+    padding : u32 = 16
+}

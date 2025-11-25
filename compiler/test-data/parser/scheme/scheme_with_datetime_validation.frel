@@ -1,0 +1,8 @@
+module test
+
+scheme Event {
+    name : String
+    startDate : LocalDate
+    endDate : LocalDate
+    duration : Duration .. min { 60 } .. max { 86400 }
+}

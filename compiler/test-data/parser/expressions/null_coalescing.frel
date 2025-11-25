@@ -1,0 +1,7 @@
+module test
+
+blueprint NullCoalescing {
+    maybeValue : String? = null
+
+    withDefault : String = maybeValue ?: "default"
+}

@@ -1,0 +1,35 @@
+module test
+
+theme AppTheme {
+    background : asset Color
+    textColor : asset Color
+    accentColor : asset Color
+    padding : u32 = 16
+
+    set container {
+        background { color: background }
+        padding { padding }
+    }
+
+    variant Dark {
+        background = 0x1E1E1E
+        textColor = 0xFFFFFF
+        accentColor = 0x4A90D9
+    }
+
+    variant Light {
+        background = 0xFFFFFF
+        textColor = 0x1E1E1E
+        accentColor = 0x0066CC
+    }
+
+    variant Compact {
+        padding = 8
+    }
+
+    variant HighContrast {
+        background = 0x000000
+        textColor = 0xFFFFFF
+        accentColor = 0xFFFF00
+    }
+}

@@ -1,0 +1,16 @@
+module test
+
+backend EditorBackend {
+    content : String = ""
+
+    command save()
+}
+
+blueprint Editor(editor: EditorBackend) {
+    with editor
+
+    column {
+        text { content }
+        button { "Save" } .. on_click { save() }
+    }
+}

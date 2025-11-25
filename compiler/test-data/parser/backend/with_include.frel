@@ -1,0 +1,18 @@
+module test
+
+backend BaseBackend {
+    value : i32 = 0
+
+    method get_value() : i32
+    command set_value(v: i32)
+}
+
+backend ExtendedBackend {
+    include BaseBackend
+
+    multiplier : i32 = 2
+    computed : i32 = value * multiplier
+
+    method get_computed() : i32
+    command double_value()
+}

@@ -1,0 +1,9 @@
+module test
+
+backend Counter {
+    count : i32 = 0
+
+    method get_count() : i32 {
+        count
+    }
+}

@@ -1,0 +1,25 @@
+module test
+
+theme AppTheme {
+    primaryColor : asset Color
+    padding : u32 = 16
+    cornerRadius : u32 = 8
+
+    set button_style {
+        corner_radius { cornerRadius }
+        padding { padding }
+        background { color: primaryColor }
+    }
+
+    set card_style {
+        border { 0xCCCCCC 1 }
+        corner_radius { 12 }
+        padding { padding * 2 }
+    }
+
+    set input_style {
+        border { 0x999999 1 }
+        corner_radius { 4 }
+        padding { 8 }
+    }
+}

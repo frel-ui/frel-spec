@@ -1,0 +1,10 @@
+module test
+
+blueprint Ternary {
+    condition : bool = true
+    value : i32 = 10
+
+    simple : String = condition ? "yes" : "no"
+    nested : String = value > 0 ? (value > 10 ? "large" : "small") : "zero"
+    withExpr : i32 = condition ? value * 2 : value / 2
+}

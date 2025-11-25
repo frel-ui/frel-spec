@@ -1,0 +1,17 @@
+module test
+
+contract UserAPI {
+    get_user(id: Uuid) : User
+    update_user(id: Uuid, data: User)
+}
+
+contract ProductAPI {
+    get_product(id: Uuid) : Product
+    list_products() : List<Product>
+}
+
+contract OrderAPI {
+    create_order(userId: Uuid, items: List<Item>) : Order
+    get_order(id: Uuid) : Order
+    cancel_order(id: Uuid)
+}

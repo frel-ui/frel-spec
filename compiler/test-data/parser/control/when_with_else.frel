@@ -1,0 +1,11 @@
+module test
+
+blueprint WhenElse {
+    isLoggedIn : bool = false
+
+    when isLoggedIn {
+        text { "Welcome back!" }
+    } else {
+        text { "Please log in" }
+    }
+}

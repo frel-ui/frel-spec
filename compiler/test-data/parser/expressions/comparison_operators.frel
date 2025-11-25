@@ -1,0 +1,13 @@
+module test
+
+blueprint Comparison {
+    a : i32 = 10
+    b : i32 = 20
+
+    eq : bool = a == b
+    ne : bool = a != b
+    lt : bool = a < b
+    le : bool = a <= b
+    gt : bool = a > b
+    ge : bool = a >= b
+}

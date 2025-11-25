@@ -1,0 +1,44 @@
+module test
+
+enum Status { Loading Ready Error }
+
+scheme Item {
+    id : Uuid .. identity
+    name : String
+    active : bool
+}
+
+backend AppBackend {
+    status : Status = Status.Ready
+    items : List<Item> = []
+    showInactive : bool = false
+}
+
+blueprint ControlCombined {
+    with AppBackend
+
+    column {
+        select on status {
+            Loading => text { "Loading..." }
+            Error => text { "Error occurred" }
+            Ready => {
+                when items.length == 0 {
+                    text { "No items" }
+                }
+
+                when items.length > 0 {
+                    repeat on items by item.id as item {
+                        when item.active || showInactive {
+                            row {
+                                text { item.name }
+                                when !item.active {
+                                    text { "(inactive)" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

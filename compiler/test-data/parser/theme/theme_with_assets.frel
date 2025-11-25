@@ -1,0 +1,8 @@
+module test
+
+theme AppTheme {
+    primaryColor : asset Color
+    secondaryColor : asset Color
+    appName : asset String
+    logo : asset Graphics
+}

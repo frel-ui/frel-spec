@@ -1,0 +1,11 @@
+module test
+
+blueprint UnicodeStrings {
+    greeting : String = "Hello, 世界!"
+    emoji : String = "Status: ✅ Complete"
+    arabic : String = "مرحبا"
+    japanese : String = "こんにちは"
+    mixed : String = "Mix: 日本語 and English and العربية"
+
+    text { greeting }
+}

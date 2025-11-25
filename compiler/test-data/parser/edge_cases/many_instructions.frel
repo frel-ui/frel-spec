@@ -1,0 +1,18 @@
+module test
+
+blueprint ManyInstructions {
+    box { }
+        .. width { 300 }
+        .. height { 200 }
+        .. padding { top: 16 right: 16 bottom: 16 left: 16 }
+        .. margin { 8 }
+        .. border { 0x000000 1 }
+        .. corner_radius { 8 }
+        .. background { color: White }
+        .. shadow { color: 0x00000040 offset_x: 0 offset_y: 4 blur: 8 }
+        .. cursor { pointer }
+        .. focusable { 1 }
+        .. on_click { }
+        .. on_pointer_enter { }
+        .. on_pointer_leave { }
+}

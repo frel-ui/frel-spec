@@ -1,0 +1,4 @@
+module test
+
+contract UserAPI {
+    get_user(id: Uuid) : User

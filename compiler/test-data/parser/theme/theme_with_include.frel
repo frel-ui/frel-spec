@@ -1,0 +1,22 @@
+module test
+
+theme BaseTheme {
+    padding : u32 = 16
+    cornerRadius : u32 = 8
+
+    set base_container {
+        padding { padding }
+        corner_radius { cornerRadius }
+    }
+}
+
+theme AppTheme {
+    include BaseTheme
+
+    primaryColor : asset Color
+
+    set button_style {
+        base_container
+        background { color: primaryColor }
+    }
+}

@@ -1,0 +1,12 @@
+module test
+
+scheme Department {
+    id : Uuid .. identity
+    name : String
+}
+
+scheme Employee {
+    id : Uuid .. identity
+    name : String
+    department : ref Department?
+}

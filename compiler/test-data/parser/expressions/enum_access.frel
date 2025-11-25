@@ -1,0 +1,9 @@
+module test
+
+enum Status { Pending Active Completed }
+
+blueprint EnumAccess {
+    current : Status = Status.Active
+    isPending : bool = current == Status.Pending
+    isCompleted : bool = current == Status.Completed
+}

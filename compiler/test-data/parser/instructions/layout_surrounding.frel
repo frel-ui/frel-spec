@@ -1,0 +1,18 @@
+module test
+
+blueprint LayoutSurrounding {
+    column {
+        box { } .. padding { 16 }
+        box { } .. padding { top: 8 }
+        box { } .. padding { top: 8 right: 16 bottom: 8 left: 16 }
+        box { } .. padding { horizontal: 16 }
+        box { } .. padding { vertical: 8 }
+
+        box { } .. margin { 8 }
+        box { } .. margin { top: 4 bottom: 4 }
+
+        box { } .. border { 0x000000 1 }
+        box { } .. border { color: 0xFF0000 top: 2 }
+        box { } .. border { top: 1 right: 1 bottom: 1 left: 1 color: Blue }
+    }
+}

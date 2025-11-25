@@ -1,0 +1,15 @@
+module test
+
+backend ItemsBackend {
+    items : List<String> = ["a", "b", "c"]
+    tags : Set<String> = []
+}
+
+blueprint CollectionLength {
+    with ItemsBackend
+
+    itemCount : i32 = items.length
+    tagCount : i32 = tags.length
+    hasItems : bool = items.length > 0
+    isEmpty : bool = items.length == 0
+}

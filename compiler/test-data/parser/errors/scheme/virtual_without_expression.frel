@@ -1,0 +1,7 @@
+module test
+
+scheme User {
+    firstName : String
+    lastName : String
+    virtual fullName : String
+}

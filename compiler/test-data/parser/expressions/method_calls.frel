@@ -1,0 +1,22 @@
+module test
+
+backend Calculator {
+    a : f64 = 10.0
+    b : f64 = 20.0
+
+    method add(x: f64, y: f64) : f64
+    method multiply(x: f64, y: f64) : f64
+    method get_max() : f64
+    method is_positive(value: f64) : bool
+}
+
+blueprint MethodCalls {
+    with Calculator
+
+    sum : f64 = add(a, b)
+    product : f64 = multiply(a, b)
+    max : f64 = get_max()
+    check : bool = is_positive(sum)
+
+    chained : f64 = add(multiply(a, 2.0), b)
+}

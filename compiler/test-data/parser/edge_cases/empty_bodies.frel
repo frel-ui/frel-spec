@@ -1,0 +1,15 @@
+module test
+
+blueprint EmptyBlueprint { }
+
+backend EmptyFieldsBackend {
+    x : i32 = 0
+}
+
+theme EmptyFieldsTheme {
+    padding : u32 = 0
+}
+
+contract MinimalContract {
+    ping()
+}

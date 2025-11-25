@@ -1,0 +1,13 @@
+module test
+
+blueprint SelectBoolean {
+    value : i32 = 15
+
+    select {
+        value < 0 => text { "Negative" }
+        value == 0 => text { "Zero" }
+        value < 10 => text { "Small" }
+        value < 100 => text { "Medium" }
+        else => text { "Large" }
+    }
+}

@@ -1,0 +1,9 @@
+module test
+
+blueprint Button(
+    label: String = "Click me",
+    size: i32 = 24,
+    enabled: bool = true
+) {
+    text { label }
+}

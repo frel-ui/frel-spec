@@ -1,0 +1,18 @@
+module test
+
+scheme User {
+    id : Uuid .. identity
+    name : String
+}
+
+contract UserAPI {
+    get_user(id: Uuid) : User
+    search_users(query: String) : List<User>
+}
+
+blueprint UserProfile(userId: Uuid) {
+    user : User = UserAPI.get_user(userId)
+    userName : String = user.name
+
+    text { userName }
+}

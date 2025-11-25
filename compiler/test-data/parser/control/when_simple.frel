@@ -1,0 +1,9 @@
+module test
+
+blueprint WhenSimple {
+    showContent : bool = true
+
+    when showContent {
+        text { "Content is visible" }
+    }
+}

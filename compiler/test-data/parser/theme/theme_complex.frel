@@ -1,0 +1,65 @@
+module test.themes
+
+theme BaseTheme {
+    padding : u32 = 16
+    smallPadding : u32 = 8
+    largePadding : u32 = 24
+    cornerRadius : u32 = 8
+    borderWidth : u32 = 1
+
+    set container {
+        padding { padding }
+    }
+}
+
+theme AppTheme {
+    include BaseTheme
+
+    primaryColor : asset Color
+    secondaryColor : asset Color
+    backgroundColor : asset Color
+    errorColor : asset Color
+    successColor : asset Color
+
+    appTitle : asset String
+    appLogo : asset Graphics
+    sendIcon : asset Graphics
+
+    set button_primary {
+        container
+        background { color: primaryColor }
+        corner_radius { cornerRadius }
+    }
+
+    set button_secondary {
+        container
+        background { color: secondaryColor }
+        corner_radius { cornerRadius }
+        border { color: primaryColor borderWidth }
+    }
+
+    set card {
+        padding { largePadding }
+        corner_radius { 12 }
+        background { color: backgroundColor }
+        shadow { color: 0x00000020 offset_x: 0 offset_y: 2 blur: 4 }
+    }
+
+    set input_field {
+        padding { smallPadding }
+        corner_radius { 4 }
+        border { 0xCCCCCC borderWidth }
+    }
+
+    variant Dark {
+        backgroundColor = 0x1E1E1E
+        primaryColor = 0x4A90D9
+        secondaryColor = 0x333333
+    }
+
+    variant Light {
+        backgroundColor = 0xFFFFFF
+        primaryColor = 0x0066CC
+        secondaryColor = 0xF5F5F5
+    }
+}

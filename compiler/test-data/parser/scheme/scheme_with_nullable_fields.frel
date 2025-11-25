@@ -1,0 +1,9 @@
+module test
+
+scheme Profile {
+    name : String
+    bio : String?
+    avatar_url : Url?
+    age : i32?
+    verified : bool?
+}

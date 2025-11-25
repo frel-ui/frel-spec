@@ -1,0 +1,14 @@
+module test
+
+enum Status { Pending Active Completed Cancelled }
+
+blueprint SelectEnum {
+    status : Status = Status.Active
+
+    select on status {
+        Pending => text { "Waiting to start..." }
+        Active => text { "In progress" }
+        Completed => text { "Done!" }
+        Cancelled => text { "Cancelled" }
+    }
+}

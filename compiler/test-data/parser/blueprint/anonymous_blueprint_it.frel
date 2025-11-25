@@ -1,0 +1,12 @@
+module test
+
+blueprint TextWrapper(content: Blueprint<String>) {
+    hw : String = "Hello!"
+    content(hw)
+}
+
+blueprint App {
+    TextWrapper {
+        text { "Message: ${it}" }
+    }
+}

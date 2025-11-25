@@ -1,0 +1,44 @@
+module test.ui
+
+import test.backends.UserBackend
+import test.data.User
+import test.themes.AppTheme
+
+blueprint UserProfile(userId: Uuid) {
+    with UserBackend(userId)
+
+    isEditing : bool = false
+    editedName : String = user.name
+
+    column {
+        gap { 16 }
+        padding { 24 }
+
+        row {
+            gap { 12 }
+            align_items { vertical: center }
+
+            image { user.avatarUrl } .. width { 64 } .. height { 64 } .. corner_radius { 32 }
+            column {
+                text { user.name } .. font { size: 20 weight: 700 }
+                text { user.email } .. font { size: 14 color: 0x666666 }
+            }
+        }
+
+        when isEditing {
+            column {
+                gap { 8 }
+                text_editor { editedName }
+                row {
+                    gap { 8 }
+                    button { "Save" } .. on_click { save_changes() }
+                    button { "Cancel" } .. on_click { isEditing = false }
+                }
+            }
+        }
+
+        when !isEditing {
+            button { "Edit Profile" } .. on_click { isEditing = true }
+        }
+    }
+}

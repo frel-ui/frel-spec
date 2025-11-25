@@ -1,0 +1,12 @@
+module test
+
+theme AppTheme {
+    primaryColor : asset Color
+    secondaryColor : asset Color
+    errorColor : asset Color
+
+    padding : u32 = 16
+    doublePadding : u32 = padding * 2
+    cornerRadius : u32 = 8
+    borderWidth : u32 = 1
+}

@@ -1,0 +1,11 @@
+module test
+
+backend TodoBackend {
+    items : List<String> = []
+    input : String = ""
+
+    command add_item()
+    command remove_item(index: i32)
+    command clear_all()
+    command save_to_storage()
+}

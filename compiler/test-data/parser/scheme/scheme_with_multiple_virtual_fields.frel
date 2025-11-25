@@ -1,0 +1,10 @@
+module test
+
+scheme Rectangle {
+    width : f64
+    height : f64
+
+    virtual area : f64 = width * height
+    virtual perimeter : f64 = 2.0 * (width + height)
+    virtual isSquare : bool = width == height
+}

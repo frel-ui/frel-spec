@@ -1,0 +1,27 @@
+module test
+
+scheme Category {
+    id : Uuid .. identity
+    name : String
+}
+
+scheme Product {
+    id : Uuid .. identity
+    name : String
+    category : ref Category
+    optionalCategory : ref Category?
+}
+
+backend ProductBackend {
+    currentCategory : ref Category
+    selectedProduct : ref Product?
+}
+
+theme AppTheme {
+    primaryColor : asset Color
+}
+
+backend ThemeBackend {
+    theme : ref AppTheme
+    alternateTheme : ref AppTheme?
+}

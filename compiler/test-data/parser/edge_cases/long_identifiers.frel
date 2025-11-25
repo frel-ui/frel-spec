@@ -1,0 +1,17 @@
+module very.long.module.path.that.goes.on.and.on.and.on
+
+scheme VeryLongSchemeNameThatDescribesExactlyWhatThisSchemeIsFor {
+    veryLongFieldNameThatDescribesExactlyWhatThisFieldContains : String
+    anotherVeryLongFieldNameForADifferentPurpose : i32
+}
+
+backend VeryLongBackendNameThatDescribesExactlyWhatThisBackendDoes {
+    veryLongFieldNameInTheBackend : String = ""
+
+    method very_long_method_name_that_describes_exactly_what_it_does() : String
+    command very_long_command_name_that_describes_exactly_what_it_does()
+}
+
+blueprint VeryLongBlueprintNameThatDescribesExactlyWhatThisBlueprintRenders {
+    text { "Content" }
+}

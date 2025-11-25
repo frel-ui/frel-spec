@@ -1,0 +1,10 @@
+module test
+
+contract ProductAPI {
+    get_product(id: Uuid) : Product
+    list_products(category: String, page: u32) : List<Product>
+    create_product(data: Product) : Product
+    update_product(id: Uuid, data: Product) : Product
+    delete_product(id: Uuid)
+    get_product_count(category: String) : i32
+}

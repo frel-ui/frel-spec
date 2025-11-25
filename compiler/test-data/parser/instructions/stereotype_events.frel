@@ -1,0 +1,24 @@
+module test
+
+backend ModalBackend {
+    confirmed : bool = false
+
+    command confirm()
+    command cancel()
+}
+
+blueprint ConfirmDialog {
+    with ModalBackend
+
+    column {
+        text { "Are you sure?" }
+
+        row {
+            button { "Cancel" } .. stereotype { cancel }
+            button { "Confirm" } .. stereotype { save }
+        }
+
+        on_cancel { cancel() }
+        on_save { confirm() }
+    }
+}

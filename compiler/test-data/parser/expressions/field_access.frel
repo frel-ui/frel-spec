@@ -1,0 +1,22 @@
+module test
+
+scheme User {
+    name : String
+    email : String
+}
+
+scheme Address {
+    street : String
+    city : String
+}
+
+scheme Person {
+    user : User
+    address : Address
+}
+
+blueprint FieldAccess(person: Person) {
+    name : String = person.user.name
+    city : String = person.address.city
+    full : String = "${person.user.name} from ${person.address.city}"
+}

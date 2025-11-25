@@ -1,0 +1,20 @@
+module test
+
+backend CounterBackend {
+    count : i32 = 0
+
+    command increment()
+    command decrement()
+}
+
+blueprint CounterUI {
+    with CounterBackend
+
+    column {
+        text { "${count}" }
+        row {
+            button { "+" } .. on_click { increment() }
+            button { "-" } .. on_click { decrement() }
+        }
+    }
+}

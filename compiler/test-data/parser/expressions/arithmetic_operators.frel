@@ -1,0 +1,17 @@
+module test
+
+blueprint Arithmetic {
+    a : i32 = 10
+    b : i32 = 3
+
+    add : i32 = a + b
+    sub : i32 = a - b
+    mul : i32 = a * b
+    div : i32 = a / b
+    mod : i32 = a % b
+    neg : i32 = -a
+
+    complex : i32 = (a + b) * 2 - 1
+    precedence : i32 = a + b * 2
+    parentheses : i32 = (a + b) * 2
+}

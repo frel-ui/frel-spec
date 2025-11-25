@@ -1,0 +1,196 @@
+module test.app
+
+import test.data.User
+import test.themes.AppTheme
+
+enum TaskStatus { Todo InProgress Done Cancelled }
+
+enum Priority { Low Medium High Urgent }
+
+scheme Task {
+    id : Uuid .. identity .. readonly { true }
+    title : String .. min_len { 1 } .. max_len { 200 }
+    description : String? .. max_len { 1000 }
+    status : TaskStatus
+    priority : Priority
+    assignee : ref User?
+    tags : List<String> .. max_items { 10 }
+    createdAt : Instant .. readonly { true }
+    updatedAt : Instant?
+
+    virtual isComplete : bool = status == TaskStatus.Done
+    virtual isOverdue : bool = false
+}
+
+contract TaskAPI {
+    get_task(id: Uuid) : Task
+    list_tasks(status: TaskStatus?) : List<Task>
+    search_tasks(query: String, status: TaskStatus?) : List<Task>
+    create_task(task: Task) : Task
+    update_task(id: Uuid, task: Task) : Task
+    delete_task(id: Uuid)
+}
+
+arena TaskArena {
+    for Task with TaskAPI
+}
+
+backend TaskListBackend {
+    searchQuery : String = ""
+    statusFilter : TaskStatus? = null
+    tasks : List<Task> = TaskAPI.list_tasks(statusFilter)
+    filteredTasks : List<Task> = TaskAPI.search_tasks(searchQuery, statusFilter)
+
+    method get_task_count() : i32
+    method get_completed_count() : i32
+    method get_progress_percentage() : f64
+
+    command refresh_tasks()
+    command set_filter(status: TaskStatus?)
+    command clear_filter()
+}
+
+backend TaskEditorBackend {
+    taskId : Uuid?
+    task : Task? = taskId != null ? TaskAPI.get_task(taskId) : null
+    editedTitle : String = task?.title ?: ""
+    editedDescription : String = task?.description ?: ""
+    editedPriority : Priority = task?.priority ?: Priority.Medium
+    isEditing : bool = false
+    isSaving : bool = false
+    error : String? = null
+
+    method is_valid() : bool
+    method has_changes() : bool
+
+    command start_editing()
+    command cancel_editing()
+    command save_task()
+    command delete_task()
+}
+
+theme TaskTheme {
+    include AppTheme
+
+    todoColor : asset Color
+    inProgressColor : asset Color
+    doneColor : asset Color
+    cancelledColor : asset Color
+
+    padding : u32 = 16
+    cardRadius : u32 = 8
+
+    set task_card {
+        padding { padding }
+        corner_radius { cardRadius }
+        background { color: 0xFFFFFF }
+        shadow { color: 0x00000020 offset_x: 0 offset_y: 2 blur: 4 }
+    }
+
+    set status_badge {
+        padding { horizontal: 8 vertical: 4 }
+        corner_radius { 4 }
+    }
+
+    variant Compact {
+        padding = 8
+        cardRadius = 4
+    }
+}
+
+blueprint TaskCard(task: Task, theme: ref TaskTheme) {
+    box {
+        theme.task_card
+
+        column {
+            gap { 8 }
+
+            row {
+                gap { 8 }
+                align_items { vertical: center }
+
+                text { task.title } .. font { size: 16 weight: 600 }
+
+                select on task.priority {
+                    Urgent => text { "!" } .. font { color: Red weight: 700 }
+                    High => text { "!" } .. font { color: 0xFFA500 }
+                    else => { }
+                }
+            }
+
+            when task.description != null {
+                text { task.description } .. font { size: 14 color: 0x666666 }
+            }
+
+            row {
+                gap { 8 }
+
+                select on task.status {
+                    Todo => text { "To Do" } .. theme.status_badge .. background { color: 0xE0E0E0 }
+                    InProgress => text { "In Progress" } .. theme.status_badge .. background { color: theme.inProgressColor }
+                    Done => text { "Done" } .. theme.status_badge .. background { color: theme.doneColor }
+                    Cancelled => text { "Cancelled" } .. theme.status_badge .. background { color: theme.cancelledColor }
+                }
+
+                when task.tags.length > 0 {
+                    repeat on task.tags as tag {
+                        text { tag }
+                            .. font { size: 12 }
+                            .. padding { horizontal: 6 vertical: 2 }
+                            .. background { color: 0xF0F0F0 }
+                            .. corner_radius { 3 }
+                    }
+                }
+            }
+        }
+    }
+}
+
+blueprint TaskList {
+    with TaskListBackend
+
+    theme : ref TaskTheme = TaskTheme
+
+    column {
+        gap { 16 }
+        padding { 24 }
+
+        row {
+            gap { 16 }
+            align_items { vertical: center }
+
+            text { "Tasks" } .. font { size: 24 weight: 700 }
+            text { "${get_task_count()} total, ${get_completed_count()} completed" }
+                .. font { size: 14 color: 0x666666 }
+        }
+
+        row {
+            gap { 8 }
+
+            text_editor { searchQuery }
+                .. width { 300 }
+                .. padding { 8 }
+                .. border { 0xCCCCCC 1 }
+                .. corner_radius { 4 }
+
+            button { "Clear" }
+                .. on_click { clear_filter() }
+        }
+
+        when tasks.length == 0 {
+            text { "No tasks found" } .. font { size: 16 color: 0x999999 }
+        }
+
+        when tasks.length > 0 {
+            column {
+                gap { 12 }
+
+                repeat on filteredTasks by task.id as task {
+                    TaskCard(task, theme)
+                        .. cursor { pointer }
+                        .. on_click { }
+                }
+            }
+        }
+    }
+}

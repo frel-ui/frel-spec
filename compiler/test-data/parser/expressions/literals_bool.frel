@@ -1,0 +1,6 @@
+module test
+
+blueprint BoolLiterals {
+    t : bool = true
+    f : bool = false
+}

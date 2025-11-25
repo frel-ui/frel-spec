@@ -1,0 +1,3 @@
+module myapp
+
+import myapp.widgets

@@ -1,0 +1,13 @@
+module test
+
+blueprint Logical {
+    a : bool = true
+    b : bool = false
+
+    and : bool = a && b
+    or : bool = a || b
+    not : bool = !a
+
+    complex : bool = (a && !b) || (!a && b)
+    shortCircuit : bool = a || b && !a
+}

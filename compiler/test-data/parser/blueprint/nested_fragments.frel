@@ -1,0 +1,19 @@
+module test
+
+blueprint Layout {
+    column {
+        row {
+            text { "Header" }
+        }
+        column {
+            text { "Content Line 1" }
+            text { "Content Line 2" }
+            row {
+                text { "Nested" }
+            }
+        }
+        row {
+            text { "Footer" }
+        }
+    }
+}

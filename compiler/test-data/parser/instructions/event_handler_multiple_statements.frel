@@ -1,0 +1,21 @@
+module test
+
+backend CounterBackend {
+    count : i32 = 0
+    lastAction : String = ""
+
+    command save_state()
+    command log_action(action: String)
+}
+
+blueprint EventHandlerMultiple {
+    with CounterBackend
+
+    button { "Increment and Save" }
+        .. on_click {
+            count = count + 1
+            lastAction = "increment"
+            log_action("incremented")
+            save_state()
+        }
+}

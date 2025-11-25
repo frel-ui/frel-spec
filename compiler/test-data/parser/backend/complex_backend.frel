@@ -1,0 +1,24 @@
+module test.backends
+
+import test.data.User
+import test.contracts.UserAPI
+
+enum EditorState { Idle Editing Saving Error }
+
+backend UserEditorBackend {
+    userId : Uuid
+    user : User = UserAPI.get_user(userId)
+    editedName : String = user.name
+    editedEmail : String = user.email
+    state : EditorState = EditorState.Idle
+    errorMessage : String? = null
+
+    method is_dirty() : bool
+    method can_save() : bool
+    method get_validation_errors() : List<String>
+
+    command start_editing()
+    command cancel_editing()
+    command save_changes()
+    command reset_form()
+}

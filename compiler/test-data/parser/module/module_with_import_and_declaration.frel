@@ -1,0 +1,7 @@
+module myapp.screens
+
+import myapp.widgets.Button
+
+blueprint HomeScreen {
+    Button { }
+}

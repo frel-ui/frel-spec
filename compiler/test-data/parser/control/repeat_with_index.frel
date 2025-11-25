@@ -1,0 +1,23 @@
+module test
+
+backend ListBackend {
+    items : List<String> = ["First", "Second", "Third"]
+}
+
+blueprint RepeatWithIndex {
+    with ListBackend
+
+    column {
+        repeat on items as item {
+            text { "#${_index + 1}: ${item}" }
+
+            when _first {
+                text { "(This is the first item)" }
+            }
+
+            when _last {
+                text { "(This is the last item)" }
+            }
+        }
+    }
+}

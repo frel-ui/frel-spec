@@ -1,0 +1,5 @@
+module test
+
+blueprint Greeting(name: String) {
+    text { "Hello, ${name}!" }
+}

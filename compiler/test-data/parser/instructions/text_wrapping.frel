@@ -1,0 +1,10 @@
+module test
+
+blueprint TextWrapping {
+    column {
+        text { "No wrap" } .. text_wrap { none }
+        text { "Wrap enabled" } .. text_wrap { wrap } .. width { 200 }
+        text { "With ellipsis" } .. text_wrap { none } .. text_overflow { ellipsis } .. width { 100 }
+        text { "Visible overflow" } .. text_wrap { none } .. text_overflow { visible }
+    }
+}

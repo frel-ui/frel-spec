@@ -1,0 +1,14 @@
+module test
+
+blueprint FocusInstructions {
+    column {
+        box { } .. focusable
+        box { } .. focusable { 1 }
+        box { } .. focusable { order: 2 }
+        box { } .. focusable { false }
+        box { } .. focusable { programmatic }
+        box { } .. not_focusable
+        box { } .. autofocus
+        box { } .. focus_trap
+    }
+}

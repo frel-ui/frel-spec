@@ -1,0 +1,53 @@
+module test.all_types
+
+import other.module.Something
+
+enum MyEnum { A B C }
+
+scheme MyScheme {
+    id : Uuid .. identity
+    name : String
+    virtual computed : String = name
+}
+
+contract MyContract {
+    get_data() : MyScheme
+    update_data(data: MyScheme)
+}
+
+arena MyArena {
+    for MyScheme with MyContract
+}
+
+backend MyBackend {
+    data : MyScheme? = null
+    status : MyEnum = MyEnum.A
+
+    method is_ready() : bool
+    command load_data()
+}
+
+theme MyTheme {
+    color : asset Color
+    padding : u32 = 16
+
+    set card {
+        padding { padding }
+    }
+
+    variant Dark {
+        color = 0x000000
+    }
+}
+
+blueprint MyBlueprint(param: String) {
+    with MyBackend
+
+    localValue : String = param
+
+    column {
+        when is_ready() {
+            text { localValue }
+        }
+    }
+}

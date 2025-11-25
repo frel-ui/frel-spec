@@ -1,0 +1,12 @@
+module test
+
+scheme DataTypes {
+    stringList : List<String>
+    intList : List<i32>
+    nestedList : List<List<String>>
+    stringSet : Set<String>
+    stringMap : Map<String, i32>
+    complexMap : Map<String, List<i32>>
+    optionalList : List<String>?
+    listOfOptionals : List<String?>
+}

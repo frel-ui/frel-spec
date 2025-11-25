@@ -1,0 +1,9 @@
+module test
+
+blueprint DecorationTint {
+    column {
+        icon { "close" } .. tint { Black }
+        icon { "star" } .. tint { 0xFFD700 }
+        icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
+    }
+}

@@ -1,0 +1,9 @@
+module test
+
+backend Calculator {
+    a : i32 = 10
+    b : i32 = 20
+    sum : i32 = a + b
+    product : i32 = a * b
+    isPositive : bool = sum > 0
+}

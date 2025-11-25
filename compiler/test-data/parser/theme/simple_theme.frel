@@ -1,0 +1,6 @@
+module test
+
+theme AppTheme {
+    padding : u32 = 16
+    cornerRadius : u32 = 8
+}

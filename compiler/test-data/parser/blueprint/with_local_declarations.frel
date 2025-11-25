@@ -1,0 +1,12 @@
+module test
+
+blueprint Counter {
+    count : i32 = 0
+    doubled : i32 = count * 2
+    label : String = "Count: ${count}"
+
+    column {
+        text { label }
+        text { "Doubled: ${doubled}" }
+    }
+}

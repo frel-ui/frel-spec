@@ -1,0 +1,13 @@
+module test
+
+blueprint UserCard(
+    name: String,
+    age: i32,
+    avatar: Url?,
+    isActive: bool
+) {
+    column {
+        text { name }
+        text { "Age: ${age}" }
+    }
+}

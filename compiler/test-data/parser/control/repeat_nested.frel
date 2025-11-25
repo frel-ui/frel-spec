@@ -1,0 +1,25 @@
+module test
+
+scheme Category {
+    name : String
+    items : List<String>
+}
+
+backend CatalogBackend {
+    categories : List<Category> = []
+}
+
+blueprint RepeatNested {
+    with CatalogBackend
+
+    column {
+        repeat on categories as category {
+            column {
+                text { category.name }
+                repeat on category.items as item {
+                    text { "  - ${item}" }
+                }
+            }
+        }
+    }
+}

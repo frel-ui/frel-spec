@@ -1,0 +1,15 @@
+module test
+
+blueprint WhenNested {
+    a : bool = true
+    b : bool = false
+
+    when a {
+        text { "A is true" }
+        when b {
+            text { "B is also true" }
+        } else {
+            text { "B is false" }
+        }
+    }
+}

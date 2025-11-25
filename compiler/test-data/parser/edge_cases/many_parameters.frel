@@ -1,0 +1,16 @@
+module test
+
+blueprint ManyParams(
+    p1: String,
+    p2: i32,
+    p3: bool,
+    p4: f64,
+    p5: List<String>,
+    p6: String?,
+    p7: i32 = 0,
+    p8: bool = true,
+    p9: String = "default",
+    p10: f64 = 0.0
+) {
+    text { p1 }
+}

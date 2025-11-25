@@ -1,0 +1,5 @@
+module test
+
+blueprint Bad {
+    x : String = "hello
+}

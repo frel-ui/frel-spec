@@ -1,0 +1,9 @@
+module test
+
+contract DataAPI {
+    get_items() : List<Item>
+    get_item_map() : Map<String, Item>
+    get_optional_item(id: Uuid) : Item?
+    process_batch(items: List<Item>) : List<Result>
+    get_nested(id: Uuid) : List<List<String>>
+}

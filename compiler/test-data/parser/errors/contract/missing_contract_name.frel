@@ -1,0 +1,5 @@
+module test
+
+contract {
+    get_data() : String
+}

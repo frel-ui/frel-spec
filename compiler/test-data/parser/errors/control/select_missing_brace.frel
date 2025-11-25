@@ -1,0 +1,10 @@
+module test
+
+blueprint Bad {
+    x : i32 = 5
+
+    select
+        x < 0 => text { "negative" }
+        else => text { "positive" }
+    }
+}

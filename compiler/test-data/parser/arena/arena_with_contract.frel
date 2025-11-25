@@ -1,0 +1,15 @@
+module test
+
+scheme Message {
+    id : Uuid .. identity
+    content : String
+    sentAt : Instant
+}
+
+contract MessageAPI {
+    receive() : Message
+}
+
+arena MessageArena {
+    for Message with MessageAPI
+}

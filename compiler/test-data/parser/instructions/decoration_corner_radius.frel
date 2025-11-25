@@ -1,0 +1,13 @@
+module test
+
+blueprint DecorationCornerRadius {
+    column {
+        box { } .. corner_radius { 8 }
+        box { } .. corner_radius { top_left: 8 top_right: 8 }
+        box { } .. corner_radius { top_left: 8 top_right: 8 bottom_left: 4 bottom_right: 4 }
+        box { } .. corner_radius { top: 8 }
+        box { } .. corner_radius { bottom: 8 }
+        box { } .. corner_radius { left: 8 }
+        box { } .. corner_radius { right: 8 }
+    }
+}

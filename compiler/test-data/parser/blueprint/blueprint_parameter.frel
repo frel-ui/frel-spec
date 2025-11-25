@@ -1,0 +1,14 @@
+module test
+
+blueprint Container(content: Blueprint) {
+    column {
+        padding { 16 }
+        content()
+    }
+}
+
+blueprint App {
+    Container {
+        text { "Hello from content!" }
+    }
+}

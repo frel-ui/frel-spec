@@ -1,0 +1,13 @@
+module test
+
+blueprint Child(value: i32, label: String) {
+    text { "${label}: ${value}" }
+}
+
+blueprint Parent {
+    column {
+        Child(42, "First")
+        Child(100, "Second")
+        Child(value = 200, label = "Third")
+    }
+}

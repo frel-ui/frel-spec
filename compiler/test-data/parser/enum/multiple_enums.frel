@@ -1,0 +1,7 @@
+module test
+
+enum Status { Pending Active Completed Cancelled }
+
+enum Priority { Low Medium High }
+
+enum Visibility { Public Private Internal }

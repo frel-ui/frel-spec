@@ -1,0 +1,17 @@
+module test
+
+theme MessageTheme {
+    background : asset Color
+    textColor : asset Color
+    padding : u32 = 16
+
+    set container {
+        background { color: background }
+        padding { padding }
+    }
+
+    variant Dark {
+        background = 0x1E1E1E
+        textColor = 0xFFFFFF
+    }
+}

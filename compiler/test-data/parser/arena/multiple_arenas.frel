@@ -1,0 +1,30 @@
+module test
+
+scheme User {
+    id : Uuid .. identity
+    name : String
+}
+
+scheme Product {
+    id : Uuid .. identity
+    name : String
+    price : Decimal
+}
+
+scheme Order {
+    id : Uuid .. identity
+    userId : ref User
+    items : List<ref Product>
+}
+
+arena UserArena {
+    for User
+}
+
+arena ProductArena {
+    for Product
+}
+
+arena OrderArena {
+    for Order
+}

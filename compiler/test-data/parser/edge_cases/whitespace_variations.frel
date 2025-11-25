@@ -1,0 +1,21 @@
+module test
+
+blueprint WhitespaceVariations {
+    column{text{"No spaces"}}
+
+    column {
+        text { "With spaces" }
+    }
+
+    column
+    {
+        text
+        {
+            "Newlines everywhere"
+        }
+    }
+
+    box{}..width{100}..height{100}
+
+    box { } .. width { 100 } .. height { 100 }
+}

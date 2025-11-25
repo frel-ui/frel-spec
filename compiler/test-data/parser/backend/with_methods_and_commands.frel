@@ -1,0 +1,16 @@
+module test
+
+backend ShoppingCart {
+    items : List<String> = []
+    taxRate : f64 = 0.08
+
+    method calculate_subtotal() : f64
+    method calculate_tax() : f64
+    method calculate_total() : f64
+    method item_count() : i32
+
+    command add_item(item: String)
+    command remove_item(id: i32)
+    command clear_cart()
+    command checkout()
+}

@@ -1,0 +1,14 @@
+module test
+
+blueprint DecorationCursor {
+    column {
+        box { } .. cursor { default }
+        box { } .. cursor { pointer }
+        box { } .. cursor { text }
+        box { } .. cursor { crosshair }
+        box { } .. cursor { move }
+        box { } .. cursor { none }
+        box { } .. cursor { grab }
+        box { } .. cursor { grabbing }
+    }
+}

@@ -1,0 +1,27 @@
+module test
+
+blueprint LayoutAlignment {
+    column {
+        align_items { horizontal: center vertical: top }
+        text { "Centered" }
+    }
+
+    row {
+        align_items { horizontal: start vertical: center }
+        text { "Left aligned" }
+    }
+
+    box {
+        width { 200 }
+        height { 200 }
+        text { "Self aligned" } .. align_self { horizontal: end vertical: bottom }
+    }
+
+    column {
+        align_items_center
+        text { "Shorthand center" }
+    }
+
+    text { "Shorthand" } .. align_self_start_top
+    text { "Shorthand" } .. align_self_center_bottom
+}

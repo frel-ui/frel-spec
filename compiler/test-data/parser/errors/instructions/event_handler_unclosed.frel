@@ -1,0 +1,5 @@
+module test
+
+blueprint Bad {
+    button { "Click" } .. on_click { count = 1
+}

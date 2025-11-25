@@ -1,0 +1,8 @@
+module test
+
+scheme Container {
+    items : List<String>
+    tags : Set<String>
+    scores : List<i32>
+    nested : List<List<i32>>
+}

@@ -1,0 +1,8 @@
+module test
+
+contract UserAPI {
+    get_user(id: Uuid) : User
+    list_users(page: u32, limit: u32) : List<User>
+    search_users(query: String) : List<User>
+    get_user_count() : i32
+}

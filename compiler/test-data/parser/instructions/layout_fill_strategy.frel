@@ -1,0 +1,36 @@
+module test
+
+blueprint LayoutFillStrategy {
+    row {
+        fill_strategy { constrain }
+        text { "First" }
+        text { "Second" }
+    }
+
+    row {
+        fill_strategy { constrain_reverse }
+        text { "First" }
+        text { "Second" }
+    }
+
+    row {
+        fill_strategy { resize_to_max }
+        text { "First" }
+        text { "Second" }
+    }
+
+    row {
+        constrain
+        text { "Shorthand" }
+    }
+
+    row {
+        constrain_reverse
+        text { "Shorthand" }
+    }
+
+    row {
+        resize_to_max
+        text { "Shorthand" }
+    }
+}

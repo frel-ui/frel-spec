@@ -1,0 +1,7 @@
+module test
+
+scheme Survey {
+    title : String
+    questions : List<String> .. min_items { 1 } .. max_items { 100 }
+    tags : Set<String> .. max_items { 10 }
+}

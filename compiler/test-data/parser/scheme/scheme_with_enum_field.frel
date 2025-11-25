@@ -1,0 +1,12 @@
+module test
+
+enum Priority { Low Medium High Critical }
+
+enum Status { Draft Pending Approved Rejected }
+
+scheme Task {
+    id : Uuid .. identity
+    title : String
+    priority : Priority
+    status : Status
+}

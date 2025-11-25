@@ -1,0 +1,9 @@
+module test
+
+blueprint NullComparison {
+    maybeValue : String? = null
+    anotherValue : String? = "hello"
+
+    isNull : bool = maybeValue == null
+    isNotNull : bool = anotherValue != null
+}

@@ -1,0 +1,21 @@
+module test
+
+blueprint DeeplyNested {
+    box {
+        column {
+            row {
+                box {
+                    column {
+                        row {
+                            box {
+                                column {
+                                    text { "Very deeply nested" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

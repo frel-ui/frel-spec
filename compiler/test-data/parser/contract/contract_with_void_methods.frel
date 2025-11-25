@@ -1,0 +1,7 @@
+module test
+
+contract UserAPI {
+    update_user(id: Uuid, data: User)
+    delete_user(id: Uuid)
+    send_notification(userId: Uuid, message: String)
+}

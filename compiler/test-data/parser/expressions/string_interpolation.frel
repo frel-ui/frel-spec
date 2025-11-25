@@ -1,0 +1,12 @@
+module test
+
+blueprint StringInterpolation {
+    name : String = "World"
+    count : i32 = 42
+
+    simple : String = "Hello, ${name}!"
+    multiple : String = "Name: ${name}, Count: ${count}"
+    nested : String = "Result: ${count * 2}"
+    expression : String = "Is even: ${count % 2 == 0}"
+    escaped : String = "Literal \${name}"
+}

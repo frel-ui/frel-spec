@@ -1,0 +1,28 @@
+module test.data
+
+import other.module.Category
+
+enum Status { Pending Active Completed Cancelled }
+
+scheme Address {
+    street : String
+    city : String
+    postalCode : String
+    country : String
+}
+
+scheme User {
+    id : Uuid .. identity .. readonly { true }
+    email : String .. pattern { "^[^@]+@[^@]+$" }
+    displayName : String .. min_len { 1 } .. max_len { 50 }
+    bio : String? .. max_len { 500 }
+    age : i32? .. min { 13 } .. max { 150 }
+    address : ref Address?
+    roles : List<String> .. min_items { 1 }
+    status : Status
+    createdAt : Instant .. readonly { true }
+    lastLoginAt : Instant?
+
+    virtual isActive : bool = status == Status.Active
+    virtual hasAddress : bool = address != null
+}

@@ -1,0 +1,51 @@
+module test
+
+backend EventBackend {
+    count : i32 = 0
+    message : String = ""
+
+    command log_event(msg: String)
+    command save()
+}
+
+blueprint EventHandlers {
+    with EventBackend
+
+    column {
+        button { "Click" } .. on_click { count = count + 1 }
+
+        button { "Double Click" } .. on_double_click { count = count + 2 }
+
+        box { }
+            .. on_pointer_move { event -> log_event("move") }
+            .. on_pointer_enter { log_event("enter") }
+            .. on_pointer_leave { log_event("leave") }
+
+        box { }
+            .. on_primary_down { log_event("down") }
+            .. on_primary_up { log_event("up") }
+
+        box { }
+            .. on_secondary_down { log_event("right down") }
+            .. on_secondary_up { log_event("right up") }
+
+        box { }
+            .. on_wheel { event -> log_event("wheel") }
+
+        box { }
+            .. focusable
+            .. on_key { event -> log_event("key") }
+
+        box { }
+            .. focusable
+            .. on_enter { save() }
+            .. on_escape { message = "" }
+
+        box { }
+            .. on_focus { log_event("focused") }
+            .. on_blur { log_event("blurred") }
+
+        box { }
+            .. on_resize { rect -> log_event("resized") }
+    }
+}

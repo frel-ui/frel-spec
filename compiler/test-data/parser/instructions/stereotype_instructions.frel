@@ -1,0 +1,8 @@
+module test
+
+blueprint StereotypeInstructions {
+    column {
+        button { "Cancel" } .. stereotype { cancel }
+        button { "Save" } .. stereotype { save }
+    }
+}

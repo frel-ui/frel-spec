@@ -1,0 +1,13 @@
+module test
+
+blueprint IntLiterals {
+    zero : i32 = 0
+    positive : i32 = 42
+    negative : i32 = -42
+    large : i64 = 9223372036854775807
+    hex : i32 = 0xFF
+    hexLower : i32 = 0xff
+    hexMixed : i32 = 0xDeAdBeEf
+    binary : i32 = 0b1010
+    octal : i32 = 0o755
+}

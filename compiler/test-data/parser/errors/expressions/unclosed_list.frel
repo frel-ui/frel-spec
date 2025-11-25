@@ -1,0 +1,5 @@
+module test
+
+backend Bad {
+    items : List<i32> = [1, 2, 3
+}

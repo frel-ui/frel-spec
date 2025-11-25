@@ -1,0 +1,11 @@
+module test
+
+theme AppTheme {
+    primaryColor : asset Color
+    padding : u32 = 16
+}
+
+backend AppBackend {
+    theme : ref AppTheme
+    currentPadding : u32 = theme.padding
+}

@@ -1,0 +1,8 @@
+module test
+
+scheme Document {
+    id : Uuid .. identity .. readonly { true }
+    createdAt : Instant .. readonly { true }
+    title : String .. default { "Untitled" }
+    published : bool .. default { false }
+}

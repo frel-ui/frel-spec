@@ -1,0 +1,7 @@
+module test
+
+blueprint Bad {
+    when {
+        text { "hello" }
+    }
+}

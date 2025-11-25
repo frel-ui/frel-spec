@@ -1,0 +1,15 @@
+module test
+
+backend ListBackend {
+    items : List<String> = ["Apple", "Banana", "Cherry"]
+}
+
+blueprint RepeatSimple {
+    with ListBackend
+
+    column {
+        repeat on items as item {
+            text { item }
+        }
+    }
+}

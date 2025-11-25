@@ -1,0 +1,21 @@
+module test
+
+backend ExprBackend {
+    a : i32 = 10
+    b : i32 = 20
+    c : i32 = 30
+    name : String? = "Test"
+
+    method compute(x: i32) : i32
+}
+
+blueprint ComplexExpressions {
+    with ExprBackend
+
+    expr1 : i32 = (a + b) * c / 2 - 5
+    expr2 : bool = a > 0 && (b < 50 || c == 30)
+    expr3 : String = name != null ? "Name: ${name}" : "Anonymous"
+    expr4 : i32 = compute(a + b) * 2
+    expr5 : bool = !((a > b) && (c < 100))
+    expr6 : i32 = a > b ? (b > c ? c : b) : a
+}

@@ -1,0 +1,12 @@
+module test
+
+blueprint TextFont {
+    column {
+        text { "Default" }
+        text { "With size" } .. font { size: 24 }
+        text { "With weight" } .. font { weight: 700 }
+        text { "With color" } .. font { color: Blue }
+        text { "With name" } .. font { name: "Arial" }
+        text { "Full" } .. font { name: "Arial" size: 16 weight: 400 color: Black }
+    }
+}

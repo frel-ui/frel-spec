@@ -1,0 +1,8 @@
+module test
+
+scheme UserRegistration {
+    username : String .. min_len { 3 } .. max_len { 20 }
+    email : String .. pattern { "^[^@]+@[^@]+$" }
+    age : i32 .. min { 18 } .. max { 120 }
+    bio : String .. blank { false } .. multiline { true }
+}

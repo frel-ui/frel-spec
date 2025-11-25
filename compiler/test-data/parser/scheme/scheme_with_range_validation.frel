@@ -1,0 +1,7 @@
+module test
+
+scheme Product {
+    name : String
+    price : Decimal .. range { 0.01, 99999.99 } .. precision { 2 }
+    stock : i32 .. min { 0 }
+}

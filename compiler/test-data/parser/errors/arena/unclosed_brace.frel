@@ -1,0 +1,9 @@
+module test
+
+scheme User {
+    id : Uuid .. identity
+    name : String
+}
+
+arena UserArena {
+    for User

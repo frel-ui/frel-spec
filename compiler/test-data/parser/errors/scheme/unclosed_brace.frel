@@ -1,0 +1,4 @@
+module test
+
+scheme User {
+    name : String

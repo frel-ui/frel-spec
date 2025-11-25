@@ -1,0 +1,18 @@
+module test
+
+blueprint WhenExpression {
+    count : i32 = 5
+    threshold : i32 = 10
+
+    when count > threshold {
+        text { "Above threshold" }
+    }
+
+    when count == 0 {
+        text { "Empty" }
+    }
+
+    when count > 0 && count <= threshold {
+        text { "Within range" }
+    }
+}

@@ -1,0 +1,10 @@
+module test
+
+blueprint PointerEvents {
+    column {
+        box { } .. pointer_events { enabled }
+        box { } .. pointer_events { disabled }
+        box { } .. with_pointer_events
+        box { } .. no_pointer_events
+    }
+}
