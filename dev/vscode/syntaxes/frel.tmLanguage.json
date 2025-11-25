@@ -1,0 +1,225 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Frel",
+  "scopeName": "source.frel",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#operators" },
+    { "include": "#fragments" },
+    { "include": "#functions" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.frel",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.block.frel",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.frel",
+          "match": "\\b(when|else|repeat|on|as|by|select)\\b"
+        },
+        {
+          "name": "keyword.declaration.frel",
+          "match": "\\b(module|import|blueprint|backend|contract|scheme|enum|theme|arena|variant|set)\\b"
+        },
+        {
+          "name": "keyword.other.frel",
+          "match": "\\b(with|include|method|command|virtual|asset|at)\\b"
+        },
+        {
+          "name": "storage.modifier.frel",
+          "match": "\\b(ref|draft|asset)\\b"
+        },
+        {
+          "comment": "Layout instructions (with block)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(position|width|height|size|expand|fill_width|fill_height|fill|fit_content|padding|border|margin|gap|fill_strategy|constrain|constrain_reverse|resize_to_max|align_self|align_items|align_self_center|align_items_center|align_relative|space_around|space_between|scroll)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Layout instructions (standalone)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(expand|fill_width|fill_height|fill|fit_content|constrain|constrain_reverse|resize_to_max|align_self_center|align_items_center|space_around|space_between)\\b"
+        },
+        {
+          "comment": "Decoration instructions",
+          "name": "entity.name.class.frel",
+          "match": "\\b(background|corner_radius|shadow|cursor|tint)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Text instructions (with block)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(font|line_height|letter_spacing|underline|small_caps|text_wrap|text_overflow)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Text instructions (standalone)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(underline|small_caps|no_select)\\b"
+        },
+        {
+          "comment": "Focus instructions (with block)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(focusable)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Focus instructions (standalone)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(focusable|not_focusable|autofocus|focus_trap)\\b"
+        },
+        {
+          "comment": "Stereotype instructions",
+          "name": "entity.name.class.frel",
+          "match": "\\b(stereotype)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Event handler instructions",
+          "name": "entity.name.class.frel",
+          "match": "\\b(on_click|on_double_click|on_pointer_move|on_pointer_enter|on_pointer_leave|on_primary_down|on_primary_up|on_secondary_down|on_secondary_up|pointer_events|with_pointer_events|no_pointer_events|on_wheel|on_key|on_enter|on_escape|on_input|on_resize|on_focus|on_blur|on_cancel|on_save)(?=\\s*\\{)"
+        },
+        {
+          "comment": "Pointer event instructions (standalone)",
+          "name": "entity.name.class.frel",
+          "match": "\\b(with_pointer_events|no_pointer_events)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.primitive.frel",
+          "match": "\\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|String)\\b"
+        },
+        {
+          "name": "support.type.special.frel",
+          "match": "\\b(Uuid|Url|Decimal|Color|Graphics|Secret|Blob|Instant|LocalDate|LocalTime|LocalDateTime|Timezone|Duration)\\b"
+        },
+        {
+          "name": "support.type.collection.frel",
+          "match": "\\b(List|Set|Map|Tree|Blueprint|Accessor)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.frel",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.frel",
+              "match": "\\\\(n|r|t|\\\\|\"|'|\\$)"
+            },
+            {
+              "name": "meta.embedded.line.frel",
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "patterns": [
+                { "include": "$self" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.frel",
+          "match": "\\b0x[0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.frel",
+          "match": "\\b0b[01]+\\b"
+        },
+        {
+          "name": "constant.numeric.octal.frel",
+          "match": "\\b0o[0-7]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.frel",
+          "match": "\\b\\d+\\.\\d+([eE][+-]?\\d+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.frel",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.frel",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.frel",
+          "match": "\\bnull\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.frel",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.comparison.frel",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.frel",
+          "match": "(\\+|-|\\*|/|%|\\*\\*)"
+        },
+        {
+          "name": "keyword.operator.assignment.frel",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.elvis.frel",
+          "match": "\\?:|\\?\\."
+        },
+        {
+          "name": "keyword.operator.ternary.frel",
+          "match": "\\?|:"
+        },
+        {
+          "name": "keyword.operator.postfix.frel",
+          "match": "\\.\\."
+        }
+      ]
+    },
+    "fragments": {
+      "patterns": [
+        {
+          "name": "variable.other.property.frel",
+          "match": "\\b[a-z_][a-z0-9_]*(?=\\s*\\{)"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.frel",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+        }
+      ]
+    }
+  }
+}

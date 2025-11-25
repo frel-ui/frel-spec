@@ -1,0 +1,17 @@
+[package]
+name = "frel-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "frelc"
+path = "src/main.rs"
+
+[dependencies]
+frel-core = { path = "../frel-core" }
+frel-plugin-javascript = { path = "../frel-plugin-javascript" }
+anyhow.workspace = true
+clap.workspace = true

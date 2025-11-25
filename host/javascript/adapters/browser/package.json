@@ -1,0 +1,36 @@
+{
+  "name": "@frel/browser",
+  "version": "0.1.0",
+  "description": "Frel browser adapter with DOM rendering and standard blueprints",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "frel",
+    "browser",
+    "dom",
+    "ui"
+  ],
+  "author": "Frel Contributors",
+  "license": "MIT OR Apache-2.0",
+  "dependencies": {
+    "@frel/runtime": "file:../../runtime"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
+  }
+}

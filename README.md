@@ -13,19 +13,32 @@ between declarative UI definitions and platform-specific adapters.
 
 Key features:
 
-- [**Type-driven automatic reactivity**](docs/10_language/10_data_model/10_reactivity_model.md)
+- [**Type-driven automatic reactivity**](docs/10_language/20_data_model/03_reactivity.md)
 - Declarative, reactive UI components
 - Programming language agnostic (host language independent)
 - Platform agnostic (web, mobile, desktop, documents)
 
 ## Status
 
-Frel is currently in the **planning and early design** stage.
+Frel is currently in **early development** with proof-of-concept implementation in progress.
 
 Expect:
 
 - Rapidly changing concepts and structures
-- Discussions and design documents instead of working examples
+- Active development of core compiler and runtime
+- Experimental JavaScript/browser POC
+
+## Documentation
+
+- [Getting Started](docs/00_overview/10_getting_started.md) - setup and build instructions
+- [Architecture](docs/00_overview/20_architecture.md) - high-level architecture overview
+- [Language Overview](docs/10_language/00_overview/00_language_overview.md)
+- [Top-level Declarations](docs/10_language/10_organization/10_top_level.md)
+- [Data Model Basics](docs/10_language/20_data_model/01_data_model_basics.md)
+- [Type System](docs/10_language/20_data_model/02_type_system.md)
+- [Reactivity Model](docs/10_language/20_data_model/03_reactivity.md)
+- [Blueprint Basics](docs/10_language/70_blueprints/10_blueprint_basics.md)
+- [Runtime Data Model](docs/10_language/80_runtime/10_runtime_data_model.md)
 
 ## Contributing
 
@@ -41,6 +54,6 @@ This project is licensed under either of
 
 at your option.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted  
-for inclusion in this project by you, as defined in the Apache-2.0 license,  
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be dual licensed as above, without any additional terms or conditions.

@@ -1,0 +1,66 @@
+// Simple counter example
+module examples.counter
+
+backend CounterBackend {
+    count : i32 = 0
+
+    command increment()
+    command decrement()
+    command reset()
+}
+
+blueprint Counter {
+    with CounterBackend
+
+    column {
+        gap { 16 }
+        padding { 32 }
+        align_items_center
+
+        text { "Counter Example" }
+            .. font { size: 24 weight: 700 }
+
+        text { "Count: ${count}" }
+            .. font { size: 48 weight: 300 }
+
+        row {
+            gap { 8 }
+
+            box {
+                padding { 12 }
+                background { color: 0x007AFF }
+                corner_radius { 4 }
+                cursor { pointer }
+                on_click { decrement() }
+
+                text { "-" }
+                    .. font { size: 24 color: White weight: 600 }
+                    .. no_select
+            }
+
+            box {
+                padding { 12 }
+                background { color: 0xDDDDDD }
+                corner_radius { 4 }
+                cursor { pointer }
+                on_click { reset() }
+
+                text { "Reset" }
+                    .. font { size: 16 color: Black weight: 600 }
+                    .. no_select
+            }
+
+            box {
+                padding { 12 }
+                background { color: 0x007AFF }
+                corner_radius { 4 }
+                cursor { pointer }
+                on_click { increment() }
+
+                text { "+" }
+                    .. font { size: 24 color: White weight: 600 }
+                    .. no_select
+            }
+        }
+    }
+}

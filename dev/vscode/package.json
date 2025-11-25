@@ -1,0 +1,58 @@
+{
+  "name": "frel",
+  "displayName": "Frel",
+  "description": "Language support for Frel",
+  "version": "0.1.0",
+  "publisher": "frel-lang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frel-lang/frel"
+  },
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "frel",
+    "ui",
+    "reactive"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "frel",
+        "aliases": [
+          "Frel",
+          "frel"
+        ],
+        "extensions": [
+          ".frel"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "frel",
+        "scopeName": "source.frel",
+        "path": "./syntaxes/frel.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.95.0",
+    "typescript": "^5.7.0",
+    "@vscode/vsce": "^3.2.0"
+  }
+}

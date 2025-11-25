@@ -1,0 +1,23 @@
+// Button component - Higher-level widget example
+module frel.stdlib
+
+blueprint Button(
+    label: String,
+    onClick: Blueprint
+) {
+    box {
+        padding { 12 }
+        background { color: 0x007AFF }
+        corner_radius { 4 }
+        cursor { pointer }
+
+        on_click {
+            // Invoke the onClick blueprint
+            onClick()
+        }
+
+        text { label }
+            .. font { color: White weight: 600 }
+            .. no_select
+    }
+}
