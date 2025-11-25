@@ -7,17 +7,21 @@
 // - Multiple error reporting
 // - Span tracking for all AST nodes
 
-mod expr;
-mod types;
-mod decl;
-mod blueprint;
+mod arena;
 mod backend;
+mod blueprint;
+mod common;
+mod contract;
+mod enum_decl;
+mod expr;
+mod scheme;
+mod theme;
+mod types;
 
 use crate::ast;
 use crate::diagnostic::{Diagnostic, Diagnostics, Label, Suggestion};
-use crate::lexer::Lexer;
+use crate::lexer::{Lexer, Token, TokenKind};
 use crate::source::Span;
-use crate::token::{Token, TokenKind};
 
 /// Parser state
 pub struct Parser<'a> {

@@ -14,7 +14,7 @@
 // - Postfix (. ?. ())
 
 use crate::ast::{BinaryOp, Expr, TemplateElement, UnaryOp};
-use crate::token::TokenKind;
+use crate::lexer::TokenKind;
 
 use super::Parser;
 

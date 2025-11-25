@@ -16,10 +16,10 @@ pub mod error;
 pub mod lexer;
 pub mod parser;
 pub mod source;
-pub mod token;
 
 pub use diagnostic::{Diagnostic, Diagnostics, Severity};
 pub use error::{Error, Result};
+pub use lexer::{Token, TokenKind};
 pub use parser::ParseResult;
 pub use source::{LineIndex, Span, Spanned};
 

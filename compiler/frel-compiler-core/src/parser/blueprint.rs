@@ -12,7 +12,7 @@ use crate::ast::{
     FragmentBody, FragmentCreation, HandlerStmt, Instruction, LocalDecl, SelectBranch,
     SlotBinding,
 };
-use crate::token::TokenKind;
+use crate::lexer::TokenKind;
 
 use super::Parser;
 

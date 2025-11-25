@@ -23,6 +23,7 @@ pub struct Import {
 
 /// Top-level declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TopLevelDecl {
     Blueprint(Blueprint),
     Backend(Backend),
@@ -43,6 +44,7 @@ pub struct Blueprint {
 
 /// Blueprint statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BlueprintStmt {
     With(String),
     LocalDecl(LocalDecl),
@@ -73,6 +75,7 @@ pub struct FragmentCreation {
 
 /// Fragment body
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum FragmentBody {
     Default(Vec<BlueprintStmt>),
     Slots(Vec<SlotBinding>),
@@ -87,6 +90,7 @@ pub struct SlotBinding {
 
 /// Blueprint value
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BlueprintValue {
     Inline {
         params: Vec<String>,
@@ -97,6 +101,7 @@ pub enum BlueprintValue {
 
 /// Control statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ControlStmt {
     When {
         condition: Expr,
@@ -147,6 +152,7 @@ pub struct EventParam {
 
 /// Handler statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum HandlerStmt {
     Assignment { name: String, value: Expr },
     CommandCall { name: String, args: Vec<Expr> },
@@ -162,6 +168,7 @@ pub struct Backend {
 
 /// Backend member
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BackendMember {
     Include(String),
     Field(Field),
@@ -216,6 +223,7 @@ pub struct Scheme {
 
 /// Scheme member
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SchemeMember {
     Field(SchemeField),
     Virtual(VirtualField),
@@ -260,6 +268,7 @@ pub struct Theme {
 
 /// Theme member
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ThemeMember {
     Include(String),
     Field(ThemeField),
@@ -315,6 +324,7 @@ pub struct Arg {
 
 /// Type expression
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TypeExpr {
     Named(String),
     Nullable(Box<TypeExpr>),
@@ -331,6 +341,7 @@ pub enum TypeExpr {
 
 /// Expression
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Expr {
     // Literals
     Null,
@@ -381,6 +392,7 @@ pub enum Expr {
 
 /// Template element for string interpolation
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TemplateElement {
     Text(String),
     Interpolation(Box<Expr>),
@@ -388,6 +400,7 @@ pub enum TemplateElement {
 
 /// Binary operators
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BinaryOp {
     // Arithmetic
     Add,
@@ -415,6 +428,7 @@ pub enum BinaryOp {
 
 /// Unary operators
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum UnaryOp {
     Not,
     Neg,

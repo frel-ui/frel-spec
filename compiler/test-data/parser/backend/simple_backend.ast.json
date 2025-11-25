@@ -3,40 +3,40 @@
   "imports": [],
   "declarations": [
     {
-      "Backend": {
+      "backend": {
         "name": "SimpleBackend",
         "params": [],
         "members": [
           {
-            "Field": {
+            "field": {
               "name": "value",
               "type_expr": {
-                "Named": "string"
+                "named": "string"
               },
               "init": {
-                "String": "hello"
+                "string": "hello"
               }
             }
           },
           {
-            "Field": {
+            "field": {
               "name": "count",
               "type_expr": {
-                "Named": "i32"
+                "named": "i32"
               },
               "init": {
-                "Int": 0
+                "int": 0
               }
             }
           },
           {
-            "Field": {
+            "field": {
               "name": "enabled",
               "type_expr": {
-                "Named": "bool"
+                "named": "bool"
               },
               "init": {
-                "Bool": true
+                "bool": true
               }
             }
           }

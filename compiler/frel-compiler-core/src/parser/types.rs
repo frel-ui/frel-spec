@@ -8,7 +8,7 @@
 // - Blueprint types (Blueprint<P1, P2>)
 
 use crate::ast::TypeExpr;
-use crate::token::TokenKind;
+use crate::lexer::TokenKind;
 
 use super::Parser;
 

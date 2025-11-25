@@ -8,7 +8,8 @@
 
 use crate::diagnostic::{Diagnostic, Diagnostics};
 use crate::source::Span;
-use crate::token::{Token, TokenKind};
+
+use super::{Token, TokenKind};
 
 /// Lexer state
 pub struct Lexer<'a> {
