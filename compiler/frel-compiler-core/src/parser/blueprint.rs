@@ -216,7 +216,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Parse fragment body (default or slot-based)
+    /// Parse fragment body (default, slot-based, or inline blueprint with params)
     fn parse_fragment_body(&mut self) -> Option<FragmentBody> {
         self.expect(TokenKind::LBrace)?;
 
@@ -225,6 +225,17 @@ impl<'a> Parser<'a> {
             let slots = self.parse_slot_bindings()?;
             self.expect(TokenKind::RBrace)?;
             Some(FragmentBody::Slots(slots))
+        } else if self.check(TokenKind::Identifier) && self.has_arrow_after_params() {
+            // Inline blueprint with parameters: { param -> body } or { p1, p2 -> body }
+            // This is used when passing an inline blueprint as fragment content
+            let mut params = vec![self.expect_identifier()?];
+            while self.consume(TokenKind::Comma).is_some() {
+                params.push(self.expect_identifier()?);
+            }
+            self.expect(TokenKind::Arrow)?;
+            let body = self.parse_blueprint_body()?;
+            self.expect(TokenKind::RBrace)?;
+            Some(FragmentBody::InlineBlueprint { params, body })
         } else {
             // Default body: regular blueprint statements
             let body = self.parse_blueprint_body()?;
@@ -258,47 +269,62 @@ impl<'a> Parser<'a> {
 
     /// Parse blueprint value (inline blueprint or reference)
     fn parse_blueprint_value(&mut self) -> Option<BlueprintValue> {
-        // Check for inline blueprint: { body } or params -> { body }
+        // Check for inline blueprint: { [params ->] body }
         if self.check(TokenKind::LBrace) {
             self.advance();
-            let body = self.parse_blueprint_body()?;
-            self.expect(TokenKind::RBrace)?;
-            Some(BlueprintValue::Inline {
-                params: vec![],
-                body,
-            })
-        } else if self.check(TokenKind::Identifier) {
-            // Could be: identifier (reference) or identifier -> { body } (inline with param)
-            let first = self.expect_identifier()?;
 
-            if self.check(TokenKind::Arrow) {
-                // param -> { body }
-                self.advance();
-                self.expect(TokenKind::LBrace)?;
-                let body = self.parse_blueprint_body()?;
-                self.expect(TokenKind::RBrace)?;
-                Some(BlueprintValue::Inline {
-                    params: vec![first],
-                    body,
-                })
-            } else if self.check(TokenKind::Comma) {
-                // Multiple params: a, b -> { body }
-                let mut params = vec![first];
+            // Check if this is { param -> body } or { param1, param2 -> body }
+            // We need to look ahead to see if there's an arrow after identifier(s)
+            if self.check(TokenKind::Identifier) && self.has_arrow_after_params() {
+                // Parse parameters: param or param1, param2, ...
+                let mut params = vec![self.expect_identifier()?];
                 while self.consume(TokenKind::Comma).is_some() {
                     params.push(self.expect_identifier()?);
                 }
                 self.expect(TokenKind::Arrow)?;
-                self.expect(TokenKind::LBrace)?;
                 let body = self.parse_blueprint_body()?;
                 self.expect(TokenKind::RBrace)?;
                 Some(BlueprintValue::Inline { params, body })
             } else {
-                // Just a reference
-                Some(BlueprintValue::Reference(first))
+                // No params, just body
+                let body = self.parse_blueprint_body()?;
+                self.expect(TokenKind::RBrace)?;
+                Some(BlueprintValue::Inline {
+                    params: vec![],
+                    body,
+                })
             }
+        } else if self.check(TokenKind::Identifier) {
+            // Blueprint reference
+            let name = self.expect_identifier()?;
+            Some(BlueprintValue::Reference(name))
         } else {
             self.error_expected("blueprint value");
             None
+        }
+    }
+
+    /// Check if there's an arrow after a sequence of comma-separated identifiers
+    /// Used to distinguish { param -> body } from { identifier ... }
+    fn has_arrow_after_params(&self) -> bool {
+        let mut offset = 1; // Start after current identifier
+
+        loop {
+            match self.peek_n(offset) {
+                Some(t) if t.kind == TokenKind::Arrow => return true,
+                Some(t) if t.kind == TokenKind::Comma => {
+                    // Expect identifier after comma
+                    offset += 1;
+                    match self.peek_n(offset) {
+                        Some(t) if t.kind == TokenKind::Identifier => {
+                            offset += 1;
+                            // Continue looking for more commas or arrow
+                        }
+                        _ => return false,
+                    }
+                }
+                _ => return false,
+            }
         }
     }
 

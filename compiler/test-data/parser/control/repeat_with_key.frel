@@ -14,7 +14,7 @@ blueprint RepeatWithKey {
     with TodoBackend
 
     column {
-        repeat on todos by todo.id as todo {
+        repeat on todos as todo by todo.id {
             row {
                 checkbox { todo.done }
                 text { todo.text }

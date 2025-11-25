@@ -79,6 +79,11 @@ pub struct FragmentCreation {
 pub enum FragmentBody {
     Default(Vec<BlueprintStmt>),
     Slots(Vec<SlotBinding>),
+    /// Inline blueprint with parameters: { param -> body }
+    InlineBlueprint {
+        params: Vec<String>,
+        body: Vec<BlueprintStmt>,
+    },
 }
 
 /// Slot binding

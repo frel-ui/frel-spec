@@ -1,9 +1,11 @@
 module test
 
-blueprint Article {
-    header : Blueprint
-    content : Blueprint
-    footer : Blueprint
+blueprint Article(header: Blueprint, content: Blueprint, footer: Blueprint) {
+    column {
+        header()
+        content()
+        footer()
+    }
 }
 
 blueprint Page {

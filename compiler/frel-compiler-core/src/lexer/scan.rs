@@ -74,6 +74,10 @@ impl<'a> Lexer<'a> {
                 TokenKind::LBrace
             }
             '}' => {
+                // Check if we're closing a string interpolation
+                if self.template_depth > 0 {
+                    return self.lex_string_template_continue(start);
+                }
                 self.advance();
                 TokenKind::RBrace
             }
@@ -520,8 +524,12 @@ impl<'a> Lexer<'a> {
                 }
                 Some((_, '$')) if self.peek_char_nth(1) == Some('{') => {
                     has_interpolation = true;
+                    // Consume the ${ so parser can read the interpolated expression
+                    self.advance(); // consume '$'
+                    self.advance(); // consume '{'
+                    // Track that we're inside a string template
+                    self.template_depth += 1;
                     // Return the start portion as StringTemplateStart
-                    // The parser will handle the interpolation
                     return Token::new(
                         TokenKind::StringTemplateStart,
                         Span::new(start as u32, self.current_pos as u32),
@@ -553,7 +561,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Continue lexing a string template after an interpolation
-    pub fn lex_string_template_continue(&mut self, start: usize) -> Token {
+    fn lex_string_template_continue(&mut self, start: usize) -> Token {
         // We're at the '}' that ends an interpolation
         self.advance(); // consume '}'
 
@@ -561,6 +569,8 @@ impl<'a> Lexer<'a> {
             match self.peek_char() {
                 Some((_, '"')) => {
                     self.advance();
+                    // We're exiting the string template
+                    self.template_depth -= 1;
                     return Token::new(
                         TokenKind::StringTemplateEnd,
                         Span::new(start as u32, self.current_pos as u32),
@@ -573,6 +583,10 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 Some((_, '$')) if self.peek_char_nth(1) == Some('{') => {
+                    // Consume the ${ so parser can read the next interpolated expression
+                    self.advance(); // consume '$'
+                    self.advance(); // consume '{'
+                    // Note: template_depth stays the same - we're still in the same string template
                     return Token::new(
                         TokenKind::StringTemplateMiddle,
                         Span::new(start as u32, self.current_pos as u32),
@@ -586,6 +600,8 @@ impl<'a> Lexer<'a> {
                         )
                         .with_code("E0105"),
                     );
+                    // Clean up template depth on error
+                    self.template_depth = self.template_depth.saturating_sub(1);
                     return Token::new(
                         TokenKind::Error,
                         Span::new(start as u32, self.current_pos as u32),

@@ -27,7 +27,7 @@ blueprint ControlCombined {
                 }
 
                 when items.length > 0 {
-                    repeat on items by item.id as item {
+                    repeat on items as item by item.id {
                         when item.active || showInactive {
                             row {
                                 text { item.name }

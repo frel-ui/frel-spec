@@ -400,22 +400,15 @@ impl<'a> Parser<'a> {
         }
         self.advance();
 
-        // We're now after the ${
+        // We're now after the ${ (lexer consumed it)
         // Parse alternating expressions and text parts
         loop {
-            // Skip ${ if present
-            if self.current_text() == "${" {
-                self.advance();
-            }
-
             // Parse the interpolated expression
             let expr = self.parse_expr()?;
             elements.push(TemplateElement::Interpolation(Box::new(expr)));
 
-            // Expect } to close interpolation
-            self.expect(TokenKind::RBrace)?;
-
-            // Check what comes next in the string
+            // The lexer handles the closing } and returns the next string part
+            // as StringTemplateMiddle or StringTemplateEnd
             match self.current_kind() {
                 TokenKind::StringTemplateMiddle => {
                     let text = self.current_text();
@@ -437,19 +430,8 @@ impl<'a> Parser<'a> {
                     self.advance();
                     break;
                 }
-                TokenKind::StringLiteral => {
-                    // Simple case: rest of string after }
-                    let text = self.current_text();
-                    if let Some(t) = self.extract_template_end_text(text) {
-                        if !t.is_empty() {
-                            elements.push(TemplateElement::Text(t));
-                        }
-                    }
-                    self.advance();
-                    break;
-                }
                 _ => {
-                    // Assume end of template
+                    self.error_expected("string template continuation");
                     break;
                 }
             }
