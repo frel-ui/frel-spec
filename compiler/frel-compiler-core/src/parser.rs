@@ -16,9 +16,7 @@ pub fn parse_file(source: &str) -> Result<ast::File> {
     // TODO: Build AST from parse tree
     // For now, return a placeholder
     Ok(ast::File {
-        module: ast::ModulePath {
-            segments: vec!["placeholder".to_string()],
-        },
+        module: "placeholder".to_string(),
         imports: vec![],
         declarations: vec![],
     })

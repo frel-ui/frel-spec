@@ -1,0 +1,7 @@
+module test
+
+backend SimpleBackend {
+    value : string = "hello"
+    count : i32 = 0
+    enabled : bool = true
+}

@@ -9,21 +9,15 @@ use serde::{Deserialize, Serialize};
 /// A Frel source file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct File {
-    pub module: ModulePath,
+    pub module: String,
     pub imports: Vec<Import>,
     pub declarations: Vec<TopLevelDecl>,
-}
-
-/// Module path (e.g., `frel.ui.components`)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ModulePath {
-    pub segments: Vec<String>,
 }
 
 /// Import statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    pub module: ModulePath,
+    pub module: String,
     pub name: String,
 }
 

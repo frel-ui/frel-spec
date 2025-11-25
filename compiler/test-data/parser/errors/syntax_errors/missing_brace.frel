@@ -1,0 +1,5 @@
+module test
+
+blueprint Hello
+    text { "Hello" }
+}

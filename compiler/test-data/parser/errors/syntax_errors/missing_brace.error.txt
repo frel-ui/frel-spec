@@ -1,0 +1,6 @@
+Parse error:  --> 4:5
+  |
+4 |     text { "Hello" }
+  |     ^---
+  |
+  = expected param_list
