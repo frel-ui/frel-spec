@@ -56,8 +56,8 @@ fn main() -> Result<()> {
         } => compile(&input, output.as_deref(), &target),
         Commands::Check { input } => check(&input),
         Commands::Version => {
-            println!("frel {}", env!("CARGO_PKG_VERSION"));
-            println!("frel-core {}", frel_core::VERSION);
+            println!("frelc {}", env!("CARGO_PKG_VERSION"));
+            println!("frel-compiler-core {}", frel_compiler_core::VERSION);
             Ok(())
         }
     }
@@ -69,12 +69,12 @@ fn compile(input: &Path, output: Option<&Path>, target: &str) -> Result<()> {
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
     // Parse and compile
-    let ast = frel_core::compile(&source)
+    let ast = frel_compiler_core::compile(&source)
         .with_context(|| "Compilation failed")?;
 
     // Generate code
     let code = match target {
-        "javascript" | "js" => frel_plugin_javascript::generate(&ast),
+        "javascript" | "js" => frel_compiler_plugin_javascript::generate(&ast),
         _ => anyhow::bail!("Unsupported target: {}", target),
     };
 
@@ -98,7 +98,7 @@ fn check(input: &Path) -> Result<()> {
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
     // Parse and check
-    frel_core::compile(&source)
+    frel_compiler_core::compile(&source)
         .with_context(|| "Check failed")?;
 
     println!("✓ {} OK", input.display());

@@ -2,7 +2,7 @@
 //
 // This module implements the actual code generation logic.
 
-use frel_core::ast::*;
+use frel_compiler_core::ast::*;
 
 /// Generate JavaScript code for a Frel file
 pub fn generate_file(file: &File) -> String {

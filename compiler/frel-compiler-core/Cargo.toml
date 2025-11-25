@@ -1,5 +1,5 @@
 [package]
-name = "frel-core"
+name = "frel-compiler-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

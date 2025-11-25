@@ -1,0 +1,27 @@
+[package]
+name = "frel-compiler-test"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Testing framework for the Frel compiler"
+
+[[bin]]
+name = "frel-compiler-test"
+path = "src/main.rs"
+
+[dependencies]
+frel-compiler-core = { path = "../frel-compiler-core" }
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# CLI
+clap.workspace = true
+
+# Testing utilities
+similar = "2.0"
+walkdir = "2.0"
+colored = "2.0"

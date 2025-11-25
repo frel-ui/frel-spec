@@ -2,9 +2,10 @@
 resolver = "2"
 
 members = [
-    "frel-core",
-    "frel-plugin-javascript",
-    "frel-cli",
+    "frel-compiler-core",
+    "frel-compiler-plugin-javascript",
+    "frel-compiler-cli",
+    "frel-compiler-test",
 ]
 
 [workspace.package]

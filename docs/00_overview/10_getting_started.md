@@ -71,9 +71,11 @@ This provides:
 ```
 frel/
 ├── compiler/                      # Rust compiler workspace
-│   ├── frel-core/                 # Core: parser, AST, type checker
-│   ├── frel-plugin-javascript/    # JavaScript code generation
-│   └── frel-cli/                  # CLI binary
+│   ├── frel-compiler-core/        # Core: parser, AST, type checker
+│   ├── frel-compiler-plugin-javascript/  # JavaScript code generation
+│   ├── frel-compiler-cli/         # CLI binary (frelc)
+│   ├── frel-compiler-test/        # Compiler testing tool
+│   └── test-data/                 # Compiler test data
 │
 ├── host/                          # Host language implementations
 │   └── javascript/
@@ -112,14 +114,14 @@ Located in `compiler/`
 
 **Working on the parser:**
 ```bash
-cd compiler/frel-core
+cd compiler/frel-compiler-core
 # Edit src/parser.rs
 cargo test
 ```
 
 **Working on code generation:**
 ```bash
-cd compiler/frel-plugin-javascript
+cd compiler/frel-compiler-plugin-javascript
 # Edit src/codegen.rs
 cargo test
 ```
@@ -129,6 +131,52 @@ cargo test
 cd compiler
 cargo run --bin frelc -- compile ../examples/counter/src/counter.frel
 ```
+
+### Compiler Testing
+
+The compiler has a dedicated testing framework (`frel-compiler-test`) that uses file-based tests. Test data is located in `compiler/test-data/`.
+
+**Running compiler tests:**
+```bash
+cd compiler
+cargo run --package frel-compiler-test
+```
+
+**Test file conventions:**
+- `<name>.frel` - Input source code
+- `<name>.ast.json` - Expected AST (for success tests)
+- `<name>.error.txt` - Expected error message (for error tests)
+
+**Test directory structure:**
+```
+compiler/test-data/
+└── parser/
+    ├── blueprint/       # Blueprint parsing tests
+    ├── backend/         # Backend parsing tests
+    └── errors/          # Error case tests
+        └── syntax_errors/
+```
+
+**Useful commands:**
+```bash
+# Run all tests
+cargo run --package frel-compiler-test
+
+# Run tests matching a pattern
+cargo run --package frel-compiler-test -- blueprint
+
+# Update expected output files
+cargo run --package frel-compiler-test -- --update
+
+# Show detailed diff on failures
+cargo run --package frel-compiler-test -- --verbose
+```
+
+**Adding new tests:**
+1. Create a `.frel` file in the appropriate directory
+2. Run with `--update` to generate the expected output
+3. Review the generated `.ast.json` or `.error.txt` file
+4. Commit both files
 
 ### Runtime Development
 
@@ -171,10 +219,10 @@ Start with these documents in `docs/10_language/`:
 
 ### Compiler Implementation
 
-- `compiler/frel-core/src/frel.pest` - Grammar definition
-- `compiler/frel-core/src/parser.rs` - Parser implementation
-- `compiler/frel-core/src/ast.rs` - AST structure
-- `compiler/frel-plugin-javascript/src/codegen.rs` - JS code generation
+- `compiler/frel-compiler-core/src/frel.pest` - Grammar definition
+- `compiler/frel-compiler-core/src/parser.rs` - Parser implementation
+- `compiler/frel-compiler-core/src/ast.rs` - AST structure
+- `compiler/frel-compiler-plugin-javascript/src/codegen.rs` - JS code generation
 
 ### Runtime Implementation
 

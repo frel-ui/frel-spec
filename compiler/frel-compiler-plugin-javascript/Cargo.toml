@@ -1,5 +1,5 @@
 [package]
-name = "frel-plugin-javascript"
+name = "frel-compiler-plugin-javascript"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-frel-core = { path = "../frel-core" }
+frel-compiler-core = { path = "../frel-compiler-core" }
 anyhow.workspace = true
 thiserror.workspace = true
 serde.workspace = true

@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cargo run:*)",
+      "Bash(git checkout:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

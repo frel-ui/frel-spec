@@ -3,7 +3,7 @@
 // This crate implements JavaScript code generation from Frel AST.
 // It produces ES6 modules that can run in modern JavaScript environments.
 
-use frel_core::ast;
+use frel_compiler_core::ast;
 
 pub mod codegen;
 

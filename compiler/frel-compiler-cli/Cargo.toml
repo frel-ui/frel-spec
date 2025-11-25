@@ -1,5 +1,5 @@
 [package]
-name = "frel-cli"
+name = "frel-compiler-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -11,7 +11,7 @@ name = "frelc"
 path = "src/main.rs"
 
 [dependencies]
-frel-core = { path = "../frel-core" }
-frel-plugin-javascript = { path = "../frel-plugin-javascript" }
+frel-compiler-core = { path = "../frel-compiler-core" }
+frel-compiler-plugin-javascript = { path = "../frel-compiler-plugin-javascript" }
 anyhow.workspace = true
 clap.workspace = true
