@@ -50,6 +50,8 @@ pub enum BlueprintStmt {
     Control(ControlStmt),
     Instruction(Instruction),
     EventHandler(EventHandler),
+    /// A standalone expression as content (e.g., "Hello" in text { "Hello" })
+    ContentExpr(Expr),
 }
 
 /// Local declaration

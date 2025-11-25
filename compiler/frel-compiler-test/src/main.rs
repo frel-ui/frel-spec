@@ -219,37 +219,39 @@ fn run_wip_test(test: &TestCase) -> TestResult {
     // Parse the source
     let result = frel_compiler_core::parse_file(&source);
 
-    match result {
-        Ok(ast) => {
-            // Serialize AST to JSON and write to .ast.json
-            let ast_path = test.source_path.with_extension("ast.json");
-            match serde_json::to_string_pretty(&ast) {
-                Ok(json) => {
-                    if let Err(e) = fs::write(&ast_path, &json) {
-                        return TestResult::Failed {
-                            message: format!("Failed to write AST file: {}", e),
-                            diff: None,
-                        };
-                    }
-                    TestResult::Passed
-                }
-                Err(e) => TestResult::Failed {
-                    message: format!("Failed to serialize AST: {}", e),
-                    diff: None,
-                },
-            }
+    if result.diagnostics.has_errors() {
+        // Write error to .error.txt
+        let error_path = test.source_path.with_extension("error.txt");
+        let error_msg = format_diagnostics(&result.diagnostics, &source);
+        if let Err(e) = fs::write(&error_path, &error_msg) {
+            return TestResult::Failed {
+                message: format!("Failed to write error file: {}", e),
+                diff: None,
+            };
         }
-        Err(e) => {
-            // Write error to .error.txt
-            let error_path = test.source_path.with_extension("error.txt");
-            let error_msg = format!("{}", e);
-            if let Err(e) = fs::write(&error_path, &error_msg) {
-                return TestResult::Failed {
-                    message: format!("Failed to write error file: {}", e),
-                    diff: None,
-                };
+        TestResult::Passed
+    } else if let Some(ast) = result.file {
+        // Serialize AST to JSON and write to .ast.json
+        let ast_path = test.source_path.with_extension("ast.json");
+        match serde_json::to_string_pretty(&ast) {
+            Ok(json) => {
+                if let Err(e) = fs::write(&ast_path, &json) {
+                    return TestResult::Failed {
+                        message: format!("Failed to write AST file: {}", e),
+                        diff: None,
+                    };
+                }
+                TestResult::Passed
             }
-            TestResult::Passed
+            Err(e) => TestResult::Failed {
+                message: format!("Failed to serialize AST: {}", e),
+                diff: None,
+            },
+        }
+    } else {
+        TestResult::Failed {
+            message: "Parse returned no AST and no errors".to_string(),
+            diff: None,
         }
     }
 }
@@ -269,59 +271,69 @@ fn run_success_test(test: &TestCase, expected_ast: &Path, update: bool) -> TestR
     // Parse the source
     let result = frel_compiler_core::parse_file(&source);
 
-    match result {
-        Ok(ast) => {
-            // Serialize AST to JSON
-            let actual_json = match serde_json::to_string_pretty(&ast) {
-                Ok(j) => j,
-                Err(e) => {
-                    return TestResult::Failed {
-                        message: format!("Failed to serialize AST: {}", e),
-                        diff: None,
-                    }
-                }
-            };
+    if result.diagnostics.has_errors() {
+        let error_msg = format_diagnostics(&result.diagnostics, &source);
+        return TestResult::Failed {
+            message: format!("Parse failed unexpectedly:\n{}", error_msg),
+            diff: None,
+        };
+    }
 
-            if update {
-                // Update mode: write actual output to expected file
-                if let Err(e) = fs::write(expected_ast, &actual_json) {
-                    return TestResult::Failed {
-                        message: format!("Failed to update expected file: {}", e),
-                        diff: None,
-                    };
-                }
-                return TestResult::Passed;
-            }
-
-            // Read expected output
-            let expected_json = match fs::read_to_string(expected_ast) {
-                Ok(s) => s,
-                Err(e) => {
-                    return TestResult::Failed {
-                        message: format!("Failed to read expected AST: {}", e),
-                        diff: None,
-                    }
-                }
-            };
-
-            // Compare
-            let actual_normalized = normalize_json(&actual_json);
-            let expected_normalized = normalize_json(&expected_json);
-
-            if actual_normalized == expected_normalized {
-                TestResult::Passed
-            } else {
-                let diff = generate_diff(&expected_json, &actual_json);
-                TestResult::Failed {
-                    message: "AST mismatch".to_string(),
-                    diff: Some(diff),
-                }
+    let ast = match result.file {
+        Some(ast) => ast,
+        None => {
+            return TestResult::Failed {
+                message: "Parse returned no AST".to_string(),
+                diff: None,
             }
         }
-        Err(e) => TestResult::Failed {
-            message: format!("Parse failed unexpectedly: {}", e),
-            diff: None,
-        },
+    };
+
+    // Serialize AST to JSON
+    let actual_json = match serde_json::to_string_pretty(&ast) {
+        Ok(j) => j,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to serialize AST: {}", e),
+                diff: None,
+            }
+        }
+    };
+
+    if update {
+        // Update mode: write actual output to expected file
+        if let Err(e) = fs::write(expected_ast, &actual_json) {
+            return TestResult::Failed {
+                message: format!("Failed to update expected file: {}", e),
+                diff: None,
+            };
+        }
+        return TestResult::Passed;
+    }
+
+    // Read expected output
+    let expected_json = match fs::read_to_string(expected_ast) {
+        Ok(s) => s,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to read expected AST: {}", e),
+                diff: None,
+            }
+        }
+    };
+
+    // Compare
+    let actual_normalized = normalize_json(&actual_json);
+    let expected_normalized = normalize_json(&expected_json);
+
+    if actual_normalized == expected_normalized {
+        TestResult::Passed
+    } else {
+        let diff = generate_diff(&expected_json, &actual_json);
+        TestResult::Failed {
+            message: "AST mismatch".to_string(),
+            diff: Some(diff),
+        }
     }
 }
 
@@ -340,51 +352,67 @@ fn run_error_test(test: &TestCase, expected_error: &Path, update: bool) -> TestR
     // Parse the source (expecting failure)
     let result = frel_compiler_core::parse_file(&source);
 
-    match result {
-        Ok(_) => TestResult::Failed {
+    if !result.diagnostics.has_errors() {
+        return TestResult::Failed {
             message: "Expected parse error but parsing succeeded".to_string(),
             diff: None,
-        },
-        Err(e) => {
-            let actual_error = format!("{}", e);
+        };
+    }
 
-            if update {
-                // Update mode: write actual error to expected file
-                if let Err(e) = fs::write(expected_error, &actual_error) {
-                    return TestResult::Failed {
-                        message: format!("Failed to update expected file: {}", e),
-                        diff: None,
-                    };
-                }
-                return TestResult::Passed;
-            }
+    let actual_error = format_diagnostics(&result.diagnostics, &source);
 
-            // Read expected error
-            let expected = match fs::read_to_string(expected_error) {
-                Ok(s) => s,
-                Err(e) => {
-                    return TestResult::Failed {
-                        message: format!("Failed to read expected error: {}", e),
-                        diff: None,
-                    }
-                }
+    if update {
+        // Update mode: write actual error to expected file
+        if let Err(e) = fs::write(expected_error, &actual_error) {
+            return TestResult::Failed {
+                message: format!("Failed to update expected file: {}", e),
+                diff: None,
             };
+        }
+        return TestResult::Passed;
+    }
 
-            // Compare (normalize whitespace)
-            let actual_normalized = actual_error.trim();
-            let expected_normalized = expected.trim();
-
-            if actual_normalized == expected_normalized {
-                TestResult::Passed
-            } else {
-                let diff = generate_diff(&expected, &actual_error);
-                TestResult::Failed {
-                    message: "Error message mismatch".to_string(),
-                    diff: Some(diff),
-                }
+    // Read expected error
+    let expected = match fs::read_to_string(expected_error) {
+        Ok(s) => s,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to read expected error: {}", e),
+                diff: None,
             }
         }
+    };
+
+    // Compare (normalize whitespace)
+    let actual_normalized = actual_error.trim();
+    let expected_normalized = expected.trim();
+
+    if actual_normalized == expected_normalized {
+        TestResult::Passed
+    } else {
+        let diff = generate_diff(&expected, &actual_error);
+        TestResult::Failed {
+            message: "Error message mismatch".to_string(),
+            diff: Some(diff),
+        }
     }
+}
+
+fn format_diagnostics(diagnostics: &frel_compiler_core::Diagnostics, source: &str) -> String {
+    let line_index = frel_compiler_core::LineIndex::new(source);
+    let mut output = String::new();
+
+    for diag in diagnostics.iter() {
+        let loc = line_index.line_col(diag.span.start);
+        output.push_str(&format!(
+            "error[{}]: {}\n",
+            diag.code.as_deref().unwrap_or("E????"),
+            diag.message
+        ));
+        output.push_str(&format!(" --> {}:{}\n", loc.line, loc.col));
+    }
+
+    output
 }
 
 fn normalize_json(json: &str) -> String {

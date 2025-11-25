@@ -7,10 +7,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-pest.workspace = true
-pest_derive.workspace = true
-anyhow.workspace = true
-thiserror.workspace = true
+# Serialization
 serde.workspace = true
 serde_json.workspace = true
+
+# Utilities
 indexmap.workspace = true

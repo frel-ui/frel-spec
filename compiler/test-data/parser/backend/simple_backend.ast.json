@@ -1,5 +1,47 @@
 {
-  "module": "placeholder",
+  "module": "test",
   "imports": [],
-  "declarations": []
+  "declarations": [
+    {
+      "Backend": {
+        "name": "SimpleBackend",
+        "params": [],
+        "members": [
+          {
+            "Field": {
+              "name": "value",
+              "type_expr": {
+                "Named": "string"
+              },
+              "init": {
+                "String": "hello"
+              }
+            }
+          },
+          {
+            "Field": {
+              "name": "count",
+              "type_expr": {
+                "Named": "i32"
+              },
+              "init": {
+                "Int": 0
+              }
+            }
+          },
+          {
+            "Field": {
+              "name": "enabled",
+              "type_expr": {
+                "Named": "bool"
+              },
+              "init": {
+                "Bool": true
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
 }

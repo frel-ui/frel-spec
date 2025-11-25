@@ -69,8 +69,25 @@ fn compile(input: &Path, output: Option<&Path>, target: &str) -> Result<()> {
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
     // Parse and compile
-    let ast = frel_compiler_core::compile(&source)
-        .with_context(|| "Compilation failed")?;
+    let result = frel_compiler_core::compile(&source);
+
+    // Check for errors
+    if result.diagnostics.has_errors() {
+        let line_index = frel_compiler_core::LineIndex::new(&source);
+        for diag in result.diagnostics.iter() {
+            let loc = line_index.line_col(diag.span.start);
+            eprintln!(
+                "error[{}]: {} at {}:{}",
+                diag.code.as_deref().unwrap_or("E????"),
+                diag.message,
+                loc.line,
+                loc.col
+            );
+        }
+        anyhow::bail!("Compilation failed with {} error(s)", result.diagnostics.error_count());
+    }
+
+    let ast = result.file.context("No AST produced")?;
 
     // Generate code
     let code = match target {
@@ -98,8 +115,23 @@ fn check(input: &Path) -> Result<()> {
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
     // Parse and check
-    frel_compiler_core::compile(&source)
-        .with_context(|| "Check failed")?;
+    let result = frel_compiler_core::compile(&source);
+
+    // Check for errors
+    if result.diagnostics.has_errors() {
+        let line_index = frel_compiler_core::LineIndex::new(&source);
+        for diag in result.diagnostics.iter() {
+            let loc = line_index.line_col(diag.span.start);
+            eprintln!(
+                "error[{}]: {} at {}:{}",
+                diag.code.as_deref().unwrap_or("E????"),
+                diag.message,
+                loc.line,
+                loc.col
+            );
+        }
+        anyhow::bail!("Check failed with {} error(s)", result.diagnostics.error_count());
+    }
 
     println!("✓ {} OK", input.display());
 
