@@ -48,7 +48,7 @@ theme AppTheme {
     set input_field {
         padding { smallPadding }
         corner_radius { 4 }
-        border { #CCCCCC borderWidth }
+        border { color: #CCCCCC width: borderWidth }
     }
 
     variant Dark {

@@ -6,7 +6,7 @@ blueprint ChainedInstructions {
         .. padding { 12 }
         .. background { color: #F0F0F0 }
         .. corner_radius { 4 }
-        .. border { #CCCCCC 1 }
+        .. border { color: #CCCCCC width: 1 }
 
     box {
         .. width { 300 } .. height { 200 } .. padding { 16 }

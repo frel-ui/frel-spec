@@ -7,6 +7,27 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 
 **DIP**: Device Independent Pixel (floating point)
 
+## Parameter Syntax
+
+Instructions accept parameters in two forms:
+
+1. **Single positional value**: `instruction { value }`
+2. **Named parameters**: `instruction { name1: value1 name2: value2 }`
+
+When using multiple parameters, all must be named. Mixed positional and named parameters are not supported.
+
+```frel
+// Single value (shorthand)
+width { 100 }
+border { #000000 }
+gap { 12 }
+
+// Multiple parameters (all named)
+border { color: #000000 width: 1 }
+width { value: 100 min: 50 max: 200 }
+padding { top: 8 left: 16 }
+```
+
 ## Color
 
 `<color>` is a 32-bit RGBA value representing a color.
@@ -104,7 +125,6 @@ NOTE: `color` may be used with any of the shorthands when `<type>` is `border`.
 | `<type> { horizontal : DIP }` | `<type> { left: DIP right : DIP }`                                    |
 | `<type> { vertical : DIP }`   | `<type> { top: DIP bottom : DIP }`                                    |
 | `<type> { DIP }`              | `<type> { top: DIP right : DIP bottom : DIP left : DIP }`             |
-| `border { <color> DIP }`      | `border { top: DIP right: DIP bottom: DIP left: DIP color: <color> }` |
 
 ### Fill strategy
 

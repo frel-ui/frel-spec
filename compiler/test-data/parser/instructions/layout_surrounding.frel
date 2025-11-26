@@ -11,7 +11,7 @@ blueprint LayoutSurrounding {
         box { } .. margin { 8 }
         box { } .. margin { top: 4 bottom: 4 }
 
-        box { } .. border { #000000 1 }
+        box { } .. border { color: #000000 width: 1 }
         box { } .. border { color: #FF0000 top: 2 }
         box { } .. border { top: 1 right: 1 bottom: 1 left: 1 color: Blue }
     }
