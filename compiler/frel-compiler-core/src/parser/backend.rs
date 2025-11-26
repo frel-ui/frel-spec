@@ -1,13 +1,13 @@
 // Backend parser for Frel
 
-use crate::ast::{Backend, BackendMember, Command, Field, Method};
+use crate::ast::{FaBackend, FaBackendMember, FaCommand, FaField, FaMethod};
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse backend declaration
-    pub(super) fn parse_backend(&mut self) -> Option<Backend> {
+    pub(super) fn parse_backend(&mut self) -> Option<FaBackend> {
         self.expect(TokenKind::Backend)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Backend {
+        Some(FaBackend {
             name,
             params,
             members,
@@ -33,12 +33,12 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a backend member
-    fn parse_backend_member(&mut self) -> Option<BackendMember> {
+    fn parse_backend_member(&mut self) -> Option<FaBackendMember> {
         match self.current_kind() {
             TokenKind::Include => {
                 self.advance();
                 let name = self.expect_identifier()?;
-                Some(BackendMember::Include(name))
+                Some(FaBackendMember::Include(name))
             }
             TokenKind::Method => {
                 self.advance();
@@ -46,7 +46,7 @@ impl<'a> Parser<'a> {
                 let params = self.parse_param_list()?;
                 self.expect(TokenKind::Colon)?;
                 let return_type = self.parse_type_expr()?;
-                Some(BackendMember::Method(Method {
+                Some(FaBackendMember::Method(FaMethod {
                     name,
                     params,
                     return_type,
@@ -56,7 +56,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let name = self.expect_identifier()?;
                 let params = self.parse_param_list()?;
-                Some(BackendMember::Command(Command { name, params }))
+                Some(FaBackendMember::Command(FaCommand { name, params }))
             }
             TokenKind::Identifier => {
                 // Field: name : type [= init]
@@ -68,7 +68,7 @@ impl<'a> Parser<'a> {
                 } else {
                     None
                 };
-                Some(BackendMember::Field(Field {
+                Some(FaBackendMember::Field(FaField {
                     name,
                     type_expr,
                     init,

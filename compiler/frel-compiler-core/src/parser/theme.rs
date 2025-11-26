@@ -1,13 +1,13 @@
 // Theme parser for Frel
 
-use crate::ast::{InstructionSet, Theme, ThemeField, ThemeMember, ThemeVariant};
+use crate::ast::{FaInstructionSet, FaTheme, FaThemeField, FaThemeMember, FaThemeVariant};
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse theme declaration
-    pub(super) fn parse_theme(&mut self) -> Option<Theme> {
+    pub(super) fn parse_theme(&mut self) -> Option<FaTheme> {
         self.expect(TokenKind::Theme)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -23,16 +23,16 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Theme { name, members })
+        Some(FaTheme { name, members })
     }
 
     /// Parse a theme member
-    fn parse_theme_member(&mut self) -> Option<ThemeMember> {
+    fn parse_theme_member(&mut self) -> Option<FaThemeMember> {
         match self.current_kind() {
             TokenKind::Include => {
                 self.advance();
                 let name = self.expect_identifier()?;
-                Some(ThemeMember::Include(name))
+                Some(FaThemeMember::Include(name))
             }
             TokenKind::Set => {
                 self.advance();
@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
 
                 self.expect(TokenKind::RBrace)?;
 
-                Some(ThemeMember::InstructionSet(InstructionSet {
+                Some(FaThemeMember::InstructionSet(FaInstructionSet {
                     name,
                     instructions,
                 }))
@@ -70,7 +70,7 @@ impl<'a> Parser<'a> {
 
                 self.expect(TokenKind::RBrace)?;
 
-                Some(ThemeMember::Variant(ThemeVariant { name, overrides }))
+                Some(FaThemeMember::Variant(FaThemeVariant { name, overrides }))
             }
             TokenKind::Identifier => {
                 // Field: name : [asset] type [= init]
@@ -86,7 +86,7 @@ impl<'a> Parser<'a> {
                     None
                 };
 
-                Some(ThemeMember::Field(ThemeField {
+                Some(FaThemeMember::Field(FaThemeField {
                     name,
                     is_asset,
                     type_expr,

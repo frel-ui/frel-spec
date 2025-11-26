@@ -1,13 +1,13 @@
 // Enum parser for Frel
 
-use crate::ast::Enum;
+use crate::ast::FaEnum;
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse enum declaration
-    pub(super) fn parse_enum(&mut self) -> Option<Enum> {
+    pub(super) fn parse_enum(&mut self) -> Option<FaEnum> {
         self.expect(TokenKind::Enum)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Enum { name, variants })
+        Some(FaEnum { name, variants })
     }
 }
 
@@ -47,7 +47,7 @@ enum Status {
         );
         assert!(!result.diagnostics.has_errors());
         let file = result.file.unwrap();
-        if let crate::ast::TopLevelDecl::Enum(e) = &file.declarations[0] {
+        if let crate::ast::FaTopLevelDecl::Enum(e) = &file.declarations[0] {
             assert_eq!(e.variants.len(), 3);
         }
     }

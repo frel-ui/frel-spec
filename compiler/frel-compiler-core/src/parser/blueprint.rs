@@ -8,9 +8,9 @@
 // - Event handlers
 
 use crate::ast::{
-    Arg, Blueprint, BlueprintStmt, BlueprintValue, ControlStmt, EventHandler, EventParam,
-    FragmentBody, FragmentCreation, HandlerStmt, Instruction, LocalDecl, SelectBranch,
-    SlotBinding,
+    FaArg, FaBlueprint, FaBlueprintStmt, FaBlueprintValue, FaControlStmt, FaEventHandler,
+    FaEventParam, FaFragmentBody, FaFragmentCreation, FaHandlerStmt, FaInstruction, FaLocalDecl,
+    FaSelectBranch, FaSlotBinding,
 };
 use crate::lexer::TokenKind;
 
@@ -18,7 +18,7 @@ use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse blueprint declaration
-    pub(super) fn parse_blueprint(&mut self) -> Option<Blueprint> {
+    pub(super) fn parse_blueprint(&mut self) -> Option<FaBlueprint> {
         self.expect(TokenKind::Blueprint)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
@@ -28,11 +28,11 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Blueprint { name, params, body })
+        Some(FaBlueprint { name, params, body })
     }
 
     /// Parse blueprint body (list of statements)
-    fn parse_blueprint_body(&mut self) -> Option<Vec<BlueprintStmt>> {
+    fn parse_blueprint_body(&mut self) -> Option<Vec<FaBlueprintStmt>> {
         let mut stmts = Vec::new();
 
         while !self.check(TokenKind::RBrace) && !self.at_end() {
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a single blueprint statement
-    fn parse_blueprint_stmt(&mut self) -> Option<BlueprintStmt> {
+    fn parse_blueprint_stmt(&mut self) -> Option<FaBlueprintStmt> {
         match self.current_kind() {
             // With statement: with BackendName
             TokenKind::With => {
@@ -59,7 +59,7 @@ impl<'a> Parser<'a> {
                     // TODO: Parse backend args if needed
                     self.parse_arg_list()?;
                 }
-                Some(BlueprintStmt::With(name))
+                Some(FaBlueprintStmt::With(name))
             }
 
             // Control statements
@@ -77,7 +77,7 @@ impl<'a> Parser<'a> {
                 let type_expr = self.parse_type_expr()?;
                 self.expect(TokenKind::Eq)?;
                 let init = self.parse_expr()?;
-                Some(BlueprintStmt::LocalDecl(LocalDecl {
+                Some(FaBlueprintStmt::LocalDecl(FaLocalDecl {
                     name,
                     type_expr,
                     init,
@@ -90,7 +90,7 @@ impl<'a> Parser<'a> {
                 // vs a fragment creation (followed by (, {, .., or nothing)
                 if self.is_expression_continuation() {
                     let expr = self.parse_expr()?;
-                    Some(BlueprintStmt::ContentExpr(expr))
+                    Some(FaBlueprintStmt::ContentExpr(expr))
                 } else {
                     self.parse_fragment_or_instruction()
                 }
@@ -100,7 +100,7 @@ impl<'a> Parser<'a> {
             TokenKind::DotDot => {
                 self.advance();
                 let instr = self.parse_instruction()?;
-                Some(BlueprintStmt::Instruction(instr))
+                Some(FaBlueprintStmt::Instruction(instr))
             }
 
             // Content expressions: string literals, numbers, etc.
@@ -113,7 +113,7 @@ impl<'a> Parser<'a> {
             | TokenKind::Null
             | TokenKind::LBracket => {
                 let expr = self.parse_expr()?;
-                Some(BlueprintStmt::ContentExpr(expr))
+                Some(FaBlueprintStmt::ContentExpr(expr))
             }
 
             // Block statement: { ... } - wraps multiple statements
@@ -124,10 +124,10 @@ impl<'a> Parser<'a> {
                 let body = self.parse_blueprint_body()?;
                 self.expect(TokenKind::RBrace)?;
                 // Wrap in FragmentCreation with empty name to represent a block
-                Some(BlueprintStmt::FragmentCreation(FragmentCreation {
+                Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                     name: String::new(), // anonymous block
                     args: vec![],
-                    body: Some(FragmentBody::Default(body)),
+                    body: Some(FaFragmentBody::Default(body)),
                     instructions: vec![],
                 }))
             }
@@ -135,7 +135,7 @@ impl<'a> Parser<'a> {
             // Parenthesized expression
             TokenKind::LParen => {
                 let expr = self.parse_expr()?;
-                Some(BlueprintStmt::ContentExpr(expr))
+                Some(FaBlueprintStmt::ContentExpr(expr))
             }
 
             _ => {
@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse fragment creation or standalone instruction
-    fn parse_fragment_or_instruction(&mut self) -> Option<BlueprintStmt> {
+    fn parse_fragment_or_instruction(&mut self) -> Option<FaBlueprintStmt> {
         let name = self.expect_identifier()?;
 
         // Check what follows
@@ -187,7 +187,7 @@ impl<'a> Parser<'a> {
                 // Parse postfix instructions
                 let instructions = self.parse_postfix_instructions()?;
 
-                Some(BlueprintStmt::FragmentCreation(FragmentCreation {
+                Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                     name,
                     args,
                     body,
@@ -198,7 +198,7 @@ impl<'a> Parser<'a> {
             // Fragment with just postfix instructions: foo .. width { 100 }
             TokenKind::DotDot => {
                 let instructions = self.parse_postfix_instructions()?;
-                Some(BlueprintStmt::FragmentCreation(FragmentCreation {
+                Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                     name,
                     args: vec![],
                     body: None,
@@ -207,7 +207,7 @@ impl<'a> Parser<'a> {
             }
 
             // Bare fragment name (no args, no body, no instructions)
-            _ => Some(BlueprintStmt::FragmentCreation(FragmentCreation {
+            _ => Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                 name,
                 args: vec![],
                 body: None,
@@ -217,14 +217,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse fragment body (default, slot-based, or inline blueprint with params)
-    fn parse_fragment_body(&mut self) -> Option<FragmentBody> {
+    fn parse_fragment_body(&mut self) -> Option<FaFragmentBody> {
         self.expect(TokenKind::LBrace)?;
 
         // Check if it's a slot-based body: { at slotName: ... }
         if self.check(TokenKind::At) {
             let slots = self.parse_slot_bindings()?;
             self.expect(TokenKind::RBrace)?;
-            Some(FragmentBody::Slots(slots))
+            Some(FaFragmentBody::Slots(slots))
         } else if self.check(TokenKind::Identifier) && self.has_arrow_after_params() {
             // Inline blueprint with parameters: { param -> body } or { p1, p2 -> body }
             // This is used when passing an inline blueprint as fragment content
@@ -235,17 +235,17 @@ impl<'a> Parser<'a> {
             self.expect(TokenKind::Arrow)?;
             let body = self.parse_blueprint_body()?;
             self.expect(TokenKind::RBrace)?;
-            Some(FragmentBody::InlineBlueprint { params, body })
+            Some(FaFragmentBody::InlineBlueprint { params, body })
         } else {
             // Default body: regular blueprint statements
             let body = self.parse_blueprint_body()?;
             self.expect(TokenKind::RBrace)?;
-            Some(FragmentBody::Default(body))
+            Some(FaFragmentBody::Default(body))
         }
     }
 
     /// Parse slot bindings: at slot1: value, at slot2: value
-    fn parse_slot_bindings(&mut self) -> Option<Vec<SlotBinding>> {
+    fn parse_slot_bindings(&mut self) -> Option<Vec<FaSlotBinding>> {
         let mut bindings = Vec::new();
 
         while self.check(TokenKind::At) {
@@ -253,7 +253,7 @@ impl<'a> Parser<'a> {
             let slot_name = self.expect_identifier()?;
             self.expect(TokenKind::Colon)?;
             let blueprint = self.parse_blueprint_value()?;
-            bindings.push(SlotBinding {
+            bindings.push(FaSlotBinding {
                 slot_name,
                 blueprint,
             });
@@ -268,7 +268,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse blueprint value (inline blueprint or reference)
-    fn parse_blueprint_value(&mut self) -> Option<BlueprintValue> {
+    fn parse_blueprint_value(&mut self) -> Option<FaBlueprintValue> {
         // Check for inline blueprint: { [params ->] body }
         if self.check(TokenKind::LBrace) {
             self.advance();
@@ -284,12 +284,12 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::Arrow)?;
                 let body = self.parse_blueprint_body()?;
                 self.expect(TokenKind::RBrace)?;
-                Some(BlueprintValue::Inline { params, body })
+                Some(FaBlueprintValue::Inline { params, body })
             } else {
                 // No params, just body
                 let body = self.parse_blueprint_body()?;
                 self.expect(TokenKind::RBrace)?;
-                Some(BlueprintValue::Inline {
+                Some(FaBlueprintValue::Inline {
                     params: vec![],
                     body,
                 })
@@ -297,7 +297,7 @@ impl<'a> Parser<'a> {
         } else if self.check(TokenKind::Identifier) {
             // Blueprint reference
             let name = self.expect_identifier()?;
-            Some(BlueprintValue::Reference(name))
+            Some(FaBlueprintValue::Reference(name))
         } else {
             self.error_expected("blueprint value");
             None
@@ -329,7 +329,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse postfix instructions: .. instr1 .. instr2
-    fn parse_postfix_instructions(&mut self) -> Option<Vec<Instruction>> {
+    fn parse_postfix_instructions(&mut self) -> Option<Vec<FaInstruction>> {
         let mut instructions = Vec::new();
 
         while self.consume(TokenKind::DotDot).is_some() {
@@ -341,7 +341,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse argument list
-    fn parse_arg_list(&mut self) -> Option<Vec<Arg>> {
+    fn parse_arg_list(&mut self) -> Option<Vec<FaArg>> {
         self.expect(TokenKind::LParen)?;
 
         if self.check(TokenKind::RParen) {
@@ -363,7 +363,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a single argument (named or positional)
-    fn parse_arg(&mut self) -> Option<Arg> {
+    fn parse_arg(&mut self) -> Option<FaArg> {
         // Check for named argument: name = value
         if self.check(TokenKind::Identifier) {
             if let Some(next) = self.peek() {
@@ -371,7 +371,7 @@ impl<'a> Parser<'a> {
                     let name = self.expect_identifier()?;
                     self.advance(); // consume '='
                     let value = self.parse_expr()?;
-                    return Some(Arg {
+                    return Some(FaArg {
                         name: Some(name),
                         value,
                     });
@@ -381,7 +381,7 @@ impl<'a> Parser<'a> {
 
         // Positional argument
         let value = self.parse_expr()?;
-        Some(Arg { name: None, value })
+        Some(FaArg { name: None, value })
     }
 
     // =========================================================================
@@ -389,7 +389,7 @@ impl<'a> Parser<'a> {
     // =========================================================================
 
     /// Parse when statement: when condition stmt [else stmt]
-    fn parse_when_stmt(&mut self) -> Option<BlueprintStmt> {
+    fn parse_when_stmt(&mut self) -> Option<FaBlueprintStmt> {
         self.expect(TokenKind::When)?;
         let condition = self.parse_expr()?;
         let then_stmt = Box::new(self.parse_blueprint_stmt()?);
@@ -400,7 +400,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Some(BlueprintStmt::Control(ControlStmt::When {
+        Some(FaBlueprintStmt::Control(FaControlStmt::When {
             condition,
             then_stmt,
             else_stmt,
@@ -408,7 +408,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse repeat statement: repeat on expr [as name] [by keyExpr] stmt
-    fn parse_repeat_stmt(&mut self) -> Option<BlueprintStmt> {
+    fn parse_repeat_stmt(&mut self) -> Option<FaBlueprintStmt> {
         self.expect(TokenKind::Repeat)?;
         self.expect(TokenKind::On)?;
         let iterable = self.parse_expr()?;
@@ -427,7 +427,7 @@ impl<'a> Parser<'a> {
 
         let body = Box::new(self.parse_blueprint_stmt()?);
 
-        Some(BlueprintStmt::Control(ControlStmt::Repeat {
+        Some(FaBlueprintStmt::Control(FaControlStmt::Repeat {
             iterable,
             item_name,
             key_expr,
@@ -436,7 +436,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse select statement: select [on expr] { branches }
-    fn parse_select_stmt(&mut self) -> Option<BlueprintStmt> {
+    fn parse_select_stmt(&mut self) -> Option<FaBlueprintStmt> {
         self.expect(TokenKind::Select)?;
 
         let discriminant = if self.consume(TokenKind::On).is_some() {
@@ -461,12 +461,12 @@ impl<'a> Parser<'a> {
             self.expect(TokenKind::FatArrow)?;
             let body = Box::new(self.parse_blueprint_stmt()?);
 
-            branches.push(SelectBranch { condition, body });
+            branches.push(FaSelectBranch { condition, body });
         }
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(BlueprintStmt::Control(ControlStmt::Select {
+        Some(FaBlueprintStmt::Control(FaControlStmt::Select {
             discriminant,
             branches,
             else_branch,
@@ -478,7 +478,7 @@ impl<'a> Parser<'a> {
     // =========================================================================
 
     /// Parse event handler: on_click [param ->] { body }
-    fn parse_event_handler(&mut self) -> Option<BlueprintStmt> {
+    fn parse_event_handler(&mut self) -> Option<FaBlueprintStmt> {
         let event_name = self.expect_identifier()?;
 
         // Optional parameter: param -> or param: Type ->
@@ -490,7 +490,7 @@ impl<'a> Parser<'a> {
                 None
             };
             self.expect(TokenKind::Arrow)?;
-            Some(EventParam { name, type_expr })
+            Some(FaEventParam { name, type_expr })
         } else {
             None
         };
@@ -508,7 +508,7 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(BlueprintStmt::EventHandler(EventHandler {
+        Some(FaBlueprintStmt::EventHandler(FaEventHandler {
             event_name,
             param,
             body,
@@ -516,14 +516,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a handler statement (assignment or command call)
-    fn parse_handler_stmt(&mut self) -> Option<HandlerStmt> {
+    fn parse_handler_stmt(&mut self) -> Option<FaHandlerStmt> {
         let name = self.expect_identifier()?;
 
         match self.current_kind() {
             TokenKind::Eq => {
                 self.advance();
                 let value = self.parse_expr()?;
-                Some(HandlerStmt::Assignment { name, value })
+                Some(FaHandlerStmt::Assignment { name, value })
             }
             TokenKind::LParen => {
                 self.advance();
@@ -535,11 +535,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 self.expect(TokenKind::RParen)?;
-                Some(HandlerStmt::CommandCall { name, args })
+                Some(FaHandlerStmt::CommandCall { name, args })
             }
             _ => {
                 // Bare identifier - treat as command call with no args
-                Some(HandlerStmt::CommandCall {
+                Some(FaHandlerStmt::CommandCall {
                     name,
                     args: vec![],
                 })

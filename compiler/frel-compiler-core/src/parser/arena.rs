@@ -1,13 +1,13 @@
 // Arena parser for Frel
 
-use crate::ast::Arena;
+use crate::ast::FaArena;
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse arena declaration
-    pub(super) fn parse_arena(&mut self) -> Option<Arena> {
+    pub(super) fn parse_arena(&mut self) -> Option<FaArena> {
         self.expect(TokenKind::Arena)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Arena {
+        Some(FaArena {
             name,
             scheme_name,
             contract,

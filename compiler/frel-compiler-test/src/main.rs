@@ -1,9 +1,20 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
+use frel_compiler_core::ast::DumpVisitor;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+enum OutputFormat {
+    /// JSON output format (default)
+    Json,
+    /// Human-readable DUMP format
+    Dump,
+    /// Both JSON and DUMP formats
+    Both,
+}
 
 #[derive(Parser)]
 #[command(name = "frel-compiler-test")]
@@ -19,11 +30,18 @@ struct Cli {
     /// Show detailed diff on failures
     #[arg(long)]
     verbose: bool,
+
+    /// Output format for AST files
+    #[arg(long, value_enum, default_value = "json")]
+    format: OutputFormat,
 }
 
 #[derive(Debug)]
 enum TestKind {
-    Success { expected_ast: PathBuf },
+    Success {
+        expected_ast: PathBuf,
+        expected_dump: Option<PathBuf>,
+    },
     Error { expected_error: PathBuf },
     Wip,
 }
@@ -77,7 +95,7 @@ fn main() {
     let mut skipped = 0;
 
     for test in &test_cases {
-        let result = run_test(test, cli.update);
+        let result = run_test(test, cli.update, cli.format);
 
         match &result {
             TestResult::Passed => {
@@ -160,11 +178,17 @@ fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
 
         // Determine test kind
         let ast_path = source_path.with_extension("ast.json");
+        let dump_path = source_path.with_extension("ast.dump");
         let error_path = source_path.with_extension("error.txt");
 
         let kind = if ast_path.exists() {
             TestKind::Success {
                 expected_ast: ast_path,
+                expected_dump: if dump_path.exists() {
+                    Some(dump_path)
+                } else {
+                    None
+                },
             }
         } else if error_path.exists() {
             TestKind::Error {
@@ -187,24 +211,27 @@ fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
     tests
 }
 
-fn run_test(test: &TestCase, update: bool) -> TestResult {
+fn run_test(test: &TestCase, update: bool, format: OutputFormat) -> TestResult {
     match &test.kind {
         TestKind::Wip => {
             if update {
                 // In update mode, try to create the expected file
-                run_wip_test(test)
+                run_wip_test(test, format)
             } else {
                 TestResult::Skipped {
                     reason: "no expected output file".to_string(),
                 }
             }
         }
-        TestKind::Success { expected_ast } => run_success_test(test, expected_ast, update),
+        TestKind::Success {
+            expected_ast,
+            expected_dump,
+        } => run_success_test(test, expected_ast, expected_dump.as_ref(), update, format),
         TestKind::Error { expected_error } => run_error_test(test, expected_error, update),
     }
 }
 
-fn run_wip_test(test: &TestCase) -> TestResult {
+fn run_wip_test(test: &TestCase, format: OutputFormat) -> TestResult {
     // Read source file
     let source = match fs::read_to_string(&test.source_path) {
         Ok(s) => s,
@@ -231,23 +258,40 @@ fn run_wip_test(test: &TestCase) -> TestResult {
         }
         TestResult::Passed
     } else if let Some(ast) = result.file {
-        // Serialize AST to JSON and write to .ast.json
-        let ast_path = test.source_path.with_extension("ast.json");
-        match serde_json::to_string_pretty(&ast) {
-            Ok(json) => {
-                if let Err(e) = fs::write(&ast_path, &json) {
-                    return TestResult::Failed {
-                        message: format!("Failed to write AST file: {}", e),
-                        diff: None,
-                    };
+        // Write JSON if needed
+        if format == OutputFormat::Json || format == OutputFormat::Both {
+            let ast_path = test.source_path.with_extension("ast.json");
+            match serde_json::to_string_pretty(&ast) {
+                Ok(json) => {
+                    if let Err(e) = fs::write(&ast_path, &json) {
+                        return TestResult::Failed {
+                            message: format!("Failed to write AST JSON file: {}", e),
+                            diff: None,
+                        };
+                    }
                 }
-                TestResult::Passed
+                Err(e) => {
+                    return TestResult::Failed {
+                        message: format!("Failed to serialize AST: {}", e),
+                        diff: None,
+                    }
+                }
             }
-            Err(e) => TestResult::Failed {
-                message: format!("Failed to serialize AST: {}", e),
-                diff: None,
-            },
         }
+
+        // Write DUMP if needed
+        if format == OutputFormat::Dump || format == OutputFormat::Both {
+            let dump_path = test.source_path.with_extension("ast.dump");
+            let dump_output = DumpVisitor::dump(&ast);
+            if let Err(e) = fs::write(&dump_path, &dump_output) {
+                return TestResult::Failed {
+                    message: format!("Failed to write AST DUMP file: {}", e),
+                    diff: None,
+                };
+            }
+        }
+
+        TestResult::Passed
     } else {
         TestResult::Failed {
             message: "Parse returned no AST and no errors".to_string(),
@@ -256,7 +300,13 @@ fn run_wip_test(test: &TestCase) -> TestResult {
     }
 }
 
-fn run_success_test(test: &TestCase, expected_ast: &Path, update: bool) -> TestResult {
+fn run_success_test(
+    test: &TestCase,
+    expected_ast: &Path,
+    expected_dump: Option<&PathBuf>,
+    update: bool,
+    format: OutputFormat,
+) -> TestResult {
     // Read source file
     let source = match fs::read_to_string(&test.source_path) {
         Ok(s) => s,
@@ -289,52 +339,88 @@ fn run_success_test(test: &TestCase, expected_ast: &Path, update: bool) -> TestR
         }
     };
 
-    // Serialize AST to JSON
-    let actual_json = match serde_json::to_string_pretty(&ast) {
-        Ok(j) => j,
-        Err(e) => {
-            return TestResult::Failed {
-                message: format!("Failed to serialize AST: {}", e),
-                diff: None,
+    // Check JSON format
+    if format == OutputFormat::Json || format == OutputFormat::Both {
+        let actual_json = match serde_json::to_string_pretty(&ast) {
+            Ok(j) => j,
+            Err(e) => {
+                return TestResult::Failed {
+                    message: format!("Failed to serialize AST: {}", e),
+                    diff: None,
+                }
             }
-        }
-    };
+        };
 
-    if update {
-        // Update mode: write actual output to expected file
-        if let Err(e) = fs::write(expected_ast, &actual_json) {
-            return TestResult::Failed {
-                message: format!("Failed to update expected file: {}", e),
-                diff: None,
+        if update {
+            if let Err(e) = fs::write(expected_ast, &actual_json) {
+                return TestResult::Failed {
+                    message: format!("Failed to update expected JSON file: {}", e),
+                    diff: None,
+                };
+            }
+        } else {
+            // Read expected output
+            let expected_json = match fs::read_to_string(expected_ast) {
+                Ok(s) => s,
+                Err(e) => {
+                    return TestResult::Failed {
+                        message: format!("Failed to read expected AST: {}", e),
+                        diff: None,
+                    }
+                }
             };
-        }
-        return TestResult::Passed;
-    }
 
-    // Read expected output
-    let expected_json = match fs::read_to_string(expected_ast) {
-        Ok(s) => s,
-        Err(e) => {
-            return TestResult::Failed {
-                message: format!("Failed to read expected AST: {}", e),
-                diff: None,
+            // Compare
+            let actual_normalized = normalize_json(&actual_json);
+            let expected_normalized = normalize_json(&expected_json);
+
+            if actual_normalized != expected_normalized {
+                let diff = generate_diff(&expected_json, &actual_json);
+                return TestResult::Failed {
+                    message: "AST JSON mismatch".to_string(),
+                    diff: Some(diff),
+                };
             }
         }
-    };
-
-    // Compare
-    let actual_normalized = normalize_json(&actual_json);
-    let expected_normalized = normalize_json(&expected_json);
-
-    if actual_normalized == expected_normalized {
-        TestResult::Passed
-    } else {
-        let diff = generate_diff(&expected_json, &actual_json);
-        TestResult::Failed {
-            message: "AST mismatch".to_string(),
-            diff: Some(diff),
-        }
     }
+
+    // Check DUMP format
+    if format == OutputFormat::Dump || format == OutputFormat::Both {
+        let actual_dump = DumpVisitor::dump(&ast);
+        let dump_path = test.source_path.with_extension("ast.dump");
+
+        if update {
+            if let Err(e) = fs::write(&dump_path, &actual_dump) {
+                return TestResult::Failed {
+                    message: format!("Failed to update expected DUMP file: {}", e),
+                    diff: None,
+                };
+            }
+        } else if let Some(expected_dump_path) = expected_dump {
+            // Read expected DUMP output
+            let expected = match fs::read_to_string(expected_dump_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    return TestResult::Failed {
+                        message: format!("Failed to read expected DUMP: {}", e),
+                        diff: None,
+                    }
+                }
+            };
+
+            // Compare
+            if actual_dump.trim() != expected.trim() {
+                let diff = generate_diff(&expected, &actual_dump);
+                return TestResult::Failed {
+                    message: "AST DUMP mismatch".to_string(),
+                    diff: Some(diff),
+                };
+            }
+        }
+        // If no expected_dump file exists and we're not updating, skip DUMP comparison
+    }
+
+    TestResult::Passed
 }
 
 fn run_error_test(test: &TestCase, expected_error: &Path, update: bool) -> TestResult {

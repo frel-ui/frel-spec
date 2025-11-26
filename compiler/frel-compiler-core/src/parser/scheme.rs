@@ -1,13 +1,13 @@
 // Scheme parser for Frel
 
-use crate::ast::{FieldInstruction, Scheme, SchemeField, SchemeMember, VirtualField};
+use crate::ast::{FaFieldInstruction, FaScheme, FaSchemeField, FaSchemeMember, FaVirtualField};
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse scheme declaration
-    pub(super) fn parse_scheme(&mut self) -> Option<Scheme> {
+    pub(super) fn parse_scheme(&mut self) -> Option<FaScheme> {
         self.expect(TokenKind::Scheme)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -23,11 +23,11 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Scheme { name, members })
+        Some(FaScheme { name, members })
     }
 
     /// Parse a scheme member
-    fn parse_scheme_member(&mut self) -> Option<SchemeMember> {
+    fn parse_scheme_member(&mut self) -> Option<FaSchemeMember> {
         if self.check(TokenKind::Virtual) {
             self.advance();
             let name = self.expect_identifier()?;
@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
             let type_expr = self.parse_type_expr()?;
             self.expect(TokenKind::Eq)?;
             let expr = self.parse_expr()?;
-            Some(SchemeMember::Virtual(VirtualField {
+            Some(FaSchemeMember::Virtual(FaVirtualField {
                 name,
                 type_expr,
                 expr,
@@ -53,7 +53,7 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            Some(SchemeMember::Field(SchemeField {
+            Some(FaSchemeMember::Field(FaSchemeField {
                 name,
                 type_expr,
                 instructions,
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a field instruction (.. identity, .. default { value })
-    fn parse_field_instruction(&mut self) -> Option<FieldInstruction> {
+    fn parse_field_instruction(&mut self) -> Option<FaFieldInstruction> {
         let name = self.expect_identifier()?;
 
         let value = if self.consume(TokenKind::LBrace).is_some() {
@@ -76,7 +76,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Some(FieldInstruction { name, value })
+        Some(FaFieldInstruction { name, value })
     }
 }
 

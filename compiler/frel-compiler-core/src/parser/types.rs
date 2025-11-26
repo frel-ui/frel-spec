@@ -7,41 +7,41 @@
 // - Collection types (List<T>, Map<K, V>)
 // - Blueprint types (Blueprint<P1, P2>)
 
-use crate::ast::TypeExpr;
+use crate::ast::FaTypeExpr;
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse a type expression
-    pub(super) fn parse_type_expr(&mut self) -> Option<TypeExpr> {
+    pub(super) fn parse_type_expr(&mut self) -> Option<FaTypeExpr> {
         let base = self.parse_type_base()?;
 
         // Check for nullable suffix
         if self.consume(TokenKind::Question).is_some() {
-            Some(TypeExpr::Nullable(Box::new(base)))
+            Some(FaTypeExpr::Nullable(Box::new(base)))
         } else {
             Some(base)
         }
     }
 
     /// Parse the base type (before nullable modifier)
-    fn parse_type_base(&mut self) -> Option<TypeExpr> {
+    fn parse_type_base(&mut self) -> Option<FaTypeExpr> {
         match self.current_kind() {
             TokenKind::Ref => {
                 self.advance();
                 let inner = self.parse_type_base()?;
-                Some(TypeExpr::Ref(Box::new(inner)))
+                Some(FaTypeExpr::Ref(Box::new(inner)))
             }
             TokenKind::Draft => {
                 self.advance();
                 let inner = self.parse_type_base()?;
-                Some(TypeExpr::Draft(Box::new(inner)))
+                Some(FaTypeExpr::Draft(Box::new(inner)))
             }
             TokenKind::Asset => {
                 self.advance();
                 let inner = self.parse_type_base()?;
-                Some(TypeExpr::Asset(Box::new(inner)))
+                Some(FaTypeExpr::Asset(Box::new(inner)))
             }
             TokenKind::Identifier => {
                 let name = self.current_text().to_string();
@@ -53,25 +53,25 @@ impl<'a> Parser<'a> {
                         if self.consume(TokenKind::Lt).is_some() {
                             let params = self.parse_type_list()?;
                             self.expect(TokenKind::Gt)?;
-                            Some(TypeExpr::Blueprint(params))
+                            Some(FaTypeExpr::Blueprint(params))
                         } else {
-                            Some(TypeExpr::Blueprint(vec![]))
+                            Some(FaTypeExpr::Blueprint(vec![]))
                         }
                     }
                     "List" => {
                         self.expect(TokenKind::Lt)?;
                         let elem = self.parse_type_expr()?;
                         self.expect(TokenKind::Gt)?;
-                        Some(TypeExpr::List(Box::new(elem)))
+                        Some(FaTypeExpr::List(Box::new(elem)))
                     }
                     "Set" => {
                         if self.consume(TokenKind::Lt).is_some() {
                             let elem = self.parse_type_expr()?;
                             self.expect(TokenKind::Gt)?;
-                            Some(TypeExpr::Set(Box::new(elem)))
+                            Some(FaTypeExpr::Set(Box::new(elem)))
                         } else {
                             // 'Set' without <> is just a named type
-                            Some(TypeExpr::Named(name))
+                            Some(FaTypeExpr::Named(name))
                         }
                     }
                     "Map" => {
@@ -80,21 +80,21 @@ impl<'a> Parser<'a> {
                         self.expect(TokenKind::Comma)?;
                         let value = self.parse_type_expr()?;
                         self.expect(TokenKind::Gt)?;
-                        Some(TypeExpr::Map(Box::new(key), Box::new(value)))
+                        Some(FaTypeExpr::Map(Box::new(key), Box::new(value)))
                     }
                     "Tree" => {
                         self.expect(TokenKind::Lt)?;
                         let elem = self.parse_type_expr()?;
                         self.expect(TokenKind::Gt)?;
-                        Some(TypeExpr::Tree(Box::new(elem)))
+                        Some(FaTypeExpr::Tree(Box::new(elem)))
                     }
                     "Accessor" => {
                         self.expect(TokenKind::Lt)?;
                         let elem = self.parse_type_expr()?;
                         self.expect(TokenKind::Gt)?;
-                        Some(TypeExpr::Accessor(Box::new(elem)))
+                        Some(FaTypeExpr::Accessor(Box::new(elem)))
                     }
-                    _ => Some(TypeExpr::Named(name)),
+                    _ => Some(FaTypeExpr::Named(name)),
                 }
             }
             _ => {
@@ -105,7 +105,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a comma-separated list of types
-    fn parse_type_list(&mut self) -> Option<Vec<TypeExpr>> {
+    fn parse_type_list(&mut self) -> Option<Vec<FaTypeExpr>> {
         let mut types = vec![self.parse_type_expr()?];
 
         while self.consume(TokenKind::Comma).is_some() {
@@ -120,7 +120,7 @@ impl<'a> Parser<'a> {
 mod tests {
     use crate::parser::parse;
 
-    fn parse_type(source: &str) -> Option<crate::ast::TypeExpr> {
+    fn parse_type(source: &str) -> Option<crate::ast::FaTypeExpr> {
         // Wrap in a minimal backend field to test type parsing
         let full_source = format!("module test\nbackend Test {{ x: {} }}", source);
         let result = parse(&full_source);
@@ -128,8 +128,8 @@ mod tests {
             return None;
         }
         let file = result.file?;
-        if let crate::ast::TopLevelDecl::Backend(backend) = &file.declarations[0] {
-            if let crate::ast::BackendMember::Field(field) = &backend.members[0] {
+        if let crate::ast::FaTopLevelDecl::Backend(backend) = &file.declarations[0] {
+            if let crate::ast::FaBackendMember::Field(field) = &backend.members[0] {
                 return Some(field.type_expr.clone());
             }
         }
@@ -139,38 +139,38 @@ mod tests {
     #[test]
     fn test_named_type() {
         let t = parse_type("String").unwrap();
-        assert!(matches!(t, crate::ast::TypeExpr::Named(s) if s == "String"));
+        assert!(matches!(t, crate::ast::FaTypeExpr::Named(s) if s == "String"));
     }
 
     #[test]
     fn test_nullable_type() {
         let t = parse_type("String?").unwrap();
-        assert!(matches!(t, crate::ast::TypeExpr::Nullable(_)));
+        assert!(matches!(t, crate::ast::FaTypeExpr::Nullable(_)));
     }
 
     #[test]
     fn test_ref_type() {
         let t = parse_type("ref User").unwrap();
-        assert!(matches!(t, crate::ast::TypeExpr::Ref(_)));
+        assert!(matches!(t, crate::ast::FaTypeExpr::Ref(_)));
     }
 
     #[test]
     fn test_list_type() {
         let t = parse_type("List<String>").unwrap();
-        assert!(matches!(t, crate::ast::TypeExpr::List(_)));
+        assert!(matches!(t, crate::ast::FaTypeExpr::List(_)));
     }
 
     #[test]
     fn test_map_type() {
         let t = parse_type("Map<String, i32>").unwrap();
-        assert!(matches!(t, crate::ast::TypeExpr::Map(_, _)));
+        assert!(matches!(t, crate::ast::FaTypeExpr::Map(_, _)));
     }
 
     #[test]
     fn test_complex_type() {
         let t = parse_type("List<ref User>?").unwrap();
-        if let crate::ast::TypeExpr::Nullable(inner) = t {
-            assert!(matches!(*inner, crate::ast::TypeExpr::List(_)));
+        if let crate::ast::FaTypeExpr::Nullable(inner) = t {
+            assert!(matches!(*inner, crate::ast::FaTypeExpr::List(_)));
         } else {
             panic!("Expected Nullable");
         }

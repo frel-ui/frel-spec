@@ -33,7 +33,7 @@ pub struct Parser<'a> {
 
 /// Result of parsing - either success or failure with partial AST
 pub struct ParseResult {
-    pub file: Option<ast::File>,
+    pub file: Option<ast::FaFile>,
     pub diagnostics: Diagnostics,
 }
 
@@ -277,7 +277,7 @@ impl<'a> Parser<'a> {
     // =========================================================================
 
     /// Parse a complete file
-    fn parse_file(&mut self) -> Option<ast::File> {
+    fn parse_file(&mut self) -> Option<ast::FaFile> {
         self.skip_newlines();
 
         // Parse module declaration
@@ -303,7 +303,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Some(ast::File {
+        Some(ast::FaFile {
             module,
             imports,
             declarations,
@@ -330,7 +330,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse import statement: import foo.bar.Baz
-    fn parse_import(&mut self) -> Option<ast::Import> {
+    fn parse_import(&mut self) -> Option<ast::FaImport> {
         self.expect(TokenKind::Import)?;
 
         // Parse module path up to the last component
@@ -344,19 +344,19 @@ impl<'a> Parser<'a> {
         let name = parts.pop()?;
         let module = parts.join(".");
 
-        Some(ast::Import { module, name })
+        Some(ast::FaImport { module, name })
     }
 
     /// Parse a top-level declaration
-    fn parse_top_level_decl(&mut self) -> Option<ast::TopLevelDecl> {
+    fn parse_top_level_decl(&mut self) -> Option<ast::FaTopLevelDecl> {
         match self.current_kind() {
-            TokenKind::Blueprint => self.parse_blueprint().map(ast::TopLevelDecl::Blueprint),
-            TokenKind::Backend => self.parse_backend().map(ast::TopLevelDecl::Backend),
-            TokenKind::Contract => self.parse_contract().map(ast::TopLevelDecl::Contract),
-            TokenKind::Scheme => self.parse_scheme().map(ast::TopLevelDecl::Scheme),
-            TokenKind::Enum => self.parse_enum().map(ast::TopLevelDecl::Enum),
-            TokenKind::Theme => self.parse_theme().map(ast::TopLevelDecl::Theme),
-            TokenKind::Arena => self.parse_arena().map(ast::TopLevelDecl::Arena),
+            TokenKind::Blueprint => self.parse_blueprint().map(ast::FaTopLevelDecl::Blueprint),
+            TokenKind::Backend => self.parse_backend().map(ast::FaTopLevelDecl::Backend),
+            TokenKind::Contract => self.parse_contract().map(ast::FaTopLevelDecl::Contract),
+            TokenKind::Scheme => self.parse_scheme().map(ast::FaTopLevelDecl::Scheme),
+            TokenKind::Enum => self.parse_enum().map(ast::FaTopLevelDecl::Enum),
+            TokenKind::Theme => self.parse_theme().map(ast::FaTopLevelDecl::Theme),
+            TokenKind::Arena => self.parse_arena().map(ast::FaTopLevelDecl::Arena),
             _ => {
                 self.error_expected("declaration (blueprint, backend, scheme, enum, contract, theme, or arena)");
                 None

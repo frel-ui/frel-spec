@@ -1,13 +1,13 @@
 // Contract parser for Frel
 
-use crate::ast::{Contract, ContractMethod};
+use crate::ast::{FaContract, FaContractMethod};
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse contract declaration
-    pub(super) fn parse_contract(&mut self) -> Option<Contract> {
+    pub(super) fn parse_contract(&mut self) -> Option<FaContract> {
         self.expect(TokenKind::Contract)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -23,11 +23,11 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(Contract { name, methods })
+        Some(FaContract { name, methods })
     }
 
     /// Parse a contract method
-    fn parse_contract_method(&mut self) -> Option<ContractMethod> {
+    fn parse_contract_method(&mut self) -> Option<FaContractMethod> {
         let name = self.expect_identifier()?;
         let params = self.parse_param_list()?;
 
@@ -37,7 +37,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Some(ContractMethod {
+        Some(FaContractMethod {
             name,
             params,
             return_type,

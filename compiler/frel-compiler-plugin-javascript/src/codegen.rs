@@ -5,7 +5,7 @@
 use frel_compiler_core::ast::*;
 
 /// Generate JavaScript code for a Frel file
-pub fn generate_file(file: &File) -> String {
+pub fn generate_file(file: &FaFile) -> String {
     let mut output = String::new();
 
     // File header
@@ -37,7 +37,7 @@ pub fn generate_file(file: &File) -> String {
     output
 }
 
-fn generate_import(import: &Import) -> String {
+fn generate_import(import: &FaImport) -> String {
     format!(
         "import {{ {} }} from '@frel/{}';\n",
         import.name,
@@ -45,19 +45,19 @@ fn generate_import(import: &Import) -> String {
     )
 }
 
-fn generate_declaration(decl: &TopLevelDecl) -> String {
+fn generate_declaration(decl: &FaTopLevelDecl) -> String {
     match decl {
-        TopLevelDecl::Blueprint(blueprint) => generate_blueprint(blueprint),
-        TopLevelDecl::Backend(backend) => generate_backend(backend),
-        TopLevelDecl::Contract(contract) => generate_contract(contract),
-        TopLevelDecl::Scheme(scheme) => generate_scheme(scheme),
-        TopLevelDecl::Enum(enum_decl) => generate_enum(enum_decl),
-        TopLevelDecl::Theme(theme) => generate_theme(theme),
-        TopLevelDecl::Arena(arena) => generate_arena(arena),
+        FaTopLevelDecl::Blueprint(blueprint) => generate_blueprint(blueprint),
+        FaTopLevelDecl::Backend(backend) => generate_backend(backend),
+        FaTopLevelDecl::Contract(contract) => generate_contract(contract),
+        FaTopLevelDecl::Scheme(scheme) => generate_scheme(scheme),
+        FaTopLevelDecl::Enum(enum_decl) => generate_enum(enum_decl),
+        FaTopLevelDecl::Theme(theme) => generate_theme(theme),
+        FaTopLevelDecl::Arena(arena) => generate_arena(arena),
     }
 }
 
-fn generate_blueprint(blueprint: &Blueprint) -> String {
+fn generate_blueprint(blueprint: &FaBlueprint) -> String {
     let mut output = String::new();
 
     output.push_str(&format!("export class {} extends Fragment {{\n", blueprint.name));
@@ -78,7 +78,7 @@ fn generate_blueprint(blueprint: &Blueprint) -> String {
     output
 }
 
-fn generate_backend(backend: &Backend) -> String {
+fn generate_backend(backend: &FaBackend) -> String {
     let mut output = String::new();
 
     output.push_str(&format!("export class {} {{\n", backend.name));
@@ -91,12 +91,12 @@ fn generate_backend(backend: &Backend) -> String {
     // Generate methods and commands
     for member in &backend.members {
         match member {
-            BackendMember::Method(method) => {
+            FaBackendMember::Method(method) => {
                 output.push_str(&format!("  {}() {{\n", method.name));
                 output.push_str("    // TODO: Implement method\n");
                 output.push_str("  }\n\n");
             }
-            BackendMember::Command(command) => {
+            FaBackendMember::Command(command) => {
                 output.push_str(&format!("  async {}() {{\n", command.name));
                 output.push_str("    // TODO: Implement command\n");
                 output.push_str("  }\n\n");
@@ -110,12 +110,12 @@ fn generate_backend(backend: &Backend) -> String {
     output
 }
 
-fn generate_contract(_contract: &Contract) -> String {
+fn generate_contract(_contract: &FaContract) -> String {
     // Contracts are runtime-bound, so we just export a marker
     String::from("// Contract placeholder\n")
 }
 
-fn generate_scheme(scheme: &Scheme) -> String {
+fn generate_scheme(scheme: &FaScheme) -> String {
     let mut output = String::new();
 
     output.push_str(&format!("export class {} {{\n", scheme.name));
@@ -127,7 +127,7 @@ fn generate_scheme(scheme: &Scheme) -> String {
     output
 }
 
-fn generate_enum(enum_decl: &Enum) -> String {
+fn generate_enum(enum_decl: &FaEnum) -> String {
     let mut output = String::new();
 
     output.push_str(&format!("export const {} = {{\n", enum_decl.name));
@@ -141,7 +141,7 @@ fn generate_enum(enum_decl: &Enum) -> String {
     output
 }
 
-fn generate_theme(theme: &Theme) -> String {
+fn generate_theme(theme: &FaTheme) -> String {
     let mut output = String::new();
 
     output.push_str(&format!("export class {} {{\n", theme.name));
@@ -153,7 +153,7 @@ fn generate_theme(theme: &Theme) -> String {
     output
 }
 
-fn generate_arena(arena: &Arena) -> String {
+fn generate_arena(arena: &FaArena) -> String {
     format!(
         "export const {} = new Arena('{}');\n",
         arena.name, arena.scheme_name
