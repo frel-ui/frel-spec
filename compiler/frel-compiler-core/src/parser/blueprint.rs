@@ -150,6 +150,15 @@ impl<'a> Parser<'a> {
                 Some(FaBlueprintStmt::ContentExpr(expr))
             }
 
+            // Slot binding in default content context - error
+            TokenKind::At => {
+                self.error_expected_with_suggestion(
+                    "blueprint statement",
+                    "cannot mix default content with slot bindings; use `at content: { ... }` for the main content when using named slots",
+                );
+                None
+            }
+
             _ => {
                 self.error_expected("blueprint statement");
                 None

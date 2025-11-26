@@ -26,11 +26,14 @@ multiSlot {
 
 Notes:
 
-* In a multi-slot block, each `at <slot>:` binds a blueprint (inline or by reference) to a slot parameter.
-* A plain block binds to the callee's **default slot** (usually named `content`).
+* A fragment body uses **either** default content **or** `at` slot bindings—never both mixed together.
+* A plain block `{ ... }` provides content for the **default slot** (usually named `content`).
+* A slot block `{ at slot1: ..., at slot2: ... }` provides content for **named slots**.
+* If you use any `at slot:` binding, all content must use `at` syntax (including the default slot).
 * Slot bindings accept two forms:
   - `at slot: { ... }` - inline blueprint with content (braces required)
   - `at slot: BlueprintName` - blueprint reference (bare identifier, no body)
+* The implicit `tooltip` slot only requires `at` syntax if you actually use it.
 
 ## Syntax (Informal)
 
@@ -518,11 +521,12 @@ blueprint ListManager() {
 
 ### Tooltip Slot
 
-All blueprints support an optional `tooltip` slot for contextual help:
+All blueprints support an optional `tooltip` slot for contextual help.
+When using the tooltip slot, all content must use `at` syntax:
 
 ```frel
 button {
-    "Save"
+    at content: { text { "Save" } }
     at tooltip: {
         .. padding { 6 }
         .. background { color: Black }

@@ -1,12 +1,18 @@
 module test
 
+// Valid: all slots use `at` syntax
 blueprint ButtonWithTooltip {
     button {
-        text { "Save" }
+        at content: { text { "Save" } }
         at tooltip: {
             .. padding { 6 }
             .. background { color: #000000 }
             text { "Ctrl+S to save" }
         }
     }
+}
+
+// Valid: default content only (no tooltip)
+blueprint SimpleButton {
+    button { text { "Click" } }
 }
