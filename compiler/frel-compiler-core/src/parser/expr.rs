@@ -36,6 +36,7 @@ enum Precedence {
 }
 
 impl Precedence {
+    #[allow(dead_code)]
     fn next(self) -> Self {
         match self {
             Precedence::None => Precedence::Ternary,

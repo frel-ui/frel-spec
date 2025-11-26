@@ -55,7 +55,7 @@ impl<'a> Lexer<'a> {
 
         let start = self.current_pos;
 
-        let Some((pos, ch)) = self.peek_char() else {
+        let Some((_, ch)) = self.peek_char() else {
             return Token::new(TokenKind::Eof, Span::new(start as u32, start as u32));
         };
 
@@ -551,8 +551,7 @@ impl<'a> Lexer<'a> {
     fn lex_string(&mut self, start: usize) -> Token {
         self.advance(); // opening '"'
 
-        let mut has_interpolation = false;
-        let string_start = self.current_pos;
+        let _string_start = self.current_pos;
 
         loop {
             match self.peek_char() {
@@ -568,7 +567,6 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 Some((_, '$')) if self.peek_char_nth(1) == Some('{') => {
-                    has_interpolation = true;
                     // Consume the ${ so parser can read the interpolated expression
                     self.advance(); // consume '$'
                     self.advance(); // consume '{'

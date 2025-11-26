@@ -19,7 +19,7 @@ mod theme;
 mod types;
 
 use crate::ast;
-use crate::diagnostic::{Diagnostic, Diagnostics, Label, Suggestion};
+use crate::diagnostic::{Diagnostic, Diagnostics, Label};
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::source::Span;
 
@@ -104,6 +104,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Check if any of the kinds match
+    #[allow(dead_code)]
     fn check_any(&self, kinds: &[TokenKind]) -> bool {
         kinds.contains(&self.current_kind())
     }
@@ -120,6 +121,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Advance without skipping newlines
+    #[allow(dead_code)]
     fn advance_raw(&mut self) -> Token {
         let token = self.current().clone();
         if !self.at_end() {
@@ -172,6 +174,7 @@ impl<'a> Parser<'a> {
 
     /// Check if the next token (after current identifier) continues an expression
     /// This distinguishes `item.name` (expression) from `item { }` (fragment creation)
+    #[allow(dead_code)]
     fn is_expression_continuation(&self) -> bool {
         // Current token is an identifier, peek at what follows
         if let Some(next) = self.peek() {
@@ -218,6 +221,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Report an "expected X" error with suggestion
+    #[allow(dead_code)]
     fn error_expected_with_suggestion(&mut self, what: &str, suggestion: &str) {
         let span = self.current_span();
         let got = self.current_kind().display_name();
@@ -238,6 +242,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Report an unclosed delimiter error
+    #[allow(dead_code)]
     fn error_unclosed(&mut self, what: &str, open_span: Span) {
         let span = self.current_span();
         self.diagnostics.add(
@@ -248,6 +253,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Synchronize to the next recovery point after an error
+    #[allow(dead_code)]
     fn synchronize(&mut self) {
         while !self.at_end() {
             // Stop at synchronization points

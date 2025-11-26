@@ -91,13 +91,13 @@ impl<'a> Parser<'a> {
             // Fragment creation or expression
             // Note: Instructions require `..` prefix (handled above)
             TokenKind::Identifier => {
-                // Check if this is an expression (has continuation tokens like . or ?)
-                // vs a fragment creation (followed by (, {, .., or nothing)
-                if self.is_expression_continuation() {
+                // Check if this is a fragment creation (followed by (, {, or ..)
+                // vs an expression (everything else, including bare identifiers)
+                if self.is_fragment_creation_start() {
+                    self.parse_fragment_creation()
+                } else {
                     let expr = self.parse_expr()?;
                     Some(FaBlueprintStmt::ContentExpr(expr))
-                } else {
-                    self.parse_fragment_creation()
                 }
             }
 
@@ -176,8 +176,22 @@ impl<'a> Parser<'a> {
         text.starts_with("on_")
     }
 
+    /// Check if current identifier starts a fragment creation
+    /// Fragment creations are followed by (, {, or ..
+    /// Bare identifiers without these are treated as expressions (variable references)
+    fn is_fragment_creation_start(&self) -> bool {
+        if let Some(next) = self.peek() {
+            matches!(
+                next.kind,
+                TokenKind::LParen | TokenKind::LBrace | TokenKind::DotDot
+            )
+        } else {
+            false
+        }
+    }
+
     /// Parse fragment creation
-    /// Note: Instructions require `..` prefix, so all bare identifiers are fragment creations.
+    /// Fragment creations require at least one of: args (), body {}, or postfix ..
     fn parse_fragment_creation(&mut self) -> Option<FaBlueprintStmt> {
         let name = self.expect_identifier()?;
 
@@ -219,13 +233,12 @@ impl<'a> Parser<'a> {
                 }))
             }
 
-            // Bare fragment name (no args, no body, no postfix)
-            _ => Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
-                name,
-                args: vec![],
-                body: None,
-                postfix: vec![],
-            })),
+            // This shouldn't happen since is_fragment_creation_start() checks for (, {, or ..
+            // but keep as fallback for safety
+            _ => {
+                // Treat as expression instead
+                Some(FaBlueprintStmt::ContentExpr(crate::ast::FaExpr::Identifier(name)))
+            }
         }
     }
 
