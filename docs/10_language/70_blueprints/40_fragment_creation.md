@@ -19,15 +19,18 @@ higherOrder(12) { text { "stuff" } }
 
 // Higher-order fragment with multiple content slots
 multiSlot {
-  at slot1: { text { "stuff-1" } }
-  at slot2: text { "stuff-2" }
+  at slot1: { text { "stuff-1" } }   // inline blueprint
+  at slot2: MyTextBlueprint          // blueprint reference
 }
 ```
 
 Notes:
 
-* In a multi-slot block, each `at <slot>:` binds a blueprint (inline or named) to a slot parameter.
+* In a multi-slot block, each `at <slot>:` binds a blueprint (inline or by reference) to a slot parameter.
 * A plain block binds to the callee's **default slot** (usually named `content`).
+* Slot bindings accept two forms:
+  - `at slot: { ... }` - inline blueprint with content (braces required)
+  - `at slot: BlueprintName` - blueprint reference (bare identifier, no body)
 
 ## Syntax (Informal)
 
@@ -408,12 +411,12 @@ multiSlot {
 column { at content: TwoLabels }
 
 // 7. Postfix styling (for fragment with no content)
-text { "Click" } .. padding { 8 } .. border { Red, 1 }
+text { "Click" } .. padding { 8 } .. border { color: Red width: 1 }
 
 // 8. Inner styling (for fragment with content)
 button {
     .. padding { 8 }
-    .. border { Red, 1 }
+    .. border { color: Red width: 1 }
 
     text { "Click" }
 }
@@ -426,7 +429,7 @@ button {
 blueprint Container(content: Blueprint) {
     column {
         .. padding { 16 }
-        .. border { Gray, 1 }
+        .. border { color: Gray width: 1 }
         content()
     }
 }
@@ -479,7 +482,7 @@ blueprint Layout(
 // Usage with multiple slots
 Layout {
     at header: { title ->
-        text { title } .. font { size: 24, weight: Bold }
+        text { title } .. font { size: 24 weight: Bold }
     }
     at content: {
         text { "Main content here" }

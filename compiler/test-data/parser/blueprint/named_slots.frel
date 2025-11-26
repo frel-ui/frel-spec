@@ -10,11 +10,11 @@ blueprint Article(header: Blueprint, content: Blueprint, footer: Blueprint) {
 
 blueprint Page {
     Article {
-        at header: text { "Header" }
+        at header: { text { "Header" } }
         at content: {
             text { "Content line 1" }
             text { "Content line 2" }
         }
-        at footer: text { "Footer" }
+        at footer: { text { "Footer" } }
     }
 }
