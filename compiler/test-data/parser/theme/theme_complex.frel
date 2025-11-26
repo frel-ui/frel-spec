@@ -42,24 +42,24 @@ theme AppTheme {
         padding { largePadding }
         corner_radius { 12 }
         background { color: backgroundColor }
-        shadow { color: 0x00000020 offset_x: 0 offset_y: 2 blur: 4 }
+        shadow { color: #00000020 offset_x: 0 offset_y: 2 blur: 4 }
     }
 
     set input_field {
         padding { smallPadding }
         corner_radius { 4 }
-        border { 0xCCCCCC borderWidth }
+        border { #CCCCCC borderWidth }
     }
 
     variant Dark {
-        backgroundColor = 0x1E1E1E
-        primaryColor = 0x4A90D9
-        secondaryColor = 0x333333
+        backgroundColor = #1E1E1E
+        primaryColor = #4A90D9
+        secondaryColor = #333333
     }
 
     variant Light {
-        backgroundColor = 0xFFFFFF
-        primaryColor = 0x0066CC
-        secondaryColor = 0xF5F5F5
+        backgroundColor = #FFFFFF
+        primaryColor = #0066CC
+        secondaryColor = #F5F5F5
     }
 }

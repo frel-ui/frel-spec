@@ -13,8 +13,8 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 
 **Supported formats:**
 
-- `0xRRGGBB` - Hex RGB (alpha defaults to 255/opaque)
-- `0xRRGGBBAA` - Hex RGBA
+- `#RRGGBB` - Hex RGB (alpha defaults to 255/opaque)
+- `#RRGGBBAA` - Hex RGBA
 - `rgb(r, g, b)` - RGB components (0-255, alpha defaults to 255)
 - `rgba(r, g, b, a)` - RGBA components (0-255)
 - `<color-name>` - Named color constant (e.g., `Red`, `Blue`, `Transparent`)
@@ -22,12 +22,12 @@ See [Fragment Creation - Instructions](40_fragment_creation.md#4-instructions-in
 **Examples:**
 
 ```frel
-background { color: 0xFF0000 }           // Red (opaque)
-background { color: 0xFF0000FF }         // Red (opaque, explicit alpha)
-background { color: rgb(255, 0, 0) }     // Red
+background { color: #FF0000 }           // Red (opaque)
+background { color: #FF0000FF }         // Red (opaque, explicit alpha)
+background { color: rgb(255, 0, 0) }    // Red
 background { color: rgba(255, 0, 0, 128) } // Red, 50% transparent
-background { color: Red }                // Named color
-border { color: Blue }                   // Named color in border
+background { color: theme.background }  // Color from a theme
+border { color: Red }  // Color from a field
 ```
 
 ## Layout
@@ -317,7 +317,7 @@ Adds a drop shadow to the created fragment.
 
 ```frel
 box { } .. shadow { color: rgba(0, 0, 0, 128) offset_x: 0 offset_y: 2 blur: 4 }
-box { } .. shadow { color: 0x00000080 offset_x: 4 offset_y: 4 blur: 8 }
+box { } .. shadow { color: #00000080 offset_x: 4 offset_y: 4 blur: 8 }
 ```
 
 **Notes:**
@@ -364,7 +364,7 @@ Applies a color tint to vector graphics (icons).
 
 ```frel
 icon { "close" } .. tint { Black }
-icon { "star" } .. tint { 0xFFD700 }  // Gold
+icon { "star" } .. tint { #FFD700 }  // Gold
 icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
 ```
 
@@ -470,12 +470,12 @@ Stereotypes add semantic behavior to fragments.
 ```frel
 blueprint Confirm(text: &str) {
     DefaultModal {
-  
+
         text { "Are you sure?" }
         button { "No" } .. stereotype { cancel }
         button { "Yes" } .. stereotype { save }
-        
-        on_save { /* ... */ } 
+
+        .. on_save { /* ... */ }
     }
 }
 ```

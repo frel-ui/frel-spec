@@ -122,6 +122,9 @@ impl<'a> Lexer<'a> {
             // String literals
             '"' => return self.lex_string(start),
 
+            // Color literals (#RRGGBB or #RRGGBBAA)
+            '#' => return self.lex_color(start),
+
             // Numbers
             '0'..='9' => return self.lex_number(start),
 
@@ -501,6 +504,48 @@ impl<'a> Lexer<'a> {
         )
     }
 
+    // --- Colors ---
+
+    fn lex_color(&mut self, start: usize) -> Token {
+        self.advance(); // '#'
+
+        // Count hex digits
+        let hex_start = self.current_pos;
+        while let Some((_, ch)) = self.peek_char() {
+            if ch.is_ascii_hexdigit() {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        let hex_len = self.current_pos - hex_start;
+
+        // Validate: must be exactly 6 (RGB) or 8 (RGBA) hex digits
+        if hex_len != 6 && hex_len != 8 {
+            self.diagnostics.add(
+                Diagnostic::error(
+                    format!(
+                        "color literal must have 6 or 8 hex digits, found {}",
+                        hex_len
+                    ),
+                    Span::new(start as u32, self.current_pos as u32),
+                )
+                .with_code("E0106")
+                .with_help("use #RRGGBB or #RRGGBBAA format"),
+            );
+            return Token::new(
+                TokenKind::Error,
+                Span::new(start as u32, self.current_pos as u32),
+            );
+        }
+
+        Token::new(
+            TokenKind::ColorLiteral,
+            Span::new(start as u32, self.current_pos as u32),
+        )
+    }
+
     // --- Strings ---
 
     fn lex_string(&mut self, start: usize) -> Token {
@@ -788,5 +833,49 @@ mod tests {
         assert!(diags.has_errors());
         // Should continue after error
         assert!(tokens.iter().any(|t| t.kind == TokenKind::Identifier));
+    }
+
+    #[test]
+    fn test_color_literals() {
+        // Valid 6-digit RGB
+        assert_eq!(
+            lex("#FF0000"),
+            vec![TokenKind::ColorLiteral, TokenKind::Eof]
+        );
+        // Valid 8-digit RGBA
+        assert_eq!(
+            lex("#FF0000FF"),
+            vec![TokenKind::ColorLiteral, TokenKind::Eof]
+        );
+        // Multiple colors
+        assert_eq!(
+            lex("#FFFFFF #000000"),
+            vec![TokenKind::ColorLiteral, TokenKind::ColorLiteral, TokenKind::Eof]
+        );
+        // Color in expression context
+        assert_eq!(
+            lex("color: #FF0000"),
+            vec![
+                TokenKind::Identifier,
+                TokenKind::Colon,
+                TokenKind::ColorLiteral,
+                TokenKind::Eof
+            ]
+        );
+    }
+
+    #[test]
+    fn test_color_literal_errors() {
+        // Too few digits
+        let lexer = Lexer::new("#FFF");
+        let (tokens, diags) = lexer.tokenize();
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::Error));
+        assert!(diags.has_errors());
+
+        // Too many digits
+        let lexer = Lexer::new("#FFFFFFFFF");
+        let (tokens, diags) = lexer.tokenize();
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::Error));
+        assert!(diags.has_errors());
     }
 }

@@ -81,6 +81,7 @@ impl DumpVisitor {
             FaExpr::Bool(b) => b.to_string(),
             FaExpr::Int(n) => n.to_string(),
             FaExpr::Float(f) => f.to_string(),
+            FaExpr::Color(c) => format!("#{:08X}", c),
             FaExpr::String(s) => format!("{:?}", s),
             FaExpr::Identifier(name) => name.clone(),
             FaExpr::QualifiedName(parts) => parts.join("."),

@@ -2,7 +2,7 @@ module test
 
 blueprint DecorationShadow {
     column {
-        box { } .. shadow { color: 0x00000080 offset_x: 0 offset_y: 2 blur: 4 }
+        box { } .. shadow { color: #00000080 offset_x: 0 offset_y: 2 blur: 4 }
         box { } .. shadow { color: rgba(0, 0, 0, 128) offset_x: 4 offset_y: 4 blur: 8 }
     }
 }

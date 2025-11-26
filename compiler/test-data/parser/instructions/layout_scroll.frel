@@ -2,23 +2,23 @@ module test
 
 blueprint LayoutScroll {
     column {
-        height { 300 }
-        scroll { vertical }
+        .. height { 300 }
+        .. scroll { vertical }
         text { "Line 1" }
         text { "Line 2" }
         text { "Line 3" }
     }
 
     row {
-        width { 200 }
-        scroll { horizontal }
+        .. width { 200 }
+        .. scroll { horizontal }
         text { "Very long content here" }
     }
 
     box {
-        width { 300 }
-        height { 300 }
-        scroll { both }
+        .. width { 300 }
+        .. height { 300 }
+        .. scroll { both }
         text { "Scrollable in both directions" }
     }
 }

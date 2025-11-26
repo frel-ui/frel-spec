@@ -83,8 +83,8 @@ theme TaskTheme {
     set task_card {
         padding { padding }
         corner_radius { cardRadius }
-        background { color: 0xFFFFFF }
-        shadow { color: 0x00000020 offset_x: 0 offset_y: 2 blur: 4 }
+        background { color: #FFFFFF }
+        shadow { color: #00000020 offset_x: 0 offset_y: 2 blur: 4 }
     }
 
     set status_badge {
@@ -103,30 +103,30 @@ blueprint TaskCard(task: Task, theme: ref TaskTheme) {
         theme.task_card
 
         column {
-            gap { 8 }
+            .. gap { 8 }
 
             row {
-                gap { 8 }
-                align_items { vertical: center }
+                .. gap { 8 }
+                .. align_items { vertical: center }
 
                 text { task.title } .. font { size: 16 weight: 600 }
 
                 select on task.priority {
                     Urgent => text { "!" } .. font { color: Red weight: 700 }
-                    High => text { "!" } .. font { color: 0xFFA500 }
+                    High => text { "!" } .. font { color: #FFA500 }
                     else => { }
                 }
             }
 
             when task.description != null {
-                text { task.description } .. font { size: 14 color: 0x666666 }
+                text { task.description } .. font { size: 14 color: #666666 }
             }
 
             row {
-                gap { 8 }
+                .. gap { 8 }
 
                 select on task.status {
-                    Todo => text { "To Do" } .. theme.status_badge .. background { color: 0xE0E0E0 }
+                    Todo => text { "To Do" } .. theme.status_badge .. background { color: #E0E0E0 }
                     InProgress => text { "In Progress" } .. theme.status_badge .. background { color: theme.inProgressColor }
                     Done => text { "Done" } .. theme.status_badge .. background { color: theme.doneColor }
                     Cancelled => text { "Cancelled" } .. theme.status_badge .. background { color: theme.cancelledColor }
@@ -137,7 +137,7 @@ blueprint TaskCard(task: Task, theme: ref TaskTheme) {
                         text { tag }
                             .. font { size: 12 }
                             .. padding { horizontal: 6 vertical: 2 }
-                            .. background { color: 0xF0F0F0 }
+                            .. background { color: #F0F0F0 }
                             .. corner_radius { 3 }
                     }
                 }
@@ -152,25 +152,25 @@ blueprint TaskList {
     theme : ref TaskTheme = TaskTheme
 
     column {
-        gap { 16 }
-        padding { 24 }
+        .. gap { 16 }
+        .. padding { 24 }
 
         row {
-            gap { 16 }
-            align_items { vertical: center }
+            .. gap { 16 }
+            .. align_items { vertical: center }
 
             text { "Tasks" } .. font { size: 24 weight: 700 }
             text { "${get_task_count()} total, ${get_completed_count()} completed" }
-                .. font { size: 14 color: 0x666666 }
+                .. font { size: 14 color: #666666 }
         }
 
         row {
-            gap { 8 }
+            .. gap { 8 }
 
             text_editor { searchQuery }
                 .. width { 300 }
                 .. padding { 8 }
-                .. border { 0xCCCCCC 1 }
+                .. border { #CCCCCC 1 }
                 .. corner_radius { 4 }
 
             button { "Clear" }
@@ -178,12 +178,12 @@ blueprint TaskList {
         }
 
         when tasks.length == 0 {
-            text { "No tasks found" } .. font { size: 16 color: 0x999999 }
+            text { "No tasks found" } .. font { size: 16 color: #999999 }
         }
 
         when tasks.length > 0 {
             column {
-                gap { 12 }
+                .. gap { 12 }
 
                 repeat on filteredTasks by task.id as task {
                     TaskCard(task, theme)

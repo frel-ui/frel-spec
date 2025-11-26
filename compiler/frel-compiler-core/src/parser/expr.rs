@@ -247,6 +247,12 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Some(FaExpr::Float(value))
             }
+            TokenKind::ColorLiteral => {
+                let text = self.current_text();
+                let value = self.parse_color_literal(text);
+                self.advance();
+                Some(FaExpr::Color(value))
+            }
             TokenKind::StringLiteral => {
                 let text = self.current_text();
                 let value = self.parse_string_content(text);
@@ -480,6 +486,21 @@ impl<'a> Parser<'a> {
     fn parse_float_literal(&self, s: &str) -> f64 {
         let s = s.replace('_', "");
         s.parse().unwrap_or(0.0)
+    }
+
+    /// Parse color literal (#RRGGBB or #RRGGBBAA) into u32 RGBA
+    fn parse_color_literal(&self, s: &str) -> u32 {
+        let hex = s.strip_prefix('#').unwrap_or(s);
+        if hex.len() == 6 {
+            // RGB -> RGBA with full opacity
+            let rgb = u32::from_str_radix(hex, 16).unwrap_or(0);
+            (rgb << 8) | 0xFF
+        } else if hex.len() == 8 {
+            // RRGGBBAA
+            u32::from_str_radix(hex, 16).unwrap_or(0)
+        } else {
+            0 // Invalid, but lexer should have caught this
+        }
     }
 
     /// Parse string content (remove quotes, handle escapes)

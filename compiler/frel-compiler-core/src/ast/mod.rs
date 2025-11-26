@@ -369,6 +369,7 @@ pub enum FaExpr {
     Bool(bool),
     Int(i64),
     Float(f64),
+    Color(u32),
     String(String),
     StringTemplate(Vec<FaTemplateElement>),
     List(Vec<FaExpr>),

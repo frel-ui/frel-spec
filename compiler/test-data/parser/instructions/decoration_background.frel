@@ -3,7 +3,7 @@ module test
 blueprint DecorationBackground {
     column {
         box { } .. background { color: White }
-        box { } .. background { color: 0xFF0000 }
+        box { } .. background { color: #FF0000 }
         box { } .. background { color: Red opacity: 0.5 }
         box { } .. background { color: rgb(100, 150, 200) }
         box { } .. background { color: rgba(100, 150, 200, 128) }

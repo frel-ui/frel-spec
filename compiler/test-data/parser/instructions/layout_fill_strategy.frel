@@ -2,35 +2,35 @@ module test
 
 blueprint LayoutFillStrategy {
     row {
-        fill_strategy { constrain }
+        .. fill_strategy { constrain }
         text { "First" }
         text { "Second" }
     }
 
     row {
-        fill_strategy { constrain_reverse }
+        .. fill_strategy { constrain_reverse }
         text { "First" }
         text { "Second" }
     }
 
     row {
-        fill_strategy { resize_to_max }
+        .. fill_strategy { resize_to_max }
         text { "First" }
         text { "Second" }
     }
 
     row {
-        constrain
+        .. constrain
         text { "Shorthand" }
     }
 
     row {
-        constrain_reverse
+        .. constrain_reverse
         text { "Shorthand" }
     }
 
     row {
-        resize_to_max
+        .. resize_to_max
         text { "Shorthand" }
     }
 }

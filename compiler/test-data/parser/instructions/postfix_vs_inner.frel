@@ -4,17 +4,17 @@ blueprint PostfixVsInner {
     text { "Postfix style" } .. font { size: 24 } .. padding { 8 }
 
     box {
-        width { 200 }
-        height { 100 }
-        padding { 16 }
-        background { color: White }
+        .. width { 200 }
+        .. height { 100 }
+        .. padding { 16 }
+        .. background { color: White }
 
         text { "Inner style" }
     }
 
     box {
-        width { 200 } .. height { 100 }
-        padding { 16 }
+        .. width { 200 } .. height { 100 }
+        .. padding { 16 }
 
         text { "Mixed" }
     } .. corner_radius { 8 }

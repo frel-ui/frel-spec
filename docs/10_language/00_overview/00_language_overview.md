@@ -129,15 +129,15 @@ theme MessageTheme {
         background { color: self_background }
         align_self_left
     }
-    
-    set received_container { 
+
+    set received_container {
         background { color: received_background }
         align_self_right
     }
-    
+
     variant ImportantMessage {
-        received_background = 0xff0000
-    }    
+        received_background = #FF0000
+    }
 }
 
 blueprint MessageList {

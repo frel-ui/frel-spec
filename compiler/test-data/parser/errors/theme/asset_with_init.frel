@@ -1,5 +1,5 @@
 module test
 
 theme AppTheme {
-    primaryColor : asset Color = 0xFF0000
+    primaryColor : asset Color = #FF0000
 }

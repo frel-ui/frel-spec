@@ -11,9 +11,9 @@ blueprint EventHandlerIt {
     with EventBackend
 
     box {
-        width { 200 }
-        height { 200 }
-        on_click {
+        .. width { 200 }
+        .. height { 200 }
+        .. on_click {
             lastX = it.x_dip
             lastY = it.y_dip
         }

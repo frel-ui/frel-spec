@@ -110,6 +110,7 @@ pub enum TokenKind {
     // Literals
     IntLiteral,        // 42, 0x2A, 0b101010, 0o52
     FloatLiteral,      // 3.14, 1.0e10
+    ColorLiteral,      // #RRGGBB, #RRGGBBAA
     StringLiteral,     // "hello"
 
     // String template parts
@@ -293,6 +294,7 @@ impl TokenKind {
             Dot => "'.'",
             IntLiteral => "integer",
             FloatLiteral => "float",
+            ColorLiteral => "color",
             StringLiteral => "string",
             StringTemplateStart => "string template",
             StringTemplateMiddle => "string template",

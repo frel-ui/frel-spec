@@ -12,15 +12,15 @@ theme AppTheme {
     }
 
     variant Dark {
-        background = 0x1E1E1E
-        textColor = 0xFFFFFF
-        accentColor = 0x4A90D9
+        background = #1E1E1E
+        textColor = #FFFFFF
+        accentColor = #4A90D9
     }
 
     variant Light {
-        background = 0xFFFFFF
-        textColor = 0x1E1E1E
-        accentColor = 0x0066CC
+        background = #FFFFFF
+        textColor = #1E1E1E
+        accentColor = #0066CC
     }
 
     variant Compact {
@@ -28,8 +28,8 @@ theme AppTheme {
     }
 
     variant HighContrast {
-        background = 0x000000
-        textColor = 0xFFFFFF
-        accentColor = 0xFFFF00
+        background = #000000
+        textColor = #FFFFFF
+        accentColor = #FFFF00
     }
 }

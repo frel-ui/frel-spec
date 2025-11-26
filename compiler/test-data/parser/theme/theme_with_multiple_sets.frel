@@ -12,13 +12,13 @@ theme AppTheme {
     }
 
     set card_style {
-        border { 0xCCCCCC 1 }
+        border { #CCCCCC 1 }
         corner_radius { 12 }
         padding { padding * 2 }
     }
 
     set input_style {
-        border { 0x999999 1 }
+        border { #999999 1 }
         corner_radius { 4 }
         padding { 8 }
     }

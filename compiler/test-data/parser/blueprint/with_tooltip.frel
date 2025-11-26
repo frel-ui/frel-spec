@@ -4,8 +4,8 @@ blueprint ButtonWithTooltip {
     button {
         text { "Save" }
         at tooltip: {
-            padding { 6 }
-            background { color: 0x000000 }
+            .. padding { 6 }
+            .. background { color: #000000 }
             text { "Ctrl+S to save" }
         }
     }

@@ -2,8 +2,8 @@ module test
 
 blueprint ColorLiterals {
     column {
-        box { } .. background { color: 0xFF0000 }
-        box { } .. background { color: 0xFF0000FF }
+        box { } .. background { color: #FF0000 }
+        box { } .. background { color: #FF0000FF }
         box { } .. background { color: rgb(255, 0, 0) }
         box { } .. background { color: rgba(255, 0, 0, 128) }
         box { } .. background { color: Red }

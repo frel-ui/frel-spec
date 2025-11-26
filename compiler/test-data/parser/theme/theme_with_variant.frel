@@ -11,7 +11,7 @@ theme MessageTheme {
     }
 
     variant Dark {
-        background = 0x1E1E1E
-        textColor = 0xFFFFFF
+        background = #1E1E1E
+        textColor = #FFFFFF
     }
 }

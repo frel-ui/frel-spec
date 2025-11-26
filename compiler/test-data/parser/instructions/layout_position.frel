@@ -2,8 +2,8 @@ module test
 
 blueprint LayoutPosition {
     box {
-        width { 400 }
-        height { 300 }
+        .. width { 400 }
+        .. height { 300 }
 
         text { "Top Left" } .. position { top: 0 left: 0 }
         text { "Center" } .. position { top: 150 left: 200 }

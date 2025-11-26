@@ -269,12 +269,24 @@ fragments created from `b(i)` automatically receive the updated value. The inter
 
 ### 4. Instructions: Inner vs Postfix Syntax
 
-Instructions (layout, styling, event handlers) can be written in two ways:
+Instructions (layout, styling, event handlers) are always prefixed with `..` and can appear in two positions:
 
-1. **Inner Syntax** - Inside the blueprint's content block: `box { width { 300 } }`
-2. **Postfix Syntax** - After the blueprint using `..`: `box { } .. width { 300 }`
+1. **Inner Syntax** - Inside the blueprint's content block: `box { .. width { 300 } }`
+2. **Postfix Syntax** - After the blueprint: `box { } .. width { 300 }`
 
 Both forms are semantically identical and apply to the created fragment's root node.
+
+**Syntax:**
+
+The `..` prefix is required for all instructions, distinguishing them from fragment creation:
+
+```frel
+box {
+    .. width { 300 }      // instruction (has .. prefix)
+    .. height { 200 }     // instruction (has .. prefix)
+    text { "Hello" }      // fragment creation (no prefix)
+}
+```
 
 **Precedence:**
 
@@ -282,24 +294,23 @@ Both forms are semantically identical and apply to the created fragment's root n
 - Postfix instructions are applied after inner instructions.
 - When the same instruction is applied multiple times, the last one wins.
 - For multi-parameter instructions parameters are **added**. For example:
-    - `padding { top : 16 } .. padding { bottom : 16 }` is equivalent to
-      `padding { top : 16, bottom : 16 }`
-    - `padding { top : 16, bottom : 16 } .. padding { bottom : 32 }` is equivalent to
-      `padding { top : 16, bottom : 32 }`
+    - `.. padding { top : 16 } .. padding { bottom : 16 }` is equivalent to
+      `.. padding { top : 16, bottom : 16 }`
+    - `.. padding { top : 16, bottom : 16 } .. padding { bottom : 32 }` is equivalent to
+      `.. padding { top : 16, bottom : 32 }`
 
 **Instruction Chaining:**
 
-Multiple instructions can be chained using `..` regardless of syntax:
+Multiple instructions can be chained using `..`:
 
 ```frel
 // Postfix chaining
 box { } .. width { 300 } .. height { 200 } .. padding { 16 }
 
-// Inner chaining
+// Inner with chaining
 box {
-    width { 300 } .. height { 200 }
-    padding { 16 }
-    
+    .. width { 300 } .. height { 200 } .. padding { 16 }
+
     text { "Content" }
 }
 ```
@@ -313,17 +324,17 @@ Use **inner syntax**:
 
 ```frel
 box {
-    width { 300 }
-    height { 200 }
-    padding { 16 }
-    
+    .. width { 300 }
+    .. height { 200 }
+    .. padding { 16 }
+
     text { "Hello" }
 }
 
 // Or with chaining:
 box {
-    width { 300 } .. height { 200 } .. padding { 16 }
-    
+    .. width { 300 } .. height { 200 } .. padding { 16 }
+
     text { "Hello" }
 }
 ```
@@ -401,8 +412,8 @@ text { "Click" } .. padding { 8 } .. border { Red, 1 }
 
 // 8. Inner styling (for fragment with content)
 button {
-    padding { 8 }
-    border { Red, 1 }
+    .. padding { 8 }
+    .. border { Red, 1 }
 
     text { "Click" }
 }
@@ -414,8 +425,8 @@ button {
 // Higher-order blueprint with Blueprint parameter
 blueprint Container(content: Blueprint) {
     column {
-        padding { 16 }
-        border { Gray, 1 }
+        .. padding { 16 }
+        .. border { Gray, 1 }
         content()
     }
 }
@@ -510,8 +521,8 @@ All blueprints support an optional `tooltip` slot for contextual help:
 button {
     "Save"
     at tooltip: {
-        padding { 6 }
-        background { color: Black }
+        .. padding { 6 }
+        .. background { color: Black }
         text { "Ctrl+S to save" } .. font { color: White }
     }
 }

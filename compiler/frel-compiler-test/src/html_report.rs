@@ -513,6 +513,15 @@ impl HtmlReportGenerator {
         .frel-operator { color: #d73a49; }
         .frel-modifier { color: #e36209; }
 
+        /* Line numbers */
+        .line-number {
+            color: #999;
+            user-select: none;
+            display: inline-block;
+            text-align: right;
+            min-width: 2ch;
+        }
+
         /* Dump syntax highlighting */
         .dump-node { color: #d73a49; font-weight: 600; }
         .dump-attr { color: #6f42c1; }
@@ -841,8 +850,34 @@ fn html_escape(s: &str) -> String {
         .replace('\'', "&#39;")
 }
 
-/// Syntax highlighting for Frel source code
+/// Syntax highlighting for Frel source code with line numbers
 fn highlight_frel(code: &str) -> String {
+    let mut result = String::new();
+    let line_count = code.lines().count().max(1);
+    let width = line_count.to_string().len();
+
+    // Process each line individually
+    for (i, line) in code.lines().enumerate() {
+        let line_num = i + 1;
+        let highlighted_line = highlight_frel_line(line);
+        result.push_str(&format!(
+            "<span class=\"line-number\">{:>width$}</span>  {}\n",
+            line_num,
+            highlighted_line,
+            width = width
+        ));
+    }
+
+    result
+}
+
+/// Highlight a single line of Frel source code
+fn highlight_frel_line(line: &str) -> String {
+    highlight_frel_content(line)
+}
+
+/// Syntax highlighting for Frel source code (content only, no line numbers)
+fn highlight_frel_content(code: &str) -> String {
     let keywords = [
         "module", "scheme", "arena", "backend", "blueprint", "theme", "contract",
         "enum", "field", "virtual", "action", "event", "import", "from", "as",

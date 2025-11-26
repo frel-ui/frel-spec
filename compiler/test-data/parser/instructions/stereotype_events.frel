@@ -18,7 +18,7 @@ blueprint ConfirmDialog {
             button { "Confirm" } .. stereotype { save }
         }
 
-        on_cancel { cancel() }
-        on_save { confirm() }
+        .. on_cancel { cancel() }
+        .. on_save { confirm() }
     }
 }

@@ -80,7 +80,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse instruction parameters (name: value pairs or just values)
-    fn parse_instruction_params(&mut self) -> Option<Vec<(String, crate::ast::FaExpr)>> {
+    pub(super) fn parse_instruction_params(&mut self) -> Option<Vec<(String, crate::ast::FaExpr)>> {
         if self.check(TokenKind::RBrace) {
             return Some(vec![]);
         }

@@ -76,6 +76,28 @@ info : String = "User: ${user.name}, Email: ${user.email}"
 - Expression can be any valid Frel expression
 - Result is always a `String`
 
+## Colors
+
+Color literals use CSS-style hex notation:
+
+```frel
+red : Color = #FF0000        // RGB (alpha defaults to FF/opaque)
+redAlpha : Color = #FF000080 // RGBA (50% transparent red)
+white : Color = #FFFFFF
+black : Color = #000000
+```
+
+**Properties:**
+- `#RRGGBB` - 6-digit hex, alpha defaults to FF (opaque)
+- `#RRGGBBAA` - 8-digit hex with explicit alpha
+- Each component is 00-FF (0-255)
+
+**Alternative formats:**
+- `rgb(r, g, b)` - RGB components (0-255)
+- `rgba(r, g, b, a)` - RGBA components (0-255)
+
+See [Instructions - Color](../70_blueprints/60_instructions.md#color) for usage in styling.
+
 ## Booleans
 
 ```frel

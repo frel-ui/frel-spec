@@ -171,8 +171,8 @@ Children are positioned using:
 ```frel
 // Absolute positioning
 box {
-    width { 400 } .. height { 300 }
-    background { color: White }
+    .. width { 400 } .. height { 300 }
+    .. background { color: White }
 
     text { "Top left" } .. position { top: 10 left: 10 }
     text { "Bottom right" } .. position { top: 270 left: 300 }
@@ -180,14 +180,14 @@ box {
 
 // Centered content
 box {
-    width { 400 } .. height { 300 }
+    .. width { 400 } .. height { 300 }
 
     text { "Centered" } .. align_self_center
 }
 
 // Layered content (z-order matches source order)
 box {
-    width { 200 } .. height { 200 }
+    .. width { 200 } .. height { 200 }
 
     // Background fills entire box (no position needed, defaults to 0,0)
     image { "background.jpg" } .. fill
@@ -200,7 +200,7 @@ box {
 
 // Mixed positioning
 box {
-    width { 500 } .. height { 400 }
+    .. width { 500 } .. height { 400 }
 
     // Absolute
     icon { "close" }
@@ -209,7 +209,7 @@ box {
 
     // Aligned
     column {
-        gap { 8 }
+        .. gap { 8 }
         text { "Title" }
         text { "Content" }
     } .. align_self_center
@@ -253,8 +253,8 @@ column {
 
 // With spacing and padding
 column {
-    gap { 16 }
-    padding { 20 }
+    .. gap { 16 }
+    .. padding { 20 }
 
     text { "Header" } .. font { size: 20 weight: 700 }
     text { "Body content" }
@@ -262,9 +262,9 @@ column {
 
 // Centered items
 column {
-    width { 400 }
-    align_items { horizontal: center }
-    gap { 8 }
+    .. width { 400 }
+    .. align_items { horizontal: center }
+    .. gap { 8 }
 
     image { "logo.png" } .. width { 100 } .. height { 100 }
     text { "Welcome" }
@@ -272,8 +272,8 @@ column {
 
 // Mixed heights
 column {
-    height { 500 }
-    gap { 8 }
+    .. height { 500 }
+    .. gap { 8 }
 
     text { "Header" } .. height { 40 }
     box { /* content */ } .. height { expand }  // Takes remaining space
@@ -282,9 +282,9 @@ column {
 
 // Scrollable column
 column {
-    height { 300 }
-    scroll { vertical }
-    gap { 8 }
+    .. height { 300 }
+    .. scroll { vertical }
+    .. gap { 8 }
 
     repeat on items as item {
         text { item.name }
@@ -328,8 +328,8 @@ row {
 
 // With spacing and padding
 row {
-    gap { 8 }
-    padding { 16 }
+    .. gap { 8 }
+    .. padding { 16 }
 
     text { "Item 1" }
     text { "Item 2" }
@@ -337,9 +337,9 @@ row {
 
 // Vertically centered items
 row {
-    height { 60 }
-    align_items { vertical: center }
-    gap { 12 }
+    .. height { 60 }
+    .. align_items { vertical: center }
+    .. gap { 12 }
 
     icon { "user" } .. size { 32 } .. tint { Black }
     text { user.name }
@@ -347,8 +347,8 @@ row {
 
 // Mixed widths
 row {
-    width { 800 }
-    gap { 16 }
+    .. width { 800 }
+    .. gap { 16 }
 
     column { /* sidebar */ } .. width { 200 }
     column { /* main */ } .. width { expand }  // Takes remaining space
@@ -356,9 +356,9 @@ row {
 
 // Scrollable row
 row {
-    width { 400 }
-    scroll { horizontal }
-    gap { 8 }
+    .. width { 400 }
+    .. scroll { horizontal }
+    .. gap { 8 }
 
     repeat on images as img {
         image { img.url } .. width { 100 } .. height { 100 }

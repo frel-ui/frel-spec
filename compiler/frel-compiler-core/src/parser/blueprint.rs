@@ -9,12 +9,16 @@
 
 use crate::ast::{
     FaArg, FaBlueprint, FaBlueprintStmt, FaBlueprintValue, FaControlStmt, FaEventHandler,
-    FaEventParam, FaFragmentBody, FaFragmentCreation, FaHandlerStmt, FaInstruction, FaLocalDecl,
-    FaPostfixItem, FaSelectBranch, FaSlotBinding,
+    FaEventParam, FaFragmentBody, FaFragmentCreation, FaHandlerStmt, FaLocalDecl, FaPostfixItem,
+    FaSelectBranch, FaSlotBinding,
 };
 use crate::lexer::TokenKind;
 
 use super::Parser;
+
+// Note: Instructions are now distinguished syntactically by the `..` prefix,
+// not by a known-names whitelist. This makes the grammar context-free.
+// Example: `.. width { 300 }` is an instruction, `text { "hello" }` is fragment creation.
 
 impl<'a> Parser<'a> {
     /// Parse blueprint declaration
@@ -84,7 +88,8 @@ impl<'a> Parser<'a> {
                 }))
             }
 
-            // Fragment creation, instruction, or expression
+            // Fragment creation or expression
+            // Note: Instructions require `..` prefix (handled above)
             TokenKind::Identifier => {
                 // Check if this is an expression (has continuation tokens like . or ?)
                 // vs a fragment creation (followed by (, {, .., or nothing)
@@ -92,7 +97,7 @@ impl<'a> Parser<'a> {
                     let expr = self.parse_expr()?;
                     Some(FaBlueprintStmt::ContentExpr(expr))
                 } else {
-                    self.parse_fragment_or_instruction()
+                    self.parse_fragment_creation()
                 }
             }
 
@@ -109,11 +114,12 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            // Content expressions: string literals, numbers, etc.
+            // Content expressions: string literals, numbers, colors, etc.
             TokenKind::StringLiteral
             | TokenKind::StringTemplateStart
             | TokenKind::IntLiteral
             | TokenKind::FloatLiteral
+            | TokenKind::ColorLiteral
             | TokenKind::True
             | TokenKind::False
             | TokenKind::Null
@@ -170,8 +176,9 @@ impl<'a> Parser<'a> {
         text.starts_with("on_")
     }
 
-    /// Parse fragment creation or standalone instruction
-    fn parse_fragment_or_instruction(&mut self) -> Option<FaBlueprintStmt> {
+    /// Parse fragment creation
+    /// Note: Instructions require `..` prefix, so all bare identifiers are fragment creations.
+    fn parse_fragment_creation(&mut self) -> Option<FaBlueprintStmt> {
         let name = self.expect_identifier()?;
 
         // Check what follows

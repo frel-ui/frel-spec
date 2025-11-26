@@ -192,7 +192,7 @@ blueprint Counter() {
 
     button {
         text { "Increment" }
-        on_click { count = count + 1 }
+        .. on_click { count = count + 1 }
     }
 }
 ```
@@ -204,9 +204,9 @@ blueprint ColorPicker() {
     hue = 0.0
 
     box {
-        width { 300 }
-        height { 50 }
-        on_click { event: PointerEvent ->
+        .. width { 300 }
+        .. height { 50 }
+        .. on_click { event: PointerEvent ->
             hue = event.x_dip / 300.0
         }
     }
@@ -217,9 +217,9 @@ blueprint ColorPicker() {
     hue = 0.0
 
     box {
-        width { 300 }
-        height { 50 }
-        on_click {
+        .. width { 300 }
+        .. height { 50 }
+        .. on_click {
             hue = it.x_dip / 300.0
         }
     }
@@ -271,8 +271,8 @@ blueprint EditorView() {
     column {
         text_input { content }
 
-        on_enter { submit() }
-        on_escape { cancel() }
+        .. on_enter { submit() }
+        .. on_escape { cancel() }
     }
 }
 ```

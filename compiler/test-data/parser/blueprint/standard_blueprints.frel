@@ -10,19 +10,19 @@ blueprint StandardBlueprints {
         icon { "close" } .. size { 24 } .. tint { Black }
 
         box {
-            width { 200 }
-            height { 100 }
+            .. width { 200 }
+            .. height { 100 }
             text { "Box content" }
         }
 
         column {
-            gap { 8 }
+            .. gap { 8 }
             text { "Column item 1" }
             text { "Column item 2" }
         }
 
         row {
-            gap { 8 }
+            .. gap { 8 }
             text { "Row item 1" }
             text { "Row item 2" }
         }
