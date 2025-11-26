@@ -58,19 +58,19 @@ impl DumpVisitor {
             FaTypeExpr::Asset(inner) => format!("asset {}", self.type_inline(inner)),
             FaTypeExpr::Blueprint(params) => {
                 if params.is_empty() {
-                    "blueprint".to_string()
+                    "Blueprint".to_string()
                 } else {
                     let p: Vec<_> = params.iter().map(|p| self.type_inline(p)).collect();
-                    format!("blueprint<{}>", p.join(", "))
+                    format!("Blueprint<{}>", p.join(", "))
                 }
             }
-            FaTypeExpr::Accessor(inner) => format!("accessor<{}>", self.type_inline(inner)),
-            FaTypeExpr::List(elem) => format!("[{}]", self.type_inline(elem)),
-            FaTypeExpr::Set(elem) => format!("set<{}>", self.type_inline(elem)),
+            FaTypeExpr::Accessor(inner) => format!("Accessor<{}>", self.type_inline(inner)),
+            FaTypeExpr::List(elem) => format!("List<{}>", self.type_inline(elem)),
+            FaTypeExpr::Set(elem) => format!("Set<{}>", self.type_inline(elem)),
             FaTypeExpr::Map(key, value) => {
-                format!("map<{}, {}>", self.type_inline(key), self.type_inline(value))
+                format!("Map<{}, {}>", self.type_inline(key), self.type_inline(value))
             }
-            FaTypeExpr::Tree(elem) => format!("tree<{}>", self.type_inline(elem)),
+            FaTypeExpr::Tree(elem) => format!("Tree<{}>", self.type_inline(elem)),
         }
     }
 
@@ -586,7 +586,7 @@ impl FaVisitor for DumpVisitor {
     fn visit_method(&mut self, method: &FaMethod) {
         let params: Vec<_> = method.params.iter().map(|p| self.format_param(p)).collect();
         self.write(&format!(
-            "METHOD {}({}) -> {}",
+            "METHOD {}({}) RETURN {}",
             method.name,
             params.join(", "),
             self.type_inline(&method.return_type)
@@ -611,7 +611,7 @@ impl FaVisitor for DumpVisitor {
         let ret = method
             .return_type
             .as_ref()
-            .map(|t| format!(" -> {}", self.type_inline(t)))
+            .map(|t| format!(" RETURN {}", self.type_inline(t)))
             .unwrap_or_default();
         self.write(&format!(
             "METHOD {}({}){}",

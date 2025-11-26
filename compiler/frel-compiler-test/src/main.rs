@@ -1,10 +1,12 @@
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 use frel_compiler_core::ast::DumpVisitor;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+
+mod html_report;
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
 enum OutputFormat {
@@ -20,20 +22,39 @@ enum OutputFormat {
 #[command(name = "frel-compiler-test")]
 #[command(about = "Testing framework for the Frel compiler")]
 struct Cli {
+    #[command(subcommand)]
+    command: Option<Command>,
+
     /// Optional filter pattern (e.g., "parser/blueprint" or "simple")
+    #[arg(global = true)]
     filter: Option<String>,
 
     /// Update expected output files with actual results
-    #[arg(long)]
+    #[arg(long, global = true)]
     update: bool,
 
     /// Show detailed diff on failures
-    #[arg(long)]
+    #[arg(long, global = true)]
     verbose: bool,
 
     /// Output format for AST files
-    #[arg(long, value_enum, default_value = "json")]
+    #[arg(long, value_enum, default_value = "json", global = true)]
     format: OutputFormat,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Run tests (default)
+    Test {
+        /// Optional filter pattern
+        filter: Option<String>,
+    },
+    /// Generate HTML report of all test cases
+    Report {
+        /// Output file path (default: compiler/target/test-results.html)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
 }
 
 #[derive(Debug)]
@@ -75,8 +96,51 @@ fn main() {
         std::process::exit(1);
     }
 
+    match &cli.command {
+        Some(Command::Report { output }) => {
+            run_report_command(&tests_dir, output.as_ref());
+        }
+        Some(Command::Test { filter }) => {
+            run_test_command(&tests_dir, filter.as_deref(), &cli);
+        }
+        None => {
+            // Default: run tests with the global filter
+            run_test_command(&tests_dir, cli.filter.as_deref(), &cli);
+        }
+    }
+}
+
+fn run_report_command(tests_dir: &Path, output: Option<&PathBuf>) {
+    let default_output = find_target_dir().join("test-results.html");
+    let output_path = output.unwrap_or(&default_output);
+
+    println!(
+        "{} HTML report...",
+        "Generating".green().bold()
+    );
+
+    let mut generator = html_report::HtmlReportGenerator::new();
+
+    if let Err(e) = generator.collect_tests(tests_dir) {
+        eprintln!("{} {}", "error:".red().bold(), e);
+        std::process::exit(1);
+    }
+
+    if let Err(e) = generator.generate(output_path) {
+        eprintln!("{} {}", "error:".red().bold(), e);
+        std::process::exit(1);
+    }
+
+    println!(
+        "{} Report written to: {}",
+        "Done!".green().bold(),
+        output_path.display()
+    );
+}
+
+fn run_test_command(tests_dir: &Path, filter: Option<&str>, cli: &Cli) {
     // Discover test cases
-    let test_cases = discover_tests(&tests_dir, cli.filter.as_deref());
+    let test_cases = discover_tests(tests_dir, filter);
 
     if test_cases.is_empty() {
         println!("{}", "No test cases found.".yellow());
@@ -149,6 +213,24 @@ fn find_tests_dir() -> PathBuf {
 
     // Default to compiler/test-data
     PathBuf::from("compiler/test-data")
+}
+
+fn find_target_dir() -> PathBuf {
+    // Try to find compiler/target relative to current directory
+    let candidates = [
+        PathBuf::from("compiler/target"),
+        PathBuf::from("target"),
+        PathBuf::from("../target"),
+    ];
+
+    for candidate in &candidates {
+        if candidate.exists() {
+            return candidate.clone();
+        }
+    }
+
+    // Default to compiler/target
+    PathBuf::from("compiler/target")
 }
 
 fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
