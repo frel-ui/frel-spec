@@ -80,6 +80,9 @@ pub trait FaVisitor {
     /// Visit a select branch
     fn visit_select_branch(&mut self, branch: &FaSelectBranch) -> Self::Result;
 
+    /// Visit a postfix item (instruction or event handler)
+    fn visit_postfix_item(&mut self, item: &FaPostfixItem) -> Self::Result;
+
     /// Visit an instruction
     fn visit_instruction(&mut self, instr: &FaInstruction) -> Self::Result;
 

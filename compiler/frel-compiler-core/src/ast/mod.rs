@@ -78,7 +78,15 @@ pub struct FaFragmentCreation {
     pub name: String,
     pub args: Vec<FaArg>,
     pub body: Option<FaFragmentBody>,
-    pub instructions: Vec<FaInstruction>,
+    pub postfix: Vec<FaPostfixItem>,
+}
+
+/// Postfix item (instruction or event handler)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FaPostfixItem {
+    Instruction(FaInstruction),
+    EventHandler(FaEventHandler),
 }
 
 /// Fragment body

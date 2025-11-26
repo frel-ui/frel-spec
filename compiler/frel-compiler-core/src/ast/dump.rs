@@ -372,11 +372,18 @@ impl FaVisitor for DumpVisitor {
             self.visit_fragment_body(body);
         }
 
-        for instr in &frag.instructions {
-            self.visit_instruction(instr);
+        for item in &frag.postfix {
+            self.visit_postfix_item(item);
         }
 
         self.dedent();
+    }
+
+    fn visit_postfix_item(&mut self, item: &FaPostfixItem) {
+        match item {
+            FaPostfixItem::Instruction(instr) => self.visit_instruction(instr),
+            FaPostfixItem::EventHandler(handler) => self.visit_event_handler(handler),
+        }
     }
 
     fn visit_fragment_body(&mut self, body: &FaFragmentBody) {

@@ -10,7 +10,7 @@
 use crate::ast::{
     FaArg, FaBlueprint, FaBlueprintStmt, FaBlueprintValue, FaControlStmt, FaEventHandler,
     FaEventParam, FaFragmentBody, FaFragmentCreation, FaHandlerStmt, FaInstruction, FaLocalDecl,
-    FaSelectBranch, FaSlotBinding,
+    FaPostfixItem, FaSelectBranch, FaSlotBinding,
 };
 use crate::lexer::TokenKind;
 
@@ -96,11 +96,17 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            // Postfix instruction: .. instruction
+            // Postfix item: .. instruction or .. on_click { ... }
             TokenKind::DotDot => {
                 self.advance();
-                let instr = self.parse_instruction()?;
-                Some(FaBlueprintStmt::Instruction(instr))
+                // Check if this is an event handler (on_*)
+                if self.is_event_handler_start() {
+                    let handler = self.parse_postfix_event_handler()?;
+                    Some(FaBlueprintStmt::EventHandler(handler))
+                } else {
+                    let instr = self.parse_instruction()?;
+                    Some(FaBlueprintStmt::Instruction(instr))
+                }
             }
 
             // Content expressions: string literals, numbers, etc.
@@ -128,7 +134,7 @@ impl<'a> Parser<'a> {
                     name: String::new(), // anonymous block
                     args: vec![],
                     body: Some(FaFragmentBody::Default(body)),
-                    instructions: vec![],
+                    postfix: vec![],
                 }))
             }
 
@@ -184,34 +190,34 @@ impl<'a> Parser<'a> {
                     None
                 };
 
-                // Parse postfix instructions
-                let instructions = self.parse_postfix_instructions()?;
+                // Parse postfix items (instructions or event handlers)
+                let postfix = self.parse_postfix_items()?;
 
                 Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                     name,
                     args,
                     body,
-                    instructions,
+                    postfix,
                 }))
             }
 
-            // Fragment with just postfix instructions: foo .. width { 100 }
+            // Fragment with just postfix items: foo .. width { 100 } .. on_click { ... }
             TokenKind::DotDot => {
-                let instructions = self.parse_postfix_instructions()?;
+                let postfix = self.parse_postfix_items()?;
                 Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                     name,
                     args: vec![],
                     body: None,
-                    instructions,
+                    postfix,
                 }))
             }
 
-            // Bare fragment name (no args, no body, no instructions)
+            // Bare fragment name (no args, no body, no postfix)
             _ => Some(FaBlueprintStmt::FragmentCreation(FaFragmentCreation {
                 name,
                 args: vec![],
                 body: None,
-                instructions: vec![],
+                postfix: vec![],
             })),
         }
     }
@@ -328,16 +334,46 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Parse postfix instructions: .. instr1 .. instr2
-    fn parse_postfix_instructions(&mut self) -> Option<Vec<FaInstruction>> {
-        let mut instructions = Vec::new();
+    /// Parse postfix items (instructions or event handlers): .. instr1 .. on_click { ... }
+    fn parse_postfix_items(&mut self) -> Option<Vec<FaPostfixItem>> {
+        let mut items = Vec::new();
 
         while self.consume(TokenKind::DotDot).is_some() {
-            let instr = self.parse_instruction()?;
-            instructions.push(instr);
+            // Check if this is an event handler (on_*)
+            if self.is_event_handler_start() {
+                let handler = self.parse_postfix_event_handler()?;
+                items.push(FaPostfixItem::EventHandler(handler));
+            } else {
+                let instr = self.parse_instruction()?;
+                items.push(FaPostfixItem::Instruction(instr));
+            }
         }
 
-        Some(instructions)
+        Some(items)
+    }
+
+    /// Parse event handler in postfix position: on_click { ... }
+    fn parse_postfix_event_handler(&mut self) -> Option<FaEventHandler> {
+        let event_name = self.expect_identifier()?;
+
+        self.expect(TokenKind::LBrace)?;
+
+        let mut body = Vec::new();
+        while !self.check(TokenKind::RBrace) && !self.at_end() {
+            if let Some(stmt) = self.parse_handler_stmt() {
+                body.push(stmt);
+            } else {
+                self.advance();
+            }
+        }
+
+        self.expect(TokenKind::RBrace)?;
+
+        Some(FaEventHandler {
+            event_name,
+            param: None, // Postfix event handlers don't have params
+            body,
+        })
     }
 
     /// Parse argument list
