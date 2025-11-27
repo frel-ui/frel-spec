@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Compiler errors
 #[derive(Debug)]
 pub enum Error {
-    /// Parse error from PEST
+    /// Parse error
     ParseError(String),
 
     /// Semantic analysis error

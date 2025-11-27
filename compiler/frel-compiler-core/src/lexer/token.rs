@@ -1,7 +1,6 @@
 // Token definitions for Frel lexer
 //
-// This module defines all token types produced by the lexer,
-// derived from the PEST grammar specification.
+// This module defines all token types produced by the lexer.
 
 use crate::source::Span;
 use serde::{Deserialize, Serialize};

@@ -93,11 +93,9 @@ frel/
 │   ├── lsp/                       # Language Server Protocol
 │   └── vscode/                    # VS Code extension
 │
-├── docs/                          # Documentation
-│   ├── 00_overview/               # Overview and setup guides
-│   └── 10_language/               # Language specification
-│
-└── frel.pest                      # PEST grammar
+└── docs/                          # Documentation
+    ├── 00_overview/               # Overview and setup guides
+    └── 10_language/               # Language specification
 ```
 
 ## Development Workflow
@@ -214,77 +212,3 @@ npm run build
 cd ../../../examples/counter
 npm run dev
 ```
-
-## Key Files to Understand
-
-### Language Specification
-
-Start with these documents in `docs/10_language/`:
-
-1. [Language Overview](docs/10_language/00_overview/00_language_overview.md) - High-level concepts
-2. [Data Model Basics](docs/10_language/20_data_model/01_data_model_basics.md) - Core data types
-3. [Reactivity](docs/10_language/20_data_model/03_reactivity.md) - Reactive system
-4. [Blueprint Basics](docs/10_language/70_blueprints/10_blueprint_basics.md) - UI components
-5. [Runtime Data Model](docs/10_language/80_runtime/10_runtime_data_model.md) - Runtime behavior
-
-### Compiler Implementation
-
-- `compiler/frel-compiler-core/src/frel.pest` - Grammar definition
-- `compiler/frel-compiler-core/src/parser.rs` - Parser implementation
-- `compiler/frel-compiler-core/src/ast.rs` - AST structure
-- `compiler/frel-compiler-plugin-javascript/src/codegen.rs` - JS code generation
-
-### Runtime Implementation
-
-- `host/javascript/runtime/src/runtime.ts` - Main runtime class
-- `host/javascript/runtime/src/datum.ts` - Reactive data unit
-- `host/javascript/runtime/src/subscription.ts` - Reactive dependencies
-- `host/javascript/runtime/src/fragment.ts` - Blueprint instances
-
-### Adapter Implementation
-
-- `host/javascript/adapters/browser/src/adapter.ts` - Browser integration
-- `host/javascript/adapters/browser/src/renderer.ts` - DOM rendering
-- `host/javascript/adapters/browser/src/blueprints/` - Standard blueprints
-
-## Next Steps
-
-### For Language Design
-
-1. Read the language specification thoroughly
-2. Provide feedback on design decisions
-3. Propose improvements via GitHub issues/discussions
-
-### For Compiler Development
-
-1. Implement AST builder from PEST parse tree
-2. Add semantic analysis and type checking
-3. Complete JavaScript code generation
-4. Add tests for all compiler phases
-
-### For Runtime Development
-
-1. Complete subscription callback mechanisms
-2. Add more comprehensive tests
-3. Optimize change propagation
-4. Profile and improve performance
-
-### For Adapter Development
-
-1. Complete standard blueprint implementations
-2. Implement instruction application (layout, styling)
-3. Add event handler binding
-4. Test with real applications
-
-### For Library Development
-
-1. Write higher-level widgets in Frel
-2. Build common UI patterns
-3. Create component library
-
-## Getting Help
-
-- **Language Questions**: See [Language Documentation](../10_language/)
-- **Architecture**: See [Architecture](20_architecture.md)
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions

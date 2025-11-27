@@ -16,9 +16,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/frel-lang/frel"
 
 [workspace.dependencies]
-# Parser
-pest = "2.7"
-pest_derive = "2.7"
 
 # Error handling
 anyhow = "1.0"

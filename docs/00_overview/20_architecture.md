@@ -58,7 +58,7 @@ Frel follows a three-layer architecture that separates concerns between compilat
 Located in `compiler/`
 
 **frel-core**
-- PEST-based parser using `frel.pest` grammar
+- hand-written (well, AI written) lexer/parser
 - AST construction from parse tree
 - Semantic analysis and type checking
 - Language-agnostic IR
