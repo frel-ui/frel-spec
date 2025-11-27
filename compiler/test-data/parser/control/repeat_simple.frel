@@ -8,7 +8,7 @@ blueprint RepeatSimple {
     with ListBackend
 
     column {
-        repeat on items as item {
+        repeat on items { item ->
             text { item }
         }
     }

@@ -7,7 +7,7 @@ backend ListBackend {
 blueprint Bad {
     with ListBackend
 
-    repeat items as item {
+    repeat items { item ->
         text { item }
     }
 }

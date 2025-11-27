@@ -13,10 +13,10 @@ blueprint RepeatNested {
     with CatalogBackend
 
     column {
-        repeat on categories as category {
+        repeat on categories { category ->
             column {
                 text { category.name }
-                repeat on category.items as item {
+                repeat on category.items { item ->
                     text { "  - ${item}" }
                 }
             }

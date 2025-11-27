@@ -1,0 +1,19 @@
+module test
+
+blueprint InstructionExprTernary {
+    // simple ternary
+    box { }
+        .. is_enabled ? background { color: #00FF00 } else background { color: #CCCCCC }
+
+    // ternary with complex instructions
+    box { }
+        .. is_selected ? background { color: #0066CC } else background { color: #FFFFFF }
+
+    // ternary with complex condition
+    box { }
+        .. (count > 0 && is_visible) ? width { 200 } else width { 0 }
+
+    // nested ternary
+    box { }
+        .. is_error ? border { color: #FF0000 } else is_warning ? border { color: #FFA500 } else border { color: #00FF00 }
+}

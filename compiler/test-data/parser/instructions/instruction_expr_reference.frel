@@ -1,0 +1,22 @@
+module test
+
+blueprint InstructionExprReference {
+    // simple field access reference
+    box { }
+        .. theme.primary_button
+
+    // chained field access
+    box { }
+        .. app.theme.status_badge
+
+    // reference combined with simple instructions
+    box { }
+        .. theme.card_style
+        .. padding { 16 }
+        .. margin { 8 }
+
+    // multiple references
+    box { }
+        .. theme.base_style
+        .. theme.highlighted
+}

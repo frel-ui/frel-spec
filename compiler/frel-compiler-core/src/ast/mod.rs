@@ -131,9 +131,9 @@ pub enum ControlStmt {
     },
     Repeat {
         iterable: Expr,
-        item_name: Option<String>,
+        item_name: String,
         key_expr: Option<Expr>,
-        body: Box<BlueprintStmt>,
+        body: Vec<BlueprintStmt>,
     },
     Select {
         discriminant: Option<Expr>,

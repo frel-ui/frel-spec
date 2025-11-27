@@ -473,17 +473,11 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    /// Parse repeat statement: repeat on expr [as name] [by keyExpr] stmt
+    /// Parse repeat statement: repeat on expr [by keyExpr] { item -> body }
     fn parse_repeat_stmt(&mut self) -> Option<BlueprintStmt> {
         self.expect(TokenKind::Repeat)?;
         self.expect(TokenKind::On)?;
         let iterable = self.parse_expr()?;
-
-        let item_name = if self.consume(TokenKind::As).is_some() {
-            Some(self.expect_identifier()?)
-        } else {
-            None
-        };
 
         let key_expr = if self.consume(TokenKind::By).is_some() {
             Some(self.parse_expr()?)
@@ -491,7 +485,12 @@ impl<'a> Parser<'a> {
             None
         };
 
-        let body = Box::new(self.parse_blueprint_stmt()?);
+        // Expect { item -> body }
+        self.expect(TokenKind::LBrace)?;
+        let item_name = self.expect_identifier()?;
+        self.expect(TokenKind::Arrow)?;
+        let body = self.parse_blueprint_body()?;
+        self.expect(TokenKind::RBrace)?;
 
         Some(BlueprintStmt::Control(ControlStmt::Repeat {
             iterable,
@@ -685,7 +684,7 @@ blueprint Conditional {
 module test
 
 blueprint List {
-    repeat on items as item {
+    repeat on items { item ->
         text { item.name }
     }
 }

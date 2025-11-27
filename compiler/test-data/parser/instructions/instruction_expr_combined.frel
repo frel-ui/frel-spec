@@ -1,0 +1,30 @@
+module test
+
+blueprint InstructionExprCombined {
+    // conditional with reference in then branch
+    box { }
+        .. when is_primary { theme.primary_button } else { theme.secondary_button }
+
+    // ternary with references
+    box { }
+        .. is_dark_mode ? theme.dark_card else theme.light_card
+
+    // mixed: simple, reference, when, ternary
+    box { }
+        .. width { 200 }
+        .. theme.base_style
+        .. when is_focused { border { color: #0066CC width: 2 } }
+        .. is_disabled ? background { color: #CCCCCC } else background { color: #FFFFFF }
+
+    // conditional reference with fallback to simple instruction
+    box { }
+        .. when has_custom_style { custom_styles.card } else { background { color: #FFFFFF } }
+
+    // nested conditionals with references
+    box { }
+        .. when is_error {
+            is_critical ? theme.critical_error else theme.warning
+        } else {
+            theme.success
+        }
+}

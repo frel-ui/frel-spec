@@ -1,0 +1,21 @@
+module test
+
+blueprint InstructionExprWhen {
+    // when without else
+    box { }
+        .. when is_active { background { color: #00FF00 } }
+
+    // when with else
+    box { }
+        .. when is_highlighted { background { color: #FFFF00 } } else { background { color: #FFFFFF } }
+
+    // nested when
+    box { }
+        .. when is_error {
+            when is_critical { border { color: #FF0000 width: 2 } } else { border { color: #FFA500 width: 1 } }
+        }
+
+    // when with complex condition
+    box { }
+        .. when count > 0 && is_visible { background { color: #00FF00 } }
+}

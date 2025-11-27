@@ -457,19 +457,20 @@ impl Visitor for DumpVisitor {
                 key_expr,
                 body,
             } => {
-                let item = item_name.as_deref().unwrap_or("it");
                 let key = key_expr
                     .as_ref()
                     .map(|k| format!(" BY {}", self.expr_inline(k)))
                     .unwrap_or_default();
                 self.write(&format!(
                     "REPEAT {} ON {}{}",
-                    item,
+                    item_name,
                     self.expr_inline(iterable),
                     key
                 ));
                 self.indent();
-                self.visit_blueprint_stmt(body);
+                for stmt in body {
+                    self.visit_blueprint_stmt(stmt);
+                }
                 self.dedent();
             }
             ControlStmt::Select {

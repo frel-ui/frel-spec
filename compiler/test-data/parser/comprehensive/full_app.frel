@@ -133,7 +133,7 @@ blueprint TaskCard(task: Task, theme: ref TaskTheme) {
                 }
 
                 when task.tags.length > 0 {
-                    repeat on task.tags as tag {
+                    repeat on task.tags { tag ->
                         text { tag }
                             .. font { size: 12 }
                             .. padding { horizontal: 6 vertical: 2 }
@@ -185,7 +185,7 @@ blueprint TaskList {
             column {
                 .. gap { 12 }
 
-                repeat on filteredTasks by task.id as task {
+                repeat on filteredTasks by task.id { task ->
                     TaskCard(task, theme)
                         .. cursor { pointer }
                         .. on_click { }
