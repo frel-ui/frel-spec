@@ -1,0 +1,33 @@
+module test
+
+scheme IntrinsicExamples {
+    signed8  : i8
+    signed16 : i16
+    signed32 : i32
+    signed64 : i64
+
+    unsigned8  : u8
+    unsigned16 : u16
+    unsigned32 : u32
+    unsigned64 : u64
+
+    float32 : f32
+    float64 : f64
+
+    flag    : bool
+    name    : String
+    uuid    : Uuid
+    url     : Url
+    amount  : Decimal
+    color   : Color
+    graphic : Graphics
+    secret  : Secret
+    blob    : Blob
+
+    instant    : Instant
+    local_date : LocalDate
+    local_time : LocalTime
+    local_date_time : LocalDateTime
+    timezone   : Timezone
+    duration   : Duration
+}

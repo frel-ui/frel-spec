@@ -1,0 +1,5 @@
+module test
+
+theme BadTheme {
+    primary : asset Color = #FFFFFF
+}
