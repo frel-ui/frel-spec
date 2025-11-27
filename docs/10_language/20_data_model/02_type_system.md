@@ -176,31 +176,46 @@ availability `Error` or `Loading`).
 
 ## Draft Types
 
-**Draft types** are editable copies of scheme instances, primarily used for form editing and
-temporary data manipulation. A draft type is created by adding the `draft` modifier to a scheme
-type.
+**Draft types** are isolated copies of values that break reactive subscription at initialization.
+A draft type is created by adding the `draft` modifier to any type.
 
-**Purpose**: Draft types solve the form editing problem by providing an isolated, editable copy of
-data that:
+**Purpose**: Draft types solve the form editing problem by providing an isolated copy of data that:
 
-- Has its own reactive identity (separate from the original)
-- Can be validated without affecting the original
-- Can be discarded or committed back to the original
+- Is initialized from an expression but does **not subscribe** to it
+- Has its own reactive identity (separate from the source)
+- Can be edited without affecting the source
+- Can be discarded or committed back
 - Lives only as long as its containing backend
+
+**Core semantic**: A draft field takes its initial value from the initialization expression, but
+does not establish a reactive subscription. Changes to the source do not propagate to the draft.
 
 **Syntax**:
 
 ```frel
-backend UserEditorBackend {
-    original : User                          // Reference to arena instance
-    user : draft User = original             // Draft copy for editing
+// Draft of intrinsic type - simple text input
+backend SimpleForm {
+    original : String
+    name : draft String = original           // Takes initial value, not subscribed
+}
+
+// Draft of collection - editing a list
+backend ListEditor {
+    source : List<Item>
+    items : draft List<Item> = source        // Isolated copy of list
+}
+
+// Draft of scheme - editing structured data
+backend UserEditor {
+    original : User
+    user : draft User = original             // Isolated copy for editing
 }
 ```
 
 **Key properties:**
 
-- **Separate identity**: `draft#456 User#123` has a different reactive identity than `User#123`,
-  preventing arena updates from affecting the draft
+- **No subscription**: The draft is initialized from the expression but does not subscribe to it
+- **Separate identity**: Each draft gets its own reactive identity, independent of the source
 - **Independent validation**: Validation rules apply to drafts, but errors don't block editing
   (non-blocking validation)
 - **Explicit lifecycle**: Drafts exist only within their backend scope and are automatically cleaned
@@ -210,10 +225,10 @@ backend UserEditorBackend {
 
 **Assignment semantics:**
 
-When a draft is assigned to a field or used in a scheme constructor:
+When a draft is assigned to a field or used in an expression:
 
-1. A **deep copy** is created of the entire draft structure
-2. The copy becomes a **non-draft** composite datum
+1. The value is **copied** (deep copy for composite types, value copy for intrinsics)
+2. The copy becomes a **non-draft** datum
 3. The original draft remains **unchanged and usable**
 
 ```frel
@@ -238,17 +253,21 @@ times while continuing to edit it.
 
 * Each draft gets a unique identity
 * Identity is stable for the draft's lifetime
-* Identity is independent of the original's identity
+* Identity is independent of the source's identity
 
-The type modifier is part of the reactive identity:
+For composite types, the type modifier is part of the reactive identity:
 
 - `User#123` - Arena instance with identity `User#123`
 - `draft#456 User#123` - Draft instance with identity `draft#456 User#123`
+- `draft#789 List<Item>#234` - Draft list with identity `draft#789 List<Item>#234`
+
+For intrinsic types, the draft field itself has stable identity even though the contained value
+is immutable (assigning a new value replaces the intrinsic, but the draft field identity remains).
 
 This ensures that:
 
-- Changes to the arena instance don't propagate to the draft
-- Changes to the draft don't propagate to the arena
+- Changes to the source don't propagate to the draft
+- Changes to the draft don't propagate to the source
 - Each has independent reactive subscribers
 
 **Relationship with arenas**:

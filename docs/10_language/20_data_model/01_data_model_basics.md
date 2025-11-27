@@ -50,7 +50,7 @@ In addition to the main categories, types can be modified with type qualifiers:
 
 - `nullable` (suffix `?`) - the datum may be absent
 - `ref` - reference to another datum
-- `draft` - isolated editable copy
+- `draft` - isolated copy, not subscribed to source
 - `asset` - externally-loaded, environment dependent value
 
 ## Field
