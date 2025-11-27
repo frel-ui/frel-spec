@@ -1,0 +1,5 @@
+module test
+
+backend InvalidDraftBackend {
+    cache : draft List<String>
+}

@@ -1,0 +1,9 @@
+module test
+
+blueprint renderer(title : String) {
+    text { title }
+}
+
+backend InvalidDraftBackend {
+    template : draft Blueprint<String>
+}
