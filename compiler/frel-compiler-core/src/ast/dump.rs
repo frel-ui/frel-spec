@@ -3,7 +3,7 @@
 // This module implements a human-readable DUMP format for the AST.
 // The format is indentation-based and suitable for debugging and review.
 
-use super::visitor::FaVisitor;
+use super::visitor::Visitor;
 use super::*;
 
 /// A visitor that produces DUMP format output
@@ -24,7 +24,7 @@ impl DumpVisitor {
     }
 
     /// Dump a file to DUMP format
-    pub fn dump(file: &FaFile) -> String {
+    pub fn dump(file: &File) -> String {
         let mut visitor = Self::new();
         visitor.visit_file(file);
         visitor.output
@@ -49,14 +49,14 @@ impl DumpVisitor {
     }
 
     // Helper to format a type expression inline
-    fn type_inline(&self, type_expr: &FaTypeExpr) -> String {
+    fn type_inline(&self, type_expr: &TypeExpr) -> String {
         match type_expr {
-            FaTypeExpr::Named(name) => name.clone(),
-            FaTypeExpr::Nullable(inner) => format!("{}?", self.type_inline(inner)),
-            FaTypeExpr::Ref(inner) => format!("ref {}", self.type_inline(inner)),
-            FaTypeExpr::Draft(inner) => format!("draft {}", self.type_inline(inner)),
-            FaTypeExpr::Asset(inner) => format!("asset {}", self.type_inline(inner)),
-            FaTypeExpr::Blueprint(params) => {
+            TypeExpr::Named(name) => name.clone(),
+            TypeExpr::Nullable(inner) => format!("{}?", self.type_inline(inner)),
+            TypeExpr::Ref(inner) => format!("ref {}", self.type_inline(inner)),
+            TypeExpr::Draft(inner) => format!("draft {}", self.type_inline(inner)),
+            TypeExpr::Asset(inner) => format!("asset {}", self.type_inline(inner)),
+            TypeExpr::Blueprint(params) => {
                 if params.is_empty() {
                     "Blueprint".to_string()
                 } else {
@@ -64,39 +64,39 @@ impl DumpVisitor {
                     format!("Blueprint<{}>", p.join(", "))
                 }
             }
-            FaTypeExpr::Accessor(inner) => format!("Accessor<{}>", self.type_inline(inner)),
-            FaTypeExpr::List(elem) => format!("List<{}>", self.type_inline(elem)),
-            FaTypeExpr::Set(elem) => format!("Set<{}>", self.type_inline(elem)),
-            FaTypeExpr::Map(key, value) => {
+            TypeExpr::Accessor(inner) => format!("Accessor<{}>", self.type_inline(inner)),
+            TypeExpr::List(elem) => format!("List<{}>", self.type_inline(elem)),
+            TypeExpr::Set(elem) => format!("Set<{}>", self.type_inline(elem)),
+            TypeExpr::Map(key, value) => {
                 format!("Map<{}, {}>", self.type_inline(key), self.type_inline(value))
             }
-            FaTypeExpr::Tree(elem) => format!("Tree<{}>", self.type_inline(elem)),
+            TypeExpr::Tree(elem) => format!("Tree<{}>", self.type_inline(elem)),
         }
     }
 
     // Helper to format an expression inline (for simple expressions)
-    fn expr_inline(&self, expr: &FaExpr) -> String {
+    fn expr_inline(&self, expr: &Expr) -> String {
         match expr {
-            FaExpr::Null => "null".to_string(),
-            FaExpr::Bool(b) => b.to_string(),
-            FaExpr::Int(n) => n.to_string(),
-            FaExpr::Float(f) => f.to_string(),
-            FaExpr::Color(c) => format!("#{:08X}", c),
-            FaExpr::String(s) => format!("{:?}", s),
-            FaExpr::Identifier(name) => name.clone(),
-            FaExpr::QualifiedName(parts) => parts.join("."),
-            FaExpr::List(items) => {
+            Expr::Null => "null".to_string(),
+            Expr::Bool(b) => b.to_string(),
+            Expr::Int(n) => n.to_string(),
+            Expr::Float(f) => f.to_string(),
+            Expr::Color(c) => format!("#{:08X}", c),
+            Expr::String(s) => format!("{:?}", s),
+            Expr::Identifier(name) => name.clone(),
+            Expr::QualifiedName(parts) => parts.join("."),
+            Expr::List(items) => {
                 let items: Vec<_> = items.iter().map(|i| self.expr_inline(i)).collect();
                 format!("[{}]", items.join(", "))
             }
-            FaExpr::Object(fields) => {
+            Expr::Object(fields) => {
                 let fields: Vec<_> = fields
                     .iter()
                     .map(|(k, v)| format!("{}: {}", k, self.expr_inline(v)))
                     .collect();
                 format!("{{ {} }}", fields.join(", "))
             }
-            FaExpr::Binary { op, left, right } => {
+            Expr::Binary { op, left, right } => {
                 format!(
                     "{} {} {}",
                     self.expr_inline(left),
@@ -104,10 +104,10 @@ impl DumpVisitor {
                     self.expr_inline(right)
                 )
             }
-            FaExpr::Unary { op, expr } => {
+            Expr::Unary { op, expr } => {
                 format!("{}{}", self.unary_op_str(op), self.expr_inline(expr))
             }
-            FaExpr::Ternary {
+            Expr::Ternary {
                 condition,
                 then_expr,
                 else_expr,
@@ -119,22 +119,22 @@ impl DumpVisitor {
                     self.expr_inline(else_expr)
                 )
             }
-            FaExpr::FieldAccess { base, field } => {
+            Expr::FieldAccess { base, field } => {
                 format!("{}.{}", self.expr_inline(base), field)
             }
-            FaExpr::OptionalChain { base, field } => {
+            Expr::OptionalChain { base, field } => {
                 format!("{}?.{}", self.expr_inline(base), field)
             }
-            FaExpr::Call { callee, args } => {
+            Expr::Call { callee, args } => {
                 let args: Vec<_> = args.iter().map(|a| self.expr_inline(a)).collect();
                 format!("{}({})", self.expr_inline(callee), args.join(", "))
             }
-            FaExpr::StringTemplate(elems) => {
+            Expr::StringTemplate(elems) => {
                 let parts: Vec<_> = elems
                     .iter()
                     .map(|e| match e {
-                        FaTemplateElement::Text(t) => t.clone(),
-                        FaTemplateElement::Interpolation(expr) => {
+                        TemplateElement::Text(t) => t.clone(),
+                        TemplateElement::Interpolation(expr) => {
                             format!("${{{}}}", self.expr_inline(expr))
                         }
                     })
@@ -144,31 +144,31 @@ impl DumpVisitor {
         }
     }
 
-    fn op_str(&self, op: &FaBinaryOp) -> &'static str {
+    fn op_str(&self, op: &BinaryOp) -> &'static str {
         match op {
-            FaBinaryOp::Add => "+",
-            FaBinaryOp::Sub => "-",
-            FaBinaryOp::Mul => "*",
-            FaBinaryOp::Div => "/",
-            FaBinaryOp::Mod => "%",
-            FaBinaryOp::Pow => "**",
-            FaBinaryOp::Eq => "==",
-            FaBinaryOp::Ne => "!=",
-            FaBinaryOp::Lt => "<",
-            FaBinaryOp::Le => "<=",
-            FaBinaryOp::Gt => ">",
-            FaBinaryOp::Ge => ">=",
-            FaBinaryOp::And => "&&",
-            FaBinaryOp::Or => "||",
-            FaBinaryOp::Elvis => "?:",
+            BinaryOp::Add => "+",
+            BinaryOp::Sub => "-",
+            BinaryOp::Mul => "*",
+            BinaryOp::Div => "/",
+            BinaryOp::Mod => "%",
+            BinaryOp::Pow => "**",
+            BinaryOp::Eq => "==",
+            BinaryOp::Ne => "!=",
+            BinaryOp::Lt => "<",
+            BinaryOp::Le => "<=",
+            BinaryOp::Gt => ">",
+            BinaryOp::Ge => ">=",
+            BinaryOp::And => "&&",
+            BinaryOp::Or => "||",
+            BinaryOp::Elvis => "?:",
         }
     }
 
-    fn unary_op_str(&self, op: &FaUnaryOp) -> &'static str {
+    fn unary_op_str(&self, op: &UnaryOp) -> &'static str {
         match op {
-            FaUnaryOp::Not => "!",
-            FaUnaryOp::Neg => "-",
-            FaUnaryOp::Pos => "+",
+            UnaryOp::Not => "!",
+            UnaryOp::Neg => "-",
+            UnaryOp::Pos => "+",
         }
     }
 }
@@ -179,14 +179,14 @@ impl Default for DumpVisitor {
     }
 }
 
-impl FaVisitor for DumpVisitor {
+impl Visitor for DumpVisitor {
     type Result = ();
 
     // =========================================================================
     // File-level
     // =========================================================================
 
-    fn visit_file(&mut self, file: &FaFile) {
+    fn visit_file(&mut self, file: &File) {
         self.write(&format!("FILE module={}", file.module));
         self.indent();
 
@@ -201,7 +201,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_import(&mut self, import: &FaImport) {
+    fn visit_import(&mut self, import: &Import) {
         self.write(&format!("IMPORT {} FROM {}", import.name, import.module));
     }
 
@@ -209,19 +209,19 @@ impl FaVisitor for DumpVisitor {
     // Top-level declarations
     // =========================================================================
 
-    fn visit_top_level_decl(&mut self, decl: &FaTopLevelDecl) {
+    fn visit_top_level_decl(&mut self, decl: &TopLevelDecl) {
         match decl {
-            FaTopLevelDecl::Blueprint(bp) => self.visit_blueprint(bp),
-            FaTopLevelDecl::Backend(be) => self.visit_backend(be),
-            FaTopLevelDecl::Contract(ct) => self.visit_contract(ct),
-            FaTopLevelDecl::Scheme(sc) => self.visit_scheme(sc),
-            FaTopLevelDecl::Enum(en) => self.visit_enum(en),
-            FaTopLevelDecl::Theme(th) => self.visit_theme(th),
-            FaTopLevelDecl::Arena(ar) => self.visit_arena(ar),
+            TopLevelDecl::Blueprint(bp) => self.visit_blueprint(bp),
+            TopLevelDecl::Backend(be) => self.visit_backend(be),
+            TopLevelDecl::Contract(ct) => self.visit_contract(ct),
+            TopLevelDecl::Scheme(sc) => self.visit_scheme(sc),
+            TopLevelDecl::Enum(en) => self.visit_enum(en),
+            TopLevelDecl::Theme(th) => self.visit_theme(th),
+            TopLevelDecl::Arena(ar) => self.visit_arena(ar),
         }
     }
 
-    fn visit_blueprint(&mut self, blueprint: &FaBlueprint) {
+    fn visit_blueprint(&mut self, blueprint: &Blueprint) {
         let params = if blueprint.params.is_empty() {
             String::new()
         } else {
@@ -242,7 +242,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_backend(&mut self, backend: &FaBackend) {
+    fn visit_backend(&mut self, backend: &Backend) {
         let params = if backend.params.is_empty() {
             String::new()
         } else {
@@ -263,7 +263,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_contract(&mut self, contract: &FaContract) {
+    fn visit_contract(&mut self, contract: &Contract) {
         self.write(&format!("CONTRACT {}", contract.name));
         self.indent();
 
@@ -274,7 +274,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_scheme(&mut self, scheme: &FaScheme) {
+    fn visit_scheme(&mut self, scheme: &Scheme) {
         self.write(&format!("SCHEME {}", scheme.name));
         self.indent();
 
@@ -285,12 +285,12 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_enum(&mut self, enum_decl: &FaEnum) {
+    fn visit_enum(&mut self, enum_decl: &Enum) {
         let variants = enum_decl.variants.join(", ");
         self.write(&format!("ENUM {} {{ {} }}", enum_decl.name, variants));
     }
 
-    fn visit_theme(&mut self, theme: &FaTheme) {
+    fn visit_theme(&mut self, theme: &Theme) {
         self.write(&format!("THEME {}", theme.name));
         self.indent();
 
@@ -301,7 +301,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_arena(&mut self, arena: &FaArena) {
+    fn visit_arena(&mut self, arena: &Arena) {
         let contract = arena
             .contract
             .as_ref()
@@ -317,33 +317,33 @@ impl FaVisitor for DumpVisitor {
     // Blueprint members
     // =========================================================================
 
-    fn visit_blueprint_stmt(&mut self, stmt: &FaBlueprintStmt) {
+    fn visit_blueprint_stmt(&mut self, stmt: &BlueprintStmt) {
         match stmt {
-            FaBlueprintStmt::With(name) => {
+            BlueprintStmt::With(name) => {
                 self.write(&format!("WITH {}", name));
             }
-            FaBlueprintStmt::LocalDecl(decl) => {
+            BlueprintStmt::LocalDecl(decl) => {
                 self.visit_local_decl(decl);
             }
-            FaBlueprintStmt::FragmentCreation(frag) => {
+            BlueprintStmt::FragmentCreation(frag) => {
                 self.visit_fragment_creation(frag);
             }
-            FaBlueprintStmt::Control(ctrl) => {
+            BlueprintStmt::Control(ctrl) => {
                 self.visit_control_stmt(ctrl);
             }
-            FaBlueprintStmt::Instruction(instr) => {
+            BlueprintStmt::Instruction(instr) => {
                 self.visit_instruction(instr);
             }
-            FaBlueprintStmt::EventHandler(handler) => {
+            BlueprintStmt::EventHandler(handler) => {
                 self.visit_event_handler(handler);
             }
-            FaBlueprintStmt::ContentExpr(expr) => {
+            BlueprintStmt::ContentExpr(expr) => {
                 self.write(&format!("CONTENT {}", self.expr_inline(expr)));
             }
         }
     }
 
-    fn visit_local_decl(&mut self, decl: &FaLocalDecl) {
+    fn visit_local_decl(&mut self, decl: &LocalDecl) {
         self.write(&format!(
             "LOCAL {} TYPE {} INIT {}",
             decl.name,
@@ -352,7 +352,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_fragment_creation(&mut self, frag: &FaFragmentCreation) {
+    fn visit_fragment_creation(&mut self, frag: &FragmentCreation) {
         let name = if frag.name.is_empty() {
             "BLOCK".to_string()
         } else {
@@ -380,26 +380,26 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_postfix_item(&mut self, item: &FaPostfixItem) {
+    fn visit_postfix_item(&mut self, item: &PostfixItem) {
         match item {
-            FaPostfixItem::Instruction(instr) => self.visit_instruction(instr),
-            FaPostfixItem::EventHandler(handler) => self.visit_event_handler(handler),
+            PostfixItem::Instruction(instr) => self.visit_instruction(instr),
+            PostfixItem::EventHandler(handler) => self.visit_event_handler(handler),
         }
     }
 
-    fn visit_fragment_body(&mut self, body: &FaFragmentBody) {
+    fn visit_fragment_body(&mut self, body: &FragmentBody) {
         match body {
-            FaFragmentBody::Default(stmts) => {
+            FragmentBody::Default(stmts) => {
                 for stmt in stmts {
                     self.visit_blueprint_stmt(stmt);
                 }
             }
-            FaFragmentBody::Slots(slots) => {
+            FragmentBody::Slots(slots) => {
                 for slot in slots {
                     self.visit_slot_binding(slot);
                 }
             }
-            FaFragmentBody::InlineBlueprint { params, body } => {
+            FragmentBody::InlineBlueprint { params, body } => {
                 self.write(&format!("INLINE({})", params.join(", ")));
                 self.indent();
                 for stmt in body {
@@ -410,19 +410,19 @@ impl FaVisitor for DumpVisitor {
         }
     }
 
-    fn visit_slot_binding(&mut self, binding: &FaSlotBinding) {
+    fn visit_slot_binding(&mut self, binding: &SlotBinding) {
         self.write(&format!("SLOT {}", binding.slot_name));
         self.indent();
         self.visit_blueprint_value(&binding.blueprint);
         self.dedent();
     }
 
-    fn visit_blueprint_value(&mut self, value: &FaBlueprintValue) {
+    fn visit_blueprint_value(&mut self, value: &BlueprintValue) {
         match value {
-            FaBlueprintValue::Reference(name) => {
+            BlueprintValue::Reference(name) => {
                 self.write(&format!("REF {}", name));
             }
-            FaBlueprintValue::Inline { params, body } => {
+            BlueprintValue::Inline { params, body } => {
                 self.write(&format!("INLINE({})", params.join(", ")));
                 self.indent();
                 for stmt in body {
@@ -433,9 +433,9 @@ impl FaVisitor for DumpVisitor {
         }
     }
 
-    fn visit_control_stmt(&mut self, ctrl: &FaControlStmt) {
+    fn visit_control_stmt(&mut self, ctrl: &ControlStmt) {
         match ctrl {
-            FaControlStmt::When {
+            ControlStmt::When {
                 condition,
                 then_stmt,
                 else_stmt,
@@ -451,7 +451,7 @@ impl FaVisitor for DumpVisitor {
                     self.dedent();
                 }
             }
-            FaControlStmt::Repeat {
+            ControlStmt::Repeat {
                 iterable,
                 item_name,
                 key_expr,
@@ -472,7 +472,7 @@ impl FaVisitor for DumpVisitor {
                 self.visit_blueprint_stmt(body);
                 self.dedent();
             }
-            FaControlStmt::Select {
+            ControlStmt::Select {
                 discriminant,
                 branches,
                 else_branch,
@@ -497,14 +497,14 @@ impl FaVisitor for DumpVisitor {
         }
     }
 
-    fn visit_select_branch(&mut self, branch: &FaSelectBranch) {
+    fn visit_select_branch(&mut self, branch: &SelectBranch) {
         self.write(&format!("CASE {}", self.expr_inline(&branch.condition)));
         self.indent();
         self.visit_blueprint_stmt(&branch.body);
         self.dedent();
     }
 
-    fn visit_instruction(&mut self, instr: &FaInstruction) {
+    fn visit_instruction(&mut self, instr: &Instruction) {
         if instr.params.is_empty() {
             self.write(&format!("INSTR {}", instr.name));
         } else {
@@ -517,7 +517,7 @@ impl FaVisitor for DumpVisitor {
         }
     }
 
-    fn visit_event_handler(&mut self, handler: &FaEventHandler) {
+    fn visit_event_handler(&mut self, handler: &EventHandler) {
         let param = handler
             .param
             .as_ref()
@@ -540,16 +540,16 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_event_param(&mut self, _param: &FaEventParam) {
+    fn visit_event_param(&mut self, _param: &EventParam) {
         // Handled inline in visit_event_handler
     }
 
-    fn visit_handler_stmt(&mut self, stmt: &FaHandlerStmt) {
+    fn visit_handler_stmt(&mut self, stmt: &HandlerStmt) {
         match stmt {
-            FaHandlerStmt::Assignment { name, value } => {
+            HandlerStmt::Assignment { name, value } => {
                 self.write(&format!("{} = {}", name, self.expr_inline(value)));
             }
-            FaHandlerStmt::CommandCall { name, args } => {
+            HandlerStmt::CommandCall { name, args } => {
                 let args: Vec<_> = args.iter().map(|a| self.expr_inline(a)).collect();
                 self.write(&format!("{}({})", name, args.join(", ")));
             }
@@ -560,24 +560,24 @@ impl FaVisitor for DumpVisitor {
     // Backend members
     // =========================================================================
 
-    fn visit_backend_member(&mut self, member: &FaBackendMember) {
+    fn visit_backend_member(&mut self, member: &BackendMember) {
         match member {
-            FaBackendMember::Include(name) => {
+            BackendMember::Include(name) => {
                 self.write(&format!("INCLUDE {}", name));
             }
-            FaBackendMember::Field(field) => {
+            BackendMember::Field(field) => {
                 self.visit_field(field);
             }
-            FaBackendMember::Method(method) => {
+            BackendMember::Method(method) => {
                 self.visit_method(method);
             }
-            FaBackendMember::Command(command) => {
+            BackendMember::Command(command) => {
                 self.visit_command(command);
             }
         }
     }
 
-    fn visit_field(&mut self, field: &FaField) {
+    fn visit_field(&mut self, field: &Field) {
         let init = field
             .init
             .as_ref()
@@ -591,7 +591,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_method(&mut self, method: &FaMethod) {
+    fn visit_method(&mut self, method: &Method) {
         let params: Vec<_> = method.params.iter().map(|p| self.format_param(p)).collect();
         self.write(&format!(
             "METHOD {}({}) RETURN {}",
@@ -601,7 +601,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_command(&mut self, command: &FaCommand) {
+    fn visit_command(&mut self, command: &Command) {
         let params: Vec<_> = command
             .params
             .iter()
@@ -614,7 +614,7 @@ impl FaVisitor for DumpVisitor {
     // Contract members
     // =========================================================================
 
-    fn visit_contract_method(&mut self, method: &FaContractMethod) {
+    fn visit_contract_method(&mut self, method: &ContractMethod) {
         let params: Vec<_> = method.params.iter().map(|p| self.format_param(p)).collect();
         let ret = method
             .return_type
@@ -633,14 +633,14 @@ impl FaVisitor for DumpVisitor {
     // Scheme members
     // =========================================================================
 
-    fn visit_scheme_member(&mut self, member: &FaSchemeMember) {
+    fn visit_scheme_member(&mut self, member: &SchemeMember) {
         match member {
-            FaSchemeMember::Field(field) => self.visit_scheme_field(field),
-            FaSchemeMember::Virtual(vf) => self.visit_virtual_field(vf),
+            SchemeMember::Field(field) => self.visit_scheme_field(field),
+            SchemeMember::Virtual(vf) => self.visit_virtual_field(vf),
         }
     }
 
-    fn visit_scheme_field(&mut self, field: &FaSchemeField) {
+    fn visit_scheme_field(&mut self, field: &SchemeField) {
         let instrs = if field.instructions.is_empty() {
             String::new()
         } else {
@@ -665,7 +665,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_virtual_field(&mut self, field: &FaVirtualField) {
+    fn visit_virtual_field(&mut self, field: &VirtualField) {
         self.write(&format!(
             "VIRTUAL {} TYPE {} = {}",
             field.name,
@@ -674,7 +674,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_field_instruction(&mut self, _instr: &FaFieldInstruction) {
+    fn visit_field_instruction(&mut self, _instr: &FieldInstruction) {
         // Handled inline in visit_scheme_field
     }
 
@@ -682,24 +682,24 @@ impl FaVisitor for DumpVisitor {
     // Theme members
     // =========================================================================
 
-    fn visit_theme_member(&mut self, member: &FaThemeMember) {
+    fn visit_theme_member(&mut self, member: &ThemeMember) {
         match member {
-            FaThemeMember::Include(name) => {
+            ThemeMember::Include(name) => {
                 self.write(&format!("INCLUDE {}", name));
             }
-            FaThemeMember::Field(field) => {
+            ThemeMember::Field(field) => {
                 self.visit_theme_field(field);
             }
-            FaThemeMember::InstructionSet(set) => {
+            ThemeMember::InstructionSet(set) => {
                 self.visit_instruction_set(set);
             }
-            FaThemeMember::Variant(variant) => {
+            ThemeMember::Variant(variant) => {
                 self.visit_theme_variant(variant);
             }
         }
     }
 
-    fn visit_theme_field(&mut self, field: &FaThemeField) {
+    fn visit_theme_field(&mut self, field: &ThemeField) {
         let asset = if field.is_asset { "ASSET " } else { "" };
         let init = field
             .init
@@ -715,7 +715,7 @@ impl FaVisitor for DumpVisitor {
         ));
     }
 
-    fn visit_instruction_set(&mut self, set: &FaInstructionSet) {
+    fn visit_instruction_set(&mut self, set: &InstructionSet) {
         self.write(&format!("SET {}", set.name));
         self.indent();
         for instr in &set.instructions {
@@ -724,7 +724,7 @@ impl FaVisitor for DumpVisitor {
         self.dedent();
     }
 
-    fn visit_theme_variant(&mut self, variant: &FaThemeVariant) {
+    fn visit_theme_variant(&mut self, variant: &ThemeVariant) {
         self.write(&format!("VARIANT {}", variant.name));
         self.indent();
         for (name, value) in &variant.overrides {
@@ -737,11 +737,11 @@ impl FaVisitor for DumpVisitor {
     // Common elements
     // =========================================================================
 
-    fn visit_parameter(&mut self, _param: &FaParameter) {
+    fn visit_parameter(&mut self, _param: &Parameter) {
         // Handled inline via format_param
     }
 
-    fn visit_arg(&mut self, _arg: &FaArg) {
+    fn visit_arg(&mut self, _arg: &Arg) {
         // Handled inline via format_arg
     }
 
@@ -749,7 +749,7 @@ impl FaVisitor for DumpVisitor {
     // Types
     // =========================================================================
 
-    fn visit_type_expr(&mut self, _type_expr: &FaTypeExpr) {
+    fn visit_type_expr(&mut self, _type_expr: &TypeExpr) {
         // Handled inline via type_inline
     }
 
@@ -757,25 +757,25 @@ impl FaVisitor for DumpVisitor {
     // Expressions
     // =========================================================================
 
-    fn visit_expr(&mut self, _expr: &FaExpr) {
+    fn visit_expr(&mut self, _expr: &Expr) {
         // Handled inline via expr_inline
     }
 
-    fn visit_template_element(&mut self, _elem: &FaTemplateElement) {
+    fn visit_template_element(&mut self, _elem: &TemplateElement) {
         // Handled inline in expr_inline
     }
 
-    fn visit_binary_op(&mut self, _op: &FaBinaryOp) {
+    fn visit_binary_op(&mut self, _op: &BinaryOp) {
         // Handled inline via op_str
     }
 
-    fn visit_unary_op(&mut self, _op: &FaUnaryOp) {
+    fn visit_unary_op(&mut self, _op: &UnaryOp) {
         // Handled inline via unary_op_str
     }
 }
 
 impl DumpVisitor {
-    fn format_param(&self, param: &FaParameter) -> String {
+    fn format_param(&self, param: &Parameter) -> String {
         let default = param
             .default
             .as_ref()
@@ -784,7 +784,7 @@ impl DumpVisitor {
         format!("{}: {}{}", param.name, self.type_inline(&param.type_expr), default)
     }
 
-    fn format_arg(&self, arg: &FaArg) -> String {
+    fn format_arg(&self, arg: &Arg) -> String {
         if let Some(name) = &arg.name {
             format!("{}: {}", name, self.expr_inline(&arg.value))
         } else {
@@ -799,7 +799,7 @@ mod tests {
 
     #[test]
     fn test_dump_simple_file() {
-        let file = FaFile {
+        let file = File {
             module: "test".to_string(),
             imports: vec![],
             declarations: vec![],
@@ -811,10 +811,10 @@ mod tests {
 
     #[test]
     fn test_dump_enum() {
-        let file = FaFile {
+        let file = File {
             module: "test".to_string(),
             imports: vec![],
-            declarations: vec![FaTopLevelDecl::Enum(FaEnum {
+            declarations: vec![TopLevelDecl::Enum(Enum {
                 name: "Status".to_string(),
                 variants: vec!["Active".to_string(), "Inactive".to_string()],
             })],
@@ -826,17 +826,17 @@ mod tests {
 
     #[test]
     fn test_dump_backend_compact() {
-        let file = FaFile {
+        let file = File {
             module: "test".to_string(),
             imports: vec![],
-            declarations: vec![FaTopLevelDecl::Backend(FaBackend {
+            declarations: vec![TopLevelDecl::Backend(Backend {
                 name: "Counter".to_string(),
                 params: vec![],
                 members: vec![
-                    FaBackendMember::Field(FaField {
+                    BackendMember::Field(Field {
                         name: "count".to_string(),
-                        type_expr: FaTypeExpr::Named("i32".to_string()),
-                        init: Some(FaExpr::Int(0)),
+                        type_expr: TypeExpr::Named("i32".to_string()),
+                        init: Some(Expr::Int(0)),
                     }),
                 ],
             })],

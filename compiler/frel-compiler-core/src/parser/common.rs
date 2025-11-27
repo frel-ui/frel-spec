@@ -2,14 +2,14 @@
 //
 // Shared utilities used across multiple declaration parsers.
 
-use crate::ast::{FaInstruction, FaParameter};
+use crate::ast::{Instruction, Parameter};
 use crate::lexer::TokenKind;
 
 use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse optional parameter list (may be absent)
-    pub(super) fn parse_param_list_opt(&mut self) -> Option<Vec<FaParameter>> {
+    pub(super) fn parse_param_list_opt(&mut self) -> Option<Vec<Parameter>> {
         if self.consume(TokenKind::LParen).is_some() {
             let params = self.parse_params()?;
             self.expect(TokenKind::RParen)?;
@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse required parameter list
-    pub(super) fn parse_param_list(&mut self) -> Option<Vec<FaParameter>> {
+    pub(super) fn parse_param_list(&mut self) -> Option<Vec<Parameter>> {
         self.expect(TokenKind::LParen)?;
         let params = self.parse_params()?;
         self.expect(TokenKind::RParen)?;
@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse parameter list contents
-    fn parse_params(&mut self) -> Option<Vec<FaParameter>> {
+    fn parse_params(&mut self) -> Option<Vec<Parameter>> {
         if self.check(TokenKind::RParen) {
             return Some(vec![]);
         }
@@ -46,7 +46,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a single parameter
-    fn parse_param(&mut self) -> Option<FaParameter> {
+    fn parse_param(&mut self) -> Option<Parameter> {
         let name = self.expect_identifier()?;
         self.expect(TokenKind::Colon)?;
         let type_expr = self.parse_type_expr()?;
@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Some(FaParameter {
+        Some(Parameter {
             name,
             type_expr,
             default,
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse an instruction (used in themes and blueprints)
-    pub(super) fn parse_instruction(&mut self) -> Option<FaInstruction> {
+    pub(super) fn parse_instruction(&mut self) -> Option<Instruction> {
         let name = self.expect_identifier()?;
 
         let params = if self.consume(TokenKind::LBrace).is_some() {
@@ -76,11 +76,11 @@ impl<'a> Parser<'a> {
             vec![]
         };
 
-        Some(FaInstruction { name, params })
+        Some(Instruction { name, params })
     }
 
     /// Parse instruction parameters (name: value pairs or just values)
-    pub(super) fn parse_instruction_params(&mut self) -> Option<Vec<(String, crate::ast::FaExpr)>> {
+    pub(super) fn parse_instruction_params(&mut self) -> Option<Vec<(String, crate::ast::Expr)>> {
         if self.check(TokenKind::RBrace) {
             return Some(vec![]);
         }

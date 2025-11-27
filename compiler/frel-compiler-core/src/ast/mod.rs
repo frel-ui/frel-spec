@@ -4,27 +4,27 @@
 // The AST is built from the parser and is used for semantic analysis,
 // type checking, and code generation.
 //
-// All AST types are prefixed with "Fa" (Frel AST) to clearly identify them.
+// Use qualified imports (e.g., `ast::File`, `ast::Expr`) for clarity.
 
 pub mod dump;
 pub mod visitor;
 
 pub use dump::DumpVisitor;
-pub use visitor::FaVisitor;
+pub use visitor::Visitor;
 
 use serde::{Deserialize, Serialize};
 
 /// A Frel source file
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaFile {
+pub struct File {
     pub module: String,
-    pub imports: Vec<FaImport>,
-    pub declarations: Vec<FaTopLevelDecl>,
+    pub imports: Vec<Import>,
+    pub declarations: Vec<TopLevelDecl>,
 }
 
 /// Import statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaImport {
+pub struct Import {
     pub module: String,
     pub name: String,
 }
@@ -32,90 +32,90 @@ pub struct FaImport {
 /// Top-level declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaTopLevelDecl {
-    Blueprint(FaBlueprint),
-    Backend(FaBackend),
-    Contract(FaContract),
-    Scheme(FaScheme),
-    Enum(FaEnum),
-    Theme(FaTheme),
-    Arena(FaArena),
+pub enum TopLevelDecl {
+    Blueprint(Blueprint),
+    Backend(Backend),
+    Contract(Contract),
+    Scheme(Scheme),
+    Enum(Enum),
+    Theme(Theme),
+    Arena(Arena),
 }
 
 /// Blueprint declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaBlueprint {
+pub struct Blueprint {
     pub name: String,
-    pub params: Vec<FaParameter>,
-    pub body: Vec<FaBlueprintStmt>,
+    pub params: Vec<Parameter>,
+    pub body: Vec<BlueprintStmt>,
 }
 
 /// Blueprint statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaBlueprintStmt {
+pub enum BlueprintStmt {
     With(String),
-    LocalDecl(FaLocalDecl),
-    FragmentCreation(FaFragmentCreation),
-    Control(FaControlStmt),
-    Instruction(FaInstruction),
-    EventHandler(FaEventHandler),
+    LocalDecl(LocalDecl),
+    FragmentCreation(FragmentCreation),
+    Control(ControlStmt),
+    Instruction(Instruction),
+    EventHandler(EventHandler),
     /// A standalone expression as content (e.g., "Hello" in text { "Hello" })
-    ContentExpr(FaExpr),
+    ContentExpr(Expr),
 }
 
 /// Local declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaLocalDecl {
+pub struct LocalDecl {
     pub name: String,
-    pub type_expr: FaTypeExpr,
-    pub init: FaExpr,
+    pub type_expr: TypeExpr,
+    pub init: Expr,
 }
 
 /// Fragment creation
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaFragmentCreation {
+pub struct FragmentCreation {
     pub name: String,
-    pub args: Vec<FaArg>,
-    pub body: Option<FaFragmentBody>,
-    pub postfix: Vec<FaPostfixItem>,
+    pub args: Vec<Arg>,
+    pub body: Option<FragmentBody>,
+    pub postfix: Vec<PostfixItem>,
 }
 
 /// Postfix item (instruction or event handler)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaPostfixItem {
-    Instruction(FaInstruction),
-    EventHandler(FaEventHandler),
+pub enum PostfixItem {
+    Instruction(Instruction),
+    EventHandler(EventHandler),
 }
 
 /// Fragment body
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaFragmentBody {
-    Default(Vec<FaBlueprintStmt>),
-    Slots(Vec<FaSlotBinding>),
+pub enum FragmentBody {
+    Default(Vec<BlueprintStmt>),
+    Slots(Vec<SlotBinding>),
     /// Inline blueprint with parameters: { param -> body }
     InlineBlueprint {
         params: Vec<String>,
-        body: Vec<FaBlueprintStmt>,
+        body: Vec<BlueprintStmt>,
     },
 }
 
 /// Slot binding
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaSlotBinding {
+pub struct SlotBinding {
     pub slot_name: String,
-    pub blueprint: FaBlueprintValue,
+    pub blueprint: BlueprintValue,
 }
 
 /// Blueprint value
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaBlueprintValue {
+pub enum BlueprintValue {
     Inline {
         params: Vec<String>,
-        body: Vec<FaBlueprintStmt>,
+        body: Vec<BlueprintStmt>,
     },
     Reference(String),
 }
@@ -123,206 +123,206 @@ pub enum FaBlueprintValue {
 /// Control statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaControlStmt {
+pub enum ControlStmt {
     When {
-        condition: FaExpr,
-        then_stmt: Box<FaBlueprintStmt>,
-        else_stmt: Option<Box<FaBlueprintStmt>>,
+        condition: Expr,
+        then_stmt: Box<BlueprintStmt>,
+        else_stmt: Option<Box<BlueprintStmt>>,
     },
     Repeat {
-        iterable: FaExpr,
+        iterable: Expr,
         item_name: Option<String>,
-        key_expr: Option<FaExpr>,
-        body: Box<FaBlueprintStmt>,
+        key_expr: Option<Expr>,
+        body: Box<BlueprintStmt>,
     },
     Select {
-        discriminant: Option<FaExpr>,
-        branches: Vec<FaSelectBranch>,
-        else_branch: Option<Box<FaBlueprintStmt>>,
+        discriminant: Option<Expr>,
+        branches: Vec<SelectBranch>,
+        else_branch: Option<Box<BlueprintStmt>>,
     },
 }
 
 /// Select branch
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaSelectBranch {
-    pub condition: FaExpr,
-    pub body: Box<FaBlueprintStmt>,
+pub struct SelectBranch {
+    pub condition: Expr,
+    pub body: Box<BlueprintStmt>,
 }
 
 /// Instruction
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaInstruction {
+pub struct Instruction {
     pub name: String,
-    pub params: Vec<(String, FaExpr)>,
+    pub params: Vec<(String, Expr)>,
 }
 
 /// Event handler
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaEventHandler {
+pub struct EventHandler {
     pub event_name: String,
-    pub param: Option<FaEventParam>,
-    pub body: Vec<FaHandlerStmt>,
+    pub param: Option<EventParam>,
+    pub body: Vec<HandlerStmt>,
 }
 
 /// Event parameter
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaEventParam {
+pub struct EventParam {
     pub name: String,
-    pub type_expr: Option<FaTypeExpr>,
+    pub type_expr: Option<TypeExpr>,
 }
 
 /// Handler statement
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaHandlerStmt {
-    Assignment { name: String, value: FaExpr },
-    CommandCall { name: String, args: Vec<FaExpr> },
+pub enum HandlerStmt {
+    Assignment { name: String, value: Expr },
+    CommandCall { name: String, args: Vec<Expr> },
 }
 
 /// Backend declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaBackend {
+pub struct Backend {
     pub name: String,
-    pub params: Vec<FaParameter>,
-    pub members: Vec<FaBackendMember>,
+    pub params: Vec<Parameter>,
+    pub members: Vec<BackendMember>,
 }
 
 /// Backend member
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaBackendMember {
+pub enum BackendMember {
     Include(String),
-    Field(FaField),
-    Method(FaMethod),
-    Command(FaCommand),
+    Field(Field),
+    Method(Method),
+    Command(Command),
 }
 
 /// Field declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaField {
+pub struct Field {
     pub name: String,
-    pub type_expr: FaTypeExpr,
-    pub init: Option<FaExpr>,
+    pub type_expr: TypeExpr,
+    pub init: Option<Expr>,
 }
 
 /// Method declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaMethod {
+pub struct Method {
     pub name: String,
-    pub params: Vec<FaParameter>,
-    pub return_type: FaTypeExpr,
+    pub params: Vec<Parameter>,
+    pub return_type: TypeExpr,
 }
 
 /// Command declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaCommand {
+pub struct Command {
     pub name: String,
-    pub params: Vec<FaParameter>,
+    pub params: Vec<Parameter>,
 }
 
 /// Contract declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaContract {
+pub struct Contract {
     pub name: String,
-    pub methods: Vec<FaContractMethod>,
+    pub methods: Vec<ContractMethod>,
 }
 
 /// Contract method
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaContractMethod {
+pub struct ContractMethod {
     pub name: String,
-    pub params: Vec<FaParameter>,
-    pub return_type: Option<FaTypeExpr>,
+    pub params: Vec<Parameter>,
+    pub return_type: Option<TypeExpr>,
 }
 
 /// Scheme declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaScheme {
+pub struct Scheme {
     pub name: String,
-    pub members: Vec<FaSchemeMember>,
+    pub members: Vec<SchemeMember>,
 }
 
 /// Scheme member
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaSchemeMember {
-    Field(FaSchemeField),
-    Virtual(FaVirtualField),
+pub enum SchemeMember {
+    Field(SchemeField),
+    Virtual(VirtualField),
 }
 
 /// Scheme field
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaSchemeField {
+pub struct SchemeField {
     pub name: String,
-    pub type_expr: FaTypeExpr,
-    pub instructions: Vec<FaFieldInstruction>,
+    pub type_expr: TypeExpr,
+    pub instructions: Vec<FieldInstruction>,
 }
 
 /// Virtual field
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaVirtualField {
+pub struct VirtualField {
     pub name: String,
-    pub type_expr: FaTypeExpr,
-    pub expr: FaExpr,
+    pub type_expr: TypeExpr,
+    pub expr: Expr,
 }
 
 /// Field instruction
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaFieldInstruction {
+pub struct FieldInstruction {
     pub name: String,
-    pub value: Option<FaExpr>,
+    pub value: Option<Expr>,
 }
 
 /// Enum declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaEnum {
+pub struct Enum {
     pub name: String,
     pub variants: Vec<String>,
 }
 
 /// Theme declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaTheme {
+pub struct Theme {
     pub name: String,
-    pub members: Vec<FaThemeMember>,
+    pub members: Vec<ThemeMember>,
 }
 
 /// Theme member
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaThemeMember {
+pub enum ThemeMember {
     Include(String),
-    Field(FaThemeField),
-    InstructionSet(FaInstructionSet),
-    Variant(FaThemeVariant),
+    Field(ThemeField),
+    InstructionSet(InstructionSet),
+    Variant(ThemeVariant),
 }
 
 /// Theme field
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaThemeField {
+pub struct ThemeField {
     pub name: String,
     pub is_asset: bool,
-    pub type_expr: FaTypeExpr,
-    pub init: Option<FaExpr>,
+    pub type_expr: TypeExpr,
+    pub init: Option<Expr>,
 }
 
 /// Instruction set
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaInstructionSet {
+pub struct InstructionSet {
     pub name: String,
-    pub instructions: Vec<FaInstruction>,
+    pub instructions: Vec<Instruction>,
 }
 
 /// Theme variant
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaThemeVariant {
+pub struct ThemeVariant {
     pub name: String,
-    pub overrides: Vec<(String, FaExpr)>,
+    pub overrides: Vec<(String, Expr)>,
 }
 
 /// Arena declaration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaArena {
+pub struct Arena {
     pub name: String,
     pub scheme_name: String,
     pub contract: Option<String>,
@@ -330,40 +330,40 @@ pub struct FaArena {
 
 /// Parameter
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaParameter {
+pub struct Parameter {
     pub name: String,
-    pub type_expr: FaTypeExpr,
-    pub default: Option<FaExpr>,
+    pub type_expr: TypeExpr,
+    pub default: Option<Expr>,
 }
 
 /// Argument
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FaArg {
+pub struct Arg {
     pub name: Option<String>,
-    pub value: FaExpr,
+    pub value: Expr,
 }
 
 /// Type expression
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaTypeExpr {
+pub enum TypeExpr {
     Named(String),
-    Nullable(Box<FaTypeExpr>),
-    Ref(Box<FaTypeExpr>),
-    Draft(Box<FaTypeExpr>),
-    Asset(Box<FaTypeExpr>),
-    Blueprint(Vec<FaTypeExpr>),
-    Accessor(Box<FaTypeExpr>),
-    List(Box<FaTypeExpr>),
-    Set(Box<FaTypeExpr>),
-    Map(Box<FaTypeExpr>, Box<FaTypeExpr>),
-    Tree(Box<FaTypeExpr>),
+    Nullable(Box<TypeExpr>),
+    Ref(Box<TypeExpr>),
+    Draft(Box<TypeExpr>),
+    Asset(Box<TypeExpr>),
+    Blueprint(Vec<TypeExpr>),
+    Accessor(Box<TypeExpr>),
+    List(Box<TypeExpr>),
+    Set(Box<TypeExpr>),
+    Map(Box<TypeExpr>, Box<TypeExpr>),
+    Tree(Box<TypeExpr>),
 }
 
 /// Expression
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaExpr {
+pub enum Expr {
     // Literals
     Null,
     Bool(bool),
@@ -371,9 +371,9 @@ pub enum FaExpr {
     Float(f64),
     Color(u32),
     String(String),
-    StringTemplate(Vec<FaTemplateElement>),
-    List(Vec<FaExpr>),
-    Object(Vec<(String, FaExpr)>),
+    StringTemplate(Vec<TemplateElement>),
+    List(Vec<Expr>),
+    Object(Vec<(String, Expr)>),
 
     // Identifiers
     Identifier(String),
@@ -381,49 +381,49 @@ pub enum FaExpr {
 
     // Operators
     Binary {
-        op: FaBinaryOp,
-        left: Box<FaExpr>,
-        right: Box<FaExpr>,
+        op: BinaryOp,
+        left: Box<Expr>,
+        right: Box<Expr>,
     },
     Unary {
-        op: FaUnaryOp,
-        expr: Box<FaExpr>,
+        op: UnaryOp,
+        expr: Box<Expr>,
     },
     Ternary {
-        condition: Box<FaExpr>,
-        then_expr: Box<FaExpr>,
-        else_expr: Box<FaExpr>,
+        condition: Box<Expr>,
+        then_expr: Box<Expr>,
+        else_expr: Box<Expr>,
     },
 
     // Field access
     FieldAccess {
-        base: Box<FaExpr>,
+        base: Box<Expr>,
         field: String,
     },
     OptionalChain {
-        base: Box<FaExpr>,
+        base: Box<Expr>,
         field: String,
     },
 
     // Function call
     Call {
-        callee: Box<FaExpr>,
-        args: Vec<FaExpr>,
+        callee: Box<Expr>,
+        args: Vec<Expr>,
     },
 }
 
 /// Template element for string interpolation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaTemplateElement {
+pub enum TemplateElement {
     Text(String),
-    Interpolation(Box<FaExpr>),
+    Interpolation(Box<Expr>),
 }
 
 /// Binary operators
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaBinaryOp {
+pub enum BinaryOp {
     // Arithmetic
     Add,
     Sub,
@@ -451,7 +451,7 @@ pub enum FaBinaryOp {
 /// Unary operators
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum FaUnaryOp {
+pub enum UnaryOp {
     Not,
     Neg,
     Pos,

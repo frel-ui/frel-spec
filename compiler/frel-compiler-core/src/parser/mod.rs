@@ -34,7 +34,7 @@ pub struct Parser<'a> {
 
 /// Result of parsing - either success or failure with partial AST
 pub struct ParseResult {
-    pub file: Option<ast::FaFile>,
+    pub file: Option<ast::File>,
     pub diagnostics: Diagnostics,
 }
 
@@ -304,7 +304,7 @@ impl<'a> Parser<'a> {
     // =========================================================================
 
     /// Parse a complete file
-    fn parse_file(&mut self) -> Option<ast::FaFile> {
+    fn parse_file(&mut self) -> Option<ast::File> {
         self.skip_newlines();
 
         // Parse module declaration
@@ -330,7 +330,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Some(ast::FaFile {
+        Some(ast::File {
             module,
             imports,
             declarations,
@@ -357,7 +357,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse import statement: import foo.bar.Baz
-    fn parse_import(&mut self) -> Option<ast::FaImport> {
+    fn parse_import(&mut self) -> Option<ast::Import> {
         self.expect_contextual(contextual::IMPORT)?;
 
         // Parse module path up to the last component
@@ -371,27 +371,27 @@ impl<'a> Parser<'a> {
         let name = parts.pop()?;
         let module = parts.join(".");
 
-        Some(ast::FaImport { module, name })
+        Some(ast::Import { module, name })
     }
 
     /// Parse a top-level declaration
-    fn parse_top_level_decl(&mut self) -> Option<ast::FaTopLevelDecl> {
+    fn parse_top_level_decl(&mut self) -> Option<ast::TopLevelDecl> {
         // Top-level declaration keywords are contextual - they're lexed as Identifier
         if self.check(TokenKind::Identifier) {
             match self.current_text() {
                 contextual::BLUEPRINT => {
-                    return self.parse_blueprint().map(ast::FaTopLevelDecl::Blueprint)
+                    return self.parse_blueprint().map(ast::TopLevelDecl::Blueprint)
                 }
                 contextual::BACKEND => {
-                    return self.parse_backend().map(ast::FaTopLevelDecl::Backend)
+                    return self.parse_backend().map(ast::TopLevelDecl::Backend)
                 }
                 contextual::CONTRACT => {
-                    return self.parse_contract().map(ast::FaTopLevelDecl::Contract)
+                    return self.parse_contract().map(ast::TopLevelDecl::Contract)
                 }
-                contextual::SCHEME => return self.parse_scheme().map(ast::FaTopLevelDecl::Scheme),
-                contextual::ENUM => return self.parse_enum().map(ast::FaTopLevelDecl::Enum),
-                contextual::THEME => return self.parse_theme().map(ast::FaTopLevelDecl::Theme),
-                contextual::ARENA => return self.parse_arena().map(ast::FaTopLevelDecl::Arena),
+                contextual::SCHEME => return self.parse_scheme().map(ast::TopLevelDecl::Scheme),
+                contextual::ENUM => return self.parse_enum().map(ast::TopLevelDecl::Enum),
+                contextual::THEME => return self.parse_theme().map(ast::TopLevelDecl::Theme),
+                contextual::ARENA => return self.parse_arena().map(ast::TopLevelDecl::Arena),
                 _ => {}
             }
         }

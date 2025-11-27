@@ -1,6 +1,6 @@
 // Scheme parser for Frel
 
-use crate::ast::{FaFieldInstruction, FaScheme, FaSchemeField, FaSchemeMember, FaVirtualField};
+use crate::ast::{FieldInstruction, Scheme, SchemeField, SchemeMember, VirtualField};
 use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
@@ -8,7 +8,7 @@ use super::Parser;
 
 impl<'a> Parser<'a> {
     /// Parse scheme declaration
-    pub(super) fn parse_scheme(&mut self) -> Option<FaScheme> {
+    pub(super) fn parse_scheme(&mut self) -> Option<Scheme> {
         self.expect_contextual(contextual::SCHEME)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -24,11 +24,11 @@ impl<'a> Parser<'a> {
 
         self.expect(TokenKind::RBrace)?;
 
-        Some(FaScheme { name, members })
+        Some(Scheme { name, members })
     }
 
     /// Parse a scheme member
-    fn parse_scheme_member(&mut self) -> Option<FaSchemeMember> {
+    fn parse_scheme_member(&mut self) -> Option<SchemeMember> {
         if self.check(TokenKind::Virtual) {
             self.advance();
             let name = self.expect_identifier()?;
@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
             let type_expr = self.parse_type_expr()?;
             self.expect(TokenKind::Eq)?;
             let expr = self.parse_expr()?;
-            Some(FaSchemeMember::Virtual(FaVirtualField {
+            Some(SchemeMember::Virtual(VirtualField {
                 name,
                 type_expr,
                 expr,
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            Some(FaSchemeMember::Field(FaSchemeField {
+            Some(SchemeMember::Field(SchemeField {
                 name,
                 type_expr,
                 instructions,
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a field instruction (.. identity, .. default { value })
-    fn parse_field_instruction(&mut self) -> Option<FaFieldInstruction> {
+    fn parse_field_instruction(&mut self) -> Option<FieldInstruction> {
         let name = self.expect_identifier()?;
 
         let value = if self.consume(TokenKind::LBrace).is_some() {
@@ -77,7 +77,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Some(FaFieldInstruction { name, value })
+        Some(FieldInstruction { name, value })
     }
 }
 

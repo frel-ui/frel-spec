@@ -13,7 +13,7 @@
 // - Unary (! - +)
 // - Postfix (. ?. ())
 
-use crate::ast::{FaBinaryOp, FaExpr, FaTemplateElement, FaUnaryOp};
+use crate::ast::{BinaryOp, Expr, TemplateElement, UnaryOp};
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -71,35 +71,35 @@ fn infix_precedence(kind: TokenKind) -> Option<Precedence> {
     })
 }
 
-fn binary_op(kind: TokenKind) -> Option<FaBinaryOp> {
+fn binary_op(kind: TokenKind) -> Option<BinaryOp> {
     Some(match kind {
-        TokenKind::Plus => FaBinaryOp::Add,
-        TokenKind::Minus => FaBinaryOp::Sub,
-        TokenKind::Star => FaBinaryOp::Mul,
-        TokenKind::Slash => FaBinaryOp::Div,
-        TokenKind::Percent => FaBinaryOp::Mod,
-        TokenKind::StarStar => FaBinaryOp::Pow,
-        TokenKind::EqEq => FaBinaryOp::Eq,
-        TokenKind::BangEq => FaBinaryOp::Ne,
-        TokenKind::Lt => FaBinaryOp::Lt,
-        TokenKind::LtEq => FaBinaryOp::Le,
-        TokenKind::Gt => FaBinaryOp::Gt,
-        TokenKind::GtEq => FaBinaryOp::Ge,
-        TokenKind::AmpAmp => FaBinaryOp::And,
-        TokenKind::PipePipe => FaBinaryOp::Or,
-        TokenKind::QuestionColon => FaBinaryOp::Elvis,
+        TokenKind::Plus => BinaryOp::Add,
+        TokenKind::Minus => BinaryOp::Sub,
+        TokenKind::Star => BinaryOp::Mul,
+        TokenKind::Slash => BinaryOp::Div,
+        TokenKind::Percent => BinaryOp::Mod,
+        TokenKind::StarStar => BinaryOp::Pow,
+        TokenKind::EqEq => BinaryOp::Eq,
+        TokenKind::BangEq => BinaryOp::Ne,
+        TokenKind::Lt => BinaryOp::Lt,
+        TokenKind::LtEq => BinaryOp::Le,
+        TokenKind::Gt => BinaryOp::Gt,
+        TokenKind::GtEq => BinaryOp::Ge,
+        TokenKind::AmpAmp => BinaryOp::And,
+        TokenKind::PipePipe => BinaryOp::Or,
+        TokenKind::QuestionColon => BinaryOp::Elvis,
         _ => return None,
     })
 }
 
 impl<'a> Parser<'a> {
     /// Parse an expression
-    pub(super) fn parse_expr(&mut self) -> Option<FaExpr> {
+    pub(super) fn parse_expr(&mut self) -> Option<Expr> {
         self.parse_expr_precedence(Precedence::None)
     }
 
     /// Parse expression with minimum precedence (Pratt parsing)
-    fn parse_expr_precedence(&mut self, min_prec: Precedence) -> Option<FaExpr> {
+    fn parse_expr_precedence(&mut self, min_prec: Precedence) -> Option<Expr> {
         // Parse prefix/primary expression
         let mut left = self.parse_prefix()?;
 
@@ -116,29 +116,29 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse prefix expression (unary or primary)
-    fn parse_prefix(&mut self) -> Option<FaExpr> {
+    fn parse_prefix(&mut self) -> Option<Expr> {
         match self.current_kind() {
             TokenKind::Bang => {
                 self.advance();
                 let expr = self.parse_expr_precedence(Precedence::Unary)?;
-                Some(FaExpr::Unary {
-                    op: FaUnaryOp::Not,
+                Some(Expr::Unary {
+                    op: UnaryOp::Not,
                     expr: Box::new(expr),
                 })
             }
             TokenKind::Minus => {
                 self.advance();
                 let expr = self.parse_expr_precedence(Precedence::Unary)?;
-                Some(FaExpr::Unary {
-                    op: FaUnaryOp::Neg,
+                Some(Expr::Unary {
+                    op: UnaryOp::Neg,
                     expr: Box::new(expr),
                 })
             }
             TokenKind::Plus => {
                 self.advance();
                 let expr = self.parse_expr_precedence(Precedence::Unary)?;
-                Some(FaExpr::Unary {
-                    op: FaUnaryOp::Pos,
+                Some(Expr::Unary {
+                    op: UnaryOp::Pos,
                     expr: Box::new(expr),
                 })
             }
@@ -147,7 +147,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse infix expression
-    fn parse_infix(&mut self, left: FaExpr, prec: Precedence) -> Option<FaExpr> {
+    fn parse_infix(&mut self, left: Expr, prec: Precedence) -> Option<Expr> {
         match self.current_kind() {
             // Ternary: a ? b : c
             TokenKind::Question => {
@@ -155,7 +155,7 @@ impl<'a> Parser<'a> {
                 let then_expr = self.parse_expr()?;
                 self.expect(TokenKind::Colon)?;
                 let else_expr = self.parse_expr_precedence(prec)?;
-                Some(FaExpr::Ternary {
+                Some(Expr::Ternary {
                     condition: Box::new(left),
                     then_expr: Box::new(then_expr),
                     else_expr: Box::new(else_expr),
@@ -166,7 +166,7 @@ impl<'a> Parser<'a> {
             TokenKind::Dot => {
                 self.advance();
                 let field = self.expect_identifier()?;
-                Some(FaExpr::FieldAccess {
+                Some(Expr::FieldAccess {
                     base: Box::new(left),
                     field,
                 })
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
             TokenKind::QuestionDot => {
                 self.advance();
                 let field = self.expect_identifier()?;
-                Some(FaExpr::OptionalChain {
+                Some(Expr::OptionalChain {
                     base: Box::new(left),
                     field,
                 })
@@ -187,7 +187,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let args = self.parse_call_args()?;
                 self.expect(TokenKind::RParen)?;
-                Some(FaExpr::Call {
+                Some(Expr::Call {
                     callee: Box::new(left),
                     args,
                 })
@@ -207,7 +207,7 @@ impl<'a> Parser<'a> {
                         prec
                     };
                     let right = self.parse_expr_precedence(right_prec)?;
-                    Some(FaExpr::Binary {
+                    Some(Expr::Binary {
                         op,
                         left: Box::new(left),
                         right: Box::new(right),
@@ -221,44 +221,44 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse primary expression
-    fn parse_primary(&mut self) -> Option<FaExpr> {
+    fn parse_primary(&mut self) -> Option<Expr> {
         match self.current_kind() {
             // Literals
             TokenKind::Null => {
                 self.advance();
-                Some(FaExpr::Null)
+                Some(Expr::Null)
             }
             TokenKind::True => {
                 self.advance();
-                Some(FaExpr::Bool(true))
+                Some(Expr::Bool(true))
             }
             TokenKind::False => {
                 self.advance();
-                Some(FaExpr::Bool(false))
+                Some(Expr::Bool(false))
             }
             TokenKind::IntLiteral => {
                 let text = self.current_text();
                 let value = self.parse_int_literal(text);
                 self.advance();
-                Some(FaExpr::Int(value))
+                Some(Expr::Int(value))
             }
             TokenKind::FloatLiteral => {
                 let text = self.current_text();
                 let value = self.parse_float_literal(text);
                 self.advance();
-                Some(FaExpr::Float(value))
+                Some(Expr::Float(value))
             }
             TokenKind::ColorLiteral => {
                 let text = self.current_text();
                 let value = self.parse_color_literal(text);
                 self.advance();
-                Some(FaExpr::Color(value))
+                Some(Expr::Color(value))
             }
             TokenKind::StringLiteral => {
                 let text = self.current_text();
                 let value = self.parse_string_content(text);
                 self.advance();
-                Some(FaExpr::String(value))
+                Some(Expr::String(value))
             }
             TokenKind::StringTemplateStart => {
                 self.parse_string_template()
@@ -269,7 +269,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let elements = self.parse_list_elements()?;
                 self.expect(TokenKind::RBracket)?;
-                Some(FaExpr::List(elements))
+                Some(Expr::List(elements))
             }
 
             // Object literal or grouping: { a: 1 } or (expr)
@@ -277,11 +277,11 @@ impl<'a> Parser<'a> {
                 self.advance();
                 if self.check(TokenKind::RBrace) {
                     self.advance();
-                    Some(FaExpr::Object(vec![]))
+                    Some(Expr::Object(vec![]))
                 } else if self.is_object_field_start() {
                     let fields = self.parse_object_fields()?;
                     self.expect(TokenKind::RBrace)?;
-                    Some(FaExpr::Object(fields))
+                    Some(Expr::Object(fields))
                 } else {
                     self.error_expected("object field");
                     None
@@ -313,7 +313,7 @@ impl<'a> Parser<'a> {
                     }
                 }
 
-                Some(FaExpr::Identifier(first))
+                Some(Expr::Identifier(first))
             }
 
             _ => {
@@ -324,7 +324,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse call arguments
-    fn parse_call_args(&mut self) -> Option<Vec<FaExpr>> {
+    fn parse_call_args(&mut self) -> Option<Vec<Expr>> {
         if self.check(TokenKind::RParen) {
             return Some(vec![]);
         }
@@ -342,7 +342,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse list elements
-    fn parse_list_elements(&mut self) -> Option<Vec<FaExpr>> {
+    fn parse_list_elements(&mut self) -> Option<Vec<Expr>> {
         if self.check(TokenKind::RBracket) {
             return Some(vec![]);
         }
@@ -373,7 +373,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse object fields
-    fn parse_object_fields(&mut self) -> Option<Vec<(String, FaExpr)>> {
+    fn parse_object_fields(&mut self) -> Option<Vec<(String, Expr)>> {
         let mut fields = vec![self.parse_object_field()?];
 
         while self.consume(TokenKind::Comma).is_some() {
@@ -387,7 +387,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a single object field
-    fn parse_object_field(&mut self) -> Option<(String, FaExpr)> {
+    fn parse_object_field(&mut self) -> Option<(String, Expr)> {
         let name = self.expect_identifier()?;
         self.expect(TokenKind::Colon)?;
         let value = self.parse_expr()?;
@@ -395,14 +395,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse string template: "text ${expr} more"
-    fn parse_string_template(&mut self) -> Option<FaExpr> {
+    fn parse_string_template(&mut self) -> Option<Expr> {
         let mut elements = Vec::new();
 
         // Get the initial text (before first ${)
         let start_text = self.current_text();
         if let Some(text) = self.extract_template_text(start_text) {
             if !text.is_empty() {
-                elements.push(FaTemplateElement::Text(text));
+                elements.push(TemplateElement::Text(text));
             }
         }
         self.advance();
@@ -412,7 +412,7 @@ impl<'a> Parser<'a> {
         loop {
             // Parse the interpolated expression
             let expr = self.parse_expr()?;
-            elements.push(FaTemplateElement::Interpolation(Box::new(expr)));
+            elements.push(TemplateElement::Interpolation(Box::new(expr)));
 
             // The lexer handles the closing } and returns the next string part
             // as StringTemplateMiddle or StringTemplateEnd
@@ -421,7 +421,7 @@ impl<'a> Parser<'a> {
                     let text = self.current_text();
                     if let Some(t) = self.extract_template_middle_text(text) {
                         if !t.is_empty() {
-                            elements.push(FaTemplateElement::Text(t));
+                            elements.push(TemplateElement::Text(t));
                         }
                     }
                     self.advance();
@@ -431,7 +431,7 @@ impl<'a> Parser<'a> {
                     let text = self.current_text();
                     if let Some(t) = self.extract_template_end_text(text) {
                         if !t.is_empty() {
-                            elements.push(FaTemplateElement::Text(t));
+                            elements.push(TemplateElement::Text(t));
                         }
                     }
                     self.advance();
@@ -444,7 +444,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Some(FaExpr::StringTemplate(elements))
+        Some(Expr::StringTemplate(elements))
     }
 
     /// Extract text from template start: "text ${
@@ -543,9 +543,9 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use crate::parser::parse;
-    use crate::ast::FaExpr;
+    use crate::ast::Expr;
 
-    fn parse_expr(source: &str) -> Option<FaExpr> {
+    fn parse_expr(source: &str) -> Option<Expr> {
         // Wrap in a backend to test expression parsing
         let full_source = format!("module test\nbackend Test {{ x: i32 = {} }}", source);
         let result = parse(&full_source);
@@ -556,8 +556,8 @@ mod tests {
             return None;
         }
         let file = result.file?;
-        if let crate::ast::FaTopLevelDecl::Backend(backend) = &file.declarations[0] {
-            if let crate::ast::FaBackendMember::Field(field) = &backend.members[0] {
+        if let crate::ast::TopLevelDecl::Backend(backend) = &file.declarations[0] {
+            if let crate::ast::BackendMember::Field(field) = &backend.members[0] {
                 return field.init.clone();
             }
         }
@@ -566,23 +566,23 @@ mod tests {
 
     #[test]
     fn test_literals() {
-        assert!(matches!(parse_expr("42"), Some(FaExpr::Int(42))));
-        assert!(matches!(parse_expr("3.14"), Some(FaExpr::Float(f)) if (f - 3.14).abs() < 0.001));
-        assert!(matches!(parse_expr("true"), Some(FaExpr::Bool(true))));
-        assert!(matches!(parse_expr("false"), Some(FaExpr::Bool(false))));
-        assert!(matches!(parse_expr("null"), Some(FaExpr::Null)));
+        assert!(matches!(parse_expr("42"), Some(Expr::Int(42))));
+        assert!(matches!(parse_expr("3.14"), Some(Expr::Float(f)) if (f - 3.14).abs() < 0.001));
+        assert!(matches!(parse_expr("true"), Some(Expr::Bool(true))));
+        assert!(matches!(parse_expr("false"), Some(Expr::Bool(false))));
+        assert!(matches!(parse_expr("null"), Some(Expr::Null)));
     }
 
     #[test]
     fn test_hex_binary_octal() {
-        assert!(matches!(parse_expr("0xFF"), Some(FaExpr::Int(255))));
-        assert!(matches!(parse_expr("0b1010"), Some(FaExpr::Int(10))));
-        assert!(matches!(parse_expr("0o77"), Some(FaExpr::Int(63))));
+        assert!(matches!(parse_expr("0xFF"), Some(Expr::Int(255))));
+        assert!(matches!(parse_expr("0b1010"), Some(Expr::Int(10))));
+        assert!(matches!(parse_expr("0o77"), Some(Expr::Int(63))));
     }
 
     #[test]
     fn test_string() {
-        if let Some(FaExpr::String(s)) = parse_expr(r#""hello""#) {
+        if let Some(Expr::String(s)) = parse_expr(r#""hello""#) {
             assert_eq!(s, "hello");
         } else {
             panic!("Expected string");
@@ -591,37 +591,37 @@ mod tests {
 
     #[test]
     fn test_binary_ops() {
-        assert!(matches!(parse_expr("1 + 2"), Some(FaExpr::Binary { .. })));
-        assert!(matches!(parse_expr("a && b"), Some(FaExpr::Binary { .. })));
-        assert!(matches!(parse_expr("x == y"), Some(FaExpr::Binary { .. })));
+        assert!(matches!(parse_expr("1 + 2"), Some(Expr::Binary { .. })));
+        assert!(matches!(parse_expr("a && b"), Some(Expr::Binary { .. })));
+        assert!(matches!(parse_expr("x == y"), Some(Expr::Binary { .. })));
     }
 
     #[test]
     fn test_unary_ops() {
-        assert!(matches!(parse_expr("!x"), Some(FaExpr::Unary { .. })));
-        assert!(matches!(parse_expr("-5"), Some(FaExpr::Unary { .. })));
+        assert!(matches!(parse_expr("!x"), Some(Expr::Unary { .. })));
+        assert!(matches!(parse_expr("-5"), Some(Expr::Unary { .. })));
     }
 
     #[test]
     fn test_ternary() {
-        assert!(matches!(parse_expr("a ? b : c"), Some(FaExpr::Ternary { .. })));
+        assert!(matches!(parse_expr("a ? b : c"), Some(Expr::Ternary { .. })));
     }
 
     #[test]
     fn test_field_access() {
-        assert!(matches!(parse_expr("a.b"), Some(FaExpr::FieldAccess { .. })));
-        assert!(matches!(parse_expr("a?.b"), Some(FaExpr::OptionalChain { .. })));
+        assert!(matches!(parse_expr("a.b"), Some(Expr::FieldAccess { .. })));
+        assert!(matches!(parse_expr("a?.b"), Some(Expr::OptionalChain { .. })));
     }
 
     #[test]
     fn test_call() {
-        assert!(matches!(parse_expr("foo()"), Some(FaExpr::Call { .. })));
-        assert!(matches!(parse_expr("foo(1, 2)"), Some(FaExpr::Call { .. })));
+        assert!(matches!(parse_expr("foo()"), Some(Expr::Call { .. })));
+        assert!(matches!(parse_expr("foo(1, 2)"), Some(Expr::Call { .. })));
     }
 
     #[test]
     fn test_list() {
-        if let Some(FaExpr::List(elements)) = parse_expr("[1, 2, 3]") {
+        if let Some(Expr::List(elements)) = parse_expr("[1, 2, 3]") {
             assert_eq!(elements.len(), 3);
         } else {
             panic!("Expected list");
@@ -630,7 +630,7 @@ mod tests {
 
     #[test]
     fn test_object() {
-        if let Some(FaExpr::Object(fields)) = parse_expr("{ a: 1, b: 2 }") {
+        if let Some(Expr::Object(fields)) = parse_expr("{ a: 1, b: 2 }") {
             assert_eq!(fields.len(), 2);
         } else {
             panic!("Expected object");
@@ -640,10 +640,10 @@ mod tests {
     #[test]
     fn test_precedence() {
         // 1 + 2 * 3 should be 1 + (2 * 3)
-        if let Some(FaExpr::Binary { op, left, right }) = parse_expr("1 + 2 * 3") {
-            assert!(matches!(op, crate::ast::FaBinaryOp::Add));
-            assert!(matches!(*left, FaExpr::Int(1)));
-            assert!(matches!(*right, FaExpr::Binary { .. }));
+        if let Some(Expr::Binary { op, left, right }) = parse_expr("1 + 2 * 3") {
+            assert!(matches!(op, crate::ast::BinaryOp::Add));
+            assert!(matches!(*left, Expr::Int(1)));
+            assert!(matches!(*right, Expr::Binary { .. }));
         } else {
             panic!("Expected binary");
         }

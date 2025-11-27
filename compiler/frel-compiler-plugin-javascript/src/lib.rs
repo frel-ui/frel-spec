@@ -8,7 +8,7 @@ use frel_compiler_core::ast;
 pub mod codegen;
 
 /// Generate JavaScript code from a Frel AST
-pub fn generate(file: &ast::FaFile) -> String {
+pub fn generate(file: &ast::File) -> String {
     codegen::generate_file(file)
 }
 
@@ -18,7 +18,7 @@ mod tests {
 
     #[test]
     fn test_generate_empty_module() {
-        let file = ast::FaFile {
+        let file = ast::File {
             module: "test".to_string(),
             imports: vec![],
             declarations: vec![],
