@@ -1,0 +1,9 @@
+module test
+
+scheme Node { id : Uuid .. identity }
+
+backend TreeBackend {
+    nodeTree : Tree<Node>
+    nestedMap : Map<String, Map<String, List<Node>>>
+    treeOfOptionals : Tree<Node?>
+}
