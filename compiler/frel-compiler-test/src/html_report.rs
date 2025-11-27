@@ -9,6 +9,13 @@ use std::path::Path;
 
 use frel_compiler_core::ast::DumpVisitor;
 
+/// Check if a test file is in an `errors` directory (direct parent only)
+fn expects_error(path: &Path) -> bool {
+    path.parent()
+        .and_then(|p| p.file_name())
+        .map_or(false, |name| name == "errors")
+}
+
 /// Information about a single test case for the report
 #[derive(Debug)]
 pub struct TestReportEntry {
@@ -20,14 +27,27 @@ pub struct TestReportEntry {
 /// The result of a test case
 #[derive(Debug)]
 pub enum TestReportResult {
+    /// Locked success test (has .ast.json)
     Success {
         dump: String,
         json: String,
     },
+    /// Locked error test (has .error.txt)
     Error {
         error: String,
     },
-    Wip {
+    /// WIP success test - expects parse to succeed
+    WipSuccess {
+        /// Whether the test passed (parse succeeded)
+        passed: bool,
+        dump: Option<String>,
+        json: Option<String>,
+        error: Option<String>,
+    },
+    /// WIP error test - expects parse to fail
+    WipError {
+        /// Whether the test passed (parse failed)
+        passed: bool,
         dump: Option<String>,
         json: Option<String>,
         error: Option<String>,
@@ -75,7 +95,7 @@ impl HtmlReportGenerator {
             let error_path = source_path.with_extension("error.txt");
 
             let result = if ast_path.exists() {
-                // Success test
+                // Locked success test
                 let json = fs::read_to_string(&ast_path).unwrap_or_default();
                 let dump = if dump_path.exists() {
                     fs::read_to_string(&dump_path).unwrap_or_default()
@@ -85,13 +105,19 @@ impl HtmlReportGenerator {
                 };
                 TestReportResult::Success { dump, json }
             } else if error_path.exists() {
-                // Error test
+                // Locked error test
                 let error = fs::read_to_string(&error_path).unwrap_or_default();
                 TestReportResult::Error { error }
-            } else {
-                // WIP test - try to parse and show current output
+            } else if expects_error(&source_path) {
+                // WIP error test - expects parse to fail
                 let (dump, json, error) = self.parse_wip(&source);
-                TestReportResult::Wip { dump, json, error }
+                let passed = error.is_some(); // Test passes if parse failed
+                TestReportResult::WipError { passed, dump, json, error }
+            } else {
+                // WIP success test - expects parse to succeed
+                let (dump, json, error) = self.parse_wip(&source);
+                let passed = error.is_none(); // Test passes if parse succeeded
+                TestReportResult::WipSuccess { passed, dump, json, error }
             };
 
             self.entries.push(TestReportEntry {
@@ -237,6 +263,7 @@ impl HtmlReportGenerator {
             --success-color: #22c55e;
             --error-color: #ef4444;
             --wip-color: #f59e0b;
+            --wip-fail-color: #dc2626;
         }
 
         * {
@@ -336,6 +363,12 @@ impl HtmlReportGenerator {
             margin-right: 0.5rem;
         }
 
+        nav .nav-item.wip-fail::before {
+            content: '●';
+            color: var(--wip-fail-color);
+            margin-right: 0.5rem;
+        }
+
         main {
             margin-left: var(--nav-width);
             padding: 2rem;
@@ -378,6 +411,7 @@ impl HtmlReportGenerator {
         .test-header .status.success { background: var(--success-color); }
         .test-header .status.error { background: var(--error-color); }
         .test-header .status.wip { background: var(--wip-color); }
+        .test-header .status.wip-fail { background: var(--wip-fail-color); }
 
         .test-header .name {
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
@@ -396,6 +430,7 @@ impl HtmlReportGenerator {
         .test-header .badge.success { background: #dcfce7; color: #166534; }
         .test-header .badge.error { background: #fee2e2; color: #991b1b; }
         .test-header .badge.wip { background: #fef3c7; color: #92400e; }
+        .test-header .badge.wip-fail { background: #fee2e2; color: #991b1b; }
 
         .test-content {
             display: grid;
@@ -553,7 +588,10 @@ impl HtmlReportGenerator {
                     .map(|e| match &e.result {
                         TestReportResult::Success { .. } => "success",
                         TestReportResult::Error { .. } => "error",
-                        TestReportResult::Wip { .. } => "wip",
+                        TestReportResult::WipSuccess { passed: true, .. } => "wip",
+                        TestReportResult::WipSuccess { passed: false, .. } => "wip-fail",
+                        TestReportResult::WipError { passed: true, .. } => "wip",
+                        TestReportResult::WipError { passed: false, .. } => "wip-fail",
                     })
                     .unwrap_or("wip");
 
@@ -581,7 +619,10 @@ impl HtmlReportGenerator {
         let (status_class, badge_text) = match &entry.result {
             TestReportResult::Success { .. } => ("success", "Success"),
             TestReportResult::Error { .. } => ("error", "Error"),
-            TestReportResult::Wip { .. } => ("wip", "WIP"),
+            TestReportResult::WipSuccess { passed: true, .. } => ("wip", "WIP"),
+            TestReportResult::WipSuccess { passed: false, .. } => ("wip-fail", "WIP FAIL"),
+            TestReportResult::WipError { passed: true, .. } => ("wip", "WIP"),
+            TestReportResult::WipError { passed: false, .. } => ("wip-fail", "WIP FAIL"),
         };
 
         html.push_str(&format!(
@@ -638,7 +679,8 @@ impl HtmlReportGenerator {
 
                 html.push_str("</div>\n");
             }
-            TestReportResult::Wip { dump, json, error } => {
+            TestReportResult::WipSuccess { dump, json, error, .. }
+            | TestReportResult::WipError { dump, json, error, .. } => {
                 if let Some(error_msg) = error {
                     let row_lines = source_lines;
 

@@ -136,25 +136,30 @@ cargo run --bin frelc -- compile ../examples/counter/src/counter.frel
 
 The compiler has a dedicated testing framework (`frel-compiler-test`) that uses file-based tests. Test data is located in `compiler/test-data/`.
 
+For detailed documentation, see [Parser Testing Framework](30_testing.md).
+
 **Running compiler tests:**
 ```bash
 cd compiler
 cargo run --package frel-compiler-test
 ```
 
-**Test file conventions:**
-- `<name>.frel` - Input source code
-- `<name>.ast.json` - Expected AST (for success tests)
-- `<name>.error.txt` - Expected error message (for error tests)
+**Test categories:**
+- **Success tests**: Expect parsing to succeed (tests not in `errors/` directory)
+- **Error tests**: Expect parsing to fail (tests in an `errors/` directory)
+- **WIP tests**: No output files yet, validates expected outcome only
+- **Locked tests**: Have `.ast.json` or `.error.txt`, validates exact output
 
 **Test directory structure:**
 ```
 compiler/test-data/
 └── parser/
-    ├── blueprint/       # Blueprint parsing tests
-    ├── backend/         # Backend parsing tests
-    └── errors/          # Error case tests
-        └── syntax_errors/
+    ├── blueprint/           # Success tests
+    │   └── errors/          # Error tests for blueprints
+    ├── scheme/              # Success tests
+    │   └── errors/          # Error tests for schemes
+    └── layout/
+        └── errors/          # Error tests for layout
 ```
 
 **Useful commands:**
@@ -163,20 +168,25 @@ compiler/test-data/
 cargo run --package frel-compiler-test
 
 # Run tests matching a pattern
-cargo run --package frel-compiler-test -- blueprint
+cargo run --package frel-compiler-test "blueprint"
 
-# Update expected output files
-cargo run --package frel-compiler-test -- --update
+# Update expected output files (lock tests)
+cargo run --package frel-compiler-test --update
 
 # Show detailed diff on failures
-cargo run --package frel-compiler-test -- --verbose
+cargo run --package frel-compiler-test --verbose
+
+# Generate HTML report
+cargo run --package frel-compiler-test report
 ```
 
 **Adding new tests:**
-1. Create a `.frel` file in the appropriate directory
-2. Run with `--update` to generate the expected output
-3. Review the generated `.ast.json` or `.error.txt` file
-4. Commit both files
+1. Create a `.frel` file:
+   - For success tests: `parser/<category>/test_name.frel`
+   - For error tests: `parser/<category>/errors/test_name.frel`
+2. Run tests to verify expected outcome
+3. When ready to lock: run with `--update` to generate output files
+4. Commit both `.frel` and output files
 
 ### Runtime Development
 

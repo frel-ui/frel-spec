@@ -375,11 +375,11 @@ pub struct VirtualField {
     pub expr: Expr,
 }
 
-/// Field instruction
+/// Field instruction (used in schemes)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldInstruction {
     pub name: String,
-    pub value: Option<Expr>,
+    pub params: Vec<(String, Expr)>,
 }
 
 /// Enum declaration

@@ -59,12 +59,17 @@ enum Command {
 
 #[derive(Debug)]
 enum TestKind {
+    /// Locked success test: has .ast.json, expects parse to succeed and output to match
     Success {
         expected_ast: PathBuf,
         expected_dump: Option<PathBuf>,
     },
+    /// Locked error test: has .error.txt, expects parse to fail and error to match
     Error { expected_error: PathBuf },
-    Wip,
+    /// WIP success test: no output files, expects parse to succeed (output not verified)
+    WipSuccess,
+    /// WIP error test: no output files, expects parse to fail (output not verified)
+    WipError,
 }
 
 #[derive(Debug)]
@@ -78,7 +83,6 @@ struct TestCase {
 enum TestResult {
     Passed,
     Failed { message: String, diff: Option<String> },
-    Skipped { reason: String },
 }
 
 fn main() {
@@ -156,7 +160,6 @@ fn run_test_command(tests_dir: &Path, filter: Option<&str>, cli: &Cli) {
     // Run tests
     let mut passed = 0;
     let mut failed = 0;
-    let mut skipped = 0;
 
     for test in &test_cases {
         let result = run_test(test, cli.update, cli.format);
@@ -176,20 +179,15 @@ fn run_test_command(tests_dir: &Path, filter: Option<&str>, cli: &Cli) {
                 }
                 failed += 1;
             }
-            TestResult::Skipped { reason } => {
-                println!("  {} {} ({})", "SKIP".yellow(), test.name, reason);
-                skipped += 1;
-            }
         }
     }
 
     // Print summary
     println!();
     println!(
-        "Results: {} passed, {} failed, {} skipped",
+        "Results: {} passed, {} failed",
         passed.to_string().green(),
-        failed.to_string().red(),
-        skipped.to_string().yellow()
+        failed.to_string().red()
     );
 
     if failed > 0 {
@@ -233,6 +231,13 @@ fn find_target_dir() -> PathBuf {
     PathBuf::from("compiler/target")
 }
 
+/// Check if a test file is in an `errors` directory (direct parent only)
+fn expects_error(path: &Path) -> bool {
+    path.parent()
+        .and_then(|p| p.file_name())
+        .map_or(false, |name| name == "errors")
+}
+
 fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
     let mut tests = Vec::new();
 
@@ -258,12 +263,13 @@ fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
             }
         }
 
-        // Determine test kind
+        // Determine test kind based on existing output files and directory convention
         let ast_path = source_path.with_extension("ast.json");
         let dump_path = source_path.with_extension("ast.dump");
         let error_path = source_path.with_extension("error.txt");
 
         let kind = if ast_path.exists() {
+            // Locked success test
             TestKind::Success {
                 expected_ast: ast_path,
                 expected_dump: if dump_path.exists() {
@@ -273,11 +279,16 @@ fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
                 },
             }
         } else if error_path.exists() {
+            // Locked error test
             TestKind::Error {
                 expected_error: error_path,
             }
+        } else if expects_error(&source_path) {
+            // WIP error test (in errors/ directory)
+            TestKind::WipError
         } else {
-            TestKind::Wip
+            // WIP success test (not in errors/ directory)
+            TestKind::WipSuccess
         };
 
         tests.push(TestCase {
@@ -295,14 +306,18 @@ fn discover_tests(tests_dir: &Path, filter: Option<&str>) -> Vec<TestCase> {
 
 fn run_test(test: &TestCase, update: bool, format: OutputFormat) -> TestResult {
     match &test.kind {
-        TestKind::Wip => {
+        TestKind::WipSuccess => {
             if update {
-                // In update mode, try to create the expected file
-                run_wip_test(test, format)
+                run_wip_success_update(test, format)
             } else {
-                TestResult::Skipped {
-                    reason: "no expected output file".to_string(),
-                }
+                run_wip_success_test(test)
+            }
+        }
+        TestKind::WipError => {
+            if update {
+                run_wip_error_update(test)
+            } else {
+                run_wip_error_test(test)
             }
         }
         TestKind::Success {
@@ -313,8 +328,8 @@ fn run_test(test: &TestCase, update: bool, format: OutputFormat) -> TestResult {
     }
 }
 
-fn run_wip_test(test: &TestCase, format: OutputFormat) -> TestResult {
-    // Read source file
+/// WIP Success test (not update mode): just check that parsing succeeds
+fn run_wip_success_test(test: &TestCase) -> TestResult {
     let source = match fs::read_to_string(&test.source_path) {
         Ok(s) => s,
         Err(e) => {
@@ -325,54 +340,15 @@ fn run_wip_test(test: &TestCase, format: OutputFormat) -> TestResult {
         }
     };
 
-    // Parse the source
     let result = frel_compiler_core::parse_file(&source);
 
     if result.diagnostics.has_errors() {
-        // Write error to .error.txt
-        let error_path = test.source_path.with_extension("error.txt");
         let error_msg = format_diagnostics(&result.diagnostics, &source);
-        if let Err(e) = fs::write(&error_path, &error_msg) {
-            return TestResult::Failed {
-                message: format!("Failed to write error file: {}", e),
-                diff: None,
-            };
+        TestResult::Failed {
+            message: format!("Expected parse to succeed but got errors:\n{}", error_msg),
+            diff: None,
         }
-        TestResult::Passed
-    } else if let Some(ast) = result.file {
-        // Write JSON if needed
-        if format == OutputFormat::Json || format == OutputFormat::Both {
-            let ast_path = test.source_path.with_extension("ast.json");
-            match serde_json::to_string_pretty(&ast) {
-                Ok(json) => {
-                    if let Err(e) = fs::write(&ast_path, &json) {
-                        return TestResult::Failed {
-                            message: format!("Failed to write AST JSON file: {}", e),
-                            diff: None,
-                        };
-                    }
-                }
-                Err(e) => {
-                    return TestResult::Failed {
-                        message: format!("Failed to serialize AST: {}", e),
-                        diff: None,
-                    }
-                }
-            }
-        }
-
-        // Write DUMP if needed
-        if format == OutputFormat::Dump || format == OutputFormat::Both {
-            let dump_path = test.source_path.with_extension("ast.dump");
-            let dump_output = DumpVisitor::dump(&ast);
-            if let Err(e) = fs::write(&dump_path, &dump_output) {
-                return TestResult::Failed {
-                    message: format!("Failed to write AST DUMP file: {}", e),
-                    diff: None,
-                };
-            }
-        }
-
+    } else if result.file.is_some() {
         TestResult::Passed
     } else {
         TestResult::Failed {
@@ -380,6 +356,131 @@ fn run_wip_test(test: &TestCase, format: OutputFormat) -> TestResult {
             diff: None,
         }
     }
+}
+
+/// WIP Error test (not update mode): just check that parsing fails
+fn run_wip_error_test(test: &TestCase) -> TestResult {
+    let source = match fs::read_to_string(&test.source_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to read source: {}", e),
+                diff: None,
+            }
+        }
+    };
+
+    let result = frel_compiler_core::parse_file(&source);
+
+    if result.diagnostics.has_errors() {
+        TestResult::Passed
+    } else {
+        TestResult::Failed {
+            message: "Expected parse to fail but it succeeded".to_string(),
+            diff: None,
+        }
+    }
+}
+
+/// WIP Success update mode: create .ast.json (and optionally .ast.dump)
+fn run_wip_success_update(test: &TestCase, format: OutputFormat) -> TestResult {
+    let source = match fs::read_to_string(&test.source_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to read source: {}", e),
+                diff: None,
+            }
+        }
+    };
+
+    let result = frel_compiler_core::parse_file(&source);
+
+    if result.diagnostics.has_errors() {
+        let error_msg = format_diagnostics(&result.diagnostics, &source);
+        return TestResult::Failed {
+            message: format!("Cannot update: parse failed with errors:\n{}", error_msg),
+            diff: None,
+        };
+    }
+
+    let ast = match result.file {
+        Some(ast) => ast,
+        None => {
+            return TestResult::Failed {
+                message: "Parse returned no AST and no errors".to_string(),
+                diff: None,
+            }
+        }
+    };
+
+    // Write JSON if needed
+    if format == OutputFormat::Json || format == OutputFormat::Both {
+        let ast_path = test.source_path.with_extension("ast.json");
+        match serde_json::to_string_pretty(&ast) {
+            Ok(json) => {
+                if let Err(e) = fs::write(&ast_path, &json) {
+                    return TestResult::Failed {
+                        message: format!("Failed to write AST JSON file: {}", e),
+                        diff: None,
+                    };
+                }
+            }
+            Err(e) => {
+                return TestResult::Failed {
+                    message: format!("Failed to serialize AST: {}", e),
+                    diff: None,
+                }
+            }
+        }
+    }
+
+    // Write DUMP if needed
+    if format == OutputFormat::Dump || format == OutputFormat::Both {
+        let dump_path = test.source_path.with_extension("ast.dump");
+        let dump_output = DumpVisitor::dump(&ast);
+        if let Err(e) = fs::write(&dump_path, &dump_output) {
+            return TestResult::Failed {
+                message: format!("Failed to write AST DUMP file: {}", e),
+                diff: None,
+            };
+        }
+    }
+
+    TestResult::Passed
+}
+
+/// WIP Error update mode: create .error.txt
+fn run_wip_error_update(test: &TestCase) -> TestResult {
+    let source = match fs::read_to_string(&test.source_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return TestResult::Failed {
+                message: format!("Failed to read source: {}", e),
+                diff: None,
+            }
+        }
+    };
+
+    let result = frel_compiler_core::parse_file(&source);
+
+    if !result.diagnostics.has_errors() {
+        return TestResult::Failed {
+            message: "Cannot update: expected parse to fail but it succeeded".to_string(),
+            diff: None,
+        };
+    }
+
+    let error_path = test.source_path.with_extension("error.txt");
+    let error_msg = format_diagnostics(&result.diagnostics, &source);
+    if let Err(e) = fs::write(&error_path, &error_msg) {
+        return TestResult::Failed {
+            message: format!("Failed to write error file: {}", e),
+            diff: None,
+        };
+    }
+
+    TestResult::Passed
 }
 
 fn run_success_test(

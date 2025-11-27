@@ -65,19 +65,19 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Parse a field instruction (.. identity, .. default { value })
+    /// Parse a field instruction (.. identity, .. range { min: 0 max: 100 })
     fn parse_field_instruction(&mut self) -> Option<FieldInstruction> {
         let name = self.expect_identifier()?;
 
-        let value = if self.consume(TokenKind::LBrace).is_some() {
-            let expr = self.parse_expr()?;
+        let params = if self.consume(TokenKind::LBrace).is_some() {
+            let params = self.parse_instruction_params()?;
             self.expect(TokenKind::RBrace)?;
-            Some(expr)
+            params
         } else {
-            None
+            vec![]
         };
 
-        Some(FieldInstruction { name, value })
+        Some(FieldInstruction { name, params })
     }
 }
 

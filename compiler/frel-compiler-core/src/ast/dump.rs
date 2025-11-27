@@ -782,10 +782,15 @@ impl Visitor for DumpVisitor {
                 .instructions
                 .iter()
                 .map(|i| {
-                    if let Some(v) = &i.value {
-                        format!("{}({})", i.name, self.expr_inline(v))
-                    } else {
+                    if i.params.is_empty() {
                         i.name.clone()
+                    } else {
+                        let params: Vec<_> = i
+                            .params
+                            .iter()
+                            .map(|(k, v)| format!("{}: {}", k, self.expr_inline(v)))
+                            .collect();
+                        format!("{}({})", i.name, params.join(", "))
                     }
                 })
                 .collect();
