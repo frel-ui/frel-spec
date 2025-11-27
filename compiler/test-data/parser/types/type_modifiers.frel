@@ -1,0 +1,22 @@
+module test
+
+scheme Article {
+    id    : Uuid .. identity
+    title : String
+}
+
+backend EditorBackend {
+    original : ref Article
+    draftCopy : draft Article = original
+}
+
+theme ArticleTheme {
+    heading_font : asset Graphics
+    accent_color : asset Color
+}
+
+blueprint Editor(accessor: Accessor<String>) {
+    with EditorBackend()
+
+    text_editor { accessor }
+}
