@@ -11,7 +11,7 @@ blueprint VerticalAlignment {
     | ^top      |
     | =center   |
     | _baseline |
-    | vbottom   |
+    | .bottom   |
     """
 }
 
@@ -20,7 +20,7 @@ blueprint CombinedAlignment {
     | <^topleft   | !^topcenter   | >^topright   |
     | <=midleft   | !=midcenter   | >=midright   |
     | <_baseleft  | !_basecenter  | >_baseright  |
-    | <vbotleft   | !vbotcenter   | >vbotright   |
+    | <.botleft   | !.botcenter   | >.botright   |
     """
 }
 

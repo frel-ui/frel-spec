@@ -368,17 +368,8 @@ impl<'a> LayoutParser<'a> {
                         v_align = VAlign::Top;
                     }
                 }
-                'v' => {
-                    // Check for v-- merge
-                    let mut temp_chars = chars.clone();
-                    if temp_chars.next() == Some('-') && temp_chars.next() == Some('-') {
-                        chars.next(); // -
-                        chars.next(); // -
-                        merge = Some(MergeDirection::Down);
-                    } else {
-                        // Could be start of identifier
-                        slot_chars.push(ch);
-                    }
+                '.' => {
+                    v_align = VAlign::Bottom;
                 }
                 '!' => {
                     h_align = HAlign::Center;
@@ -387,13 +378,8 @@ impl<'a> LayoutParser<'a> {
                     v_align = VAlign::Center;
                 }
                 '_' => {
-                    // Could be baseline alignment or part of identifier
-                    // Check if followed by identifier chars
-                    if slot_chars.is_empty() && !matches!(chars.peek(), Some('a'..='z') | Some('A'..='Z') | Some('0'..='9') | Some('_')) {
-                        v_align = VAlign::Baseline;
-                    } else {
-                        slot_chars.push(ch);
-                    }
+                    // Always baseline alignment - slot names cannot start with _
+                    v_align = VAlign::Baseline;
                 }
                 ' ' => {
                     // Space - if we have slot chars, we're done with the identifier
@@ -401,7 +387,19 @@ impl<'a> LayoutParser<'a> {
                         // Continue to allow modifiers after slot name
                     }
                 }
-                'a'..='z' | 'A'..='Z' | '0'..='9' => {
+                'v' => {
+                    // Check for v-- merge (down)
+                    let mut temp_chars = chars.clone();
+                    if temp_chars.next() == Some('-') && temp_chars.next() == Some('-') {
+                        chars.next(); // -
+                        chars.next(); // -
+                        merge = Some(MergeDirection::Down);
+                    } else {
+                        // It's part of identifier (e.g., "value")
+                        slot_chars.push(ch);
+                    }
+                }
+                'a'..='u' | 'w'..='z' | 'A'..='Z' | '0'..='9' => {
                     slot_chars.push(ch);
                 }
                 _ => {

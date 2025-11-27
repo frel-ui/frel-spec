@@ -160,16 +160,18 @@ Cell modifiers control alignment within each cell.
 | `^`      | Vertical align top                   |
 | `=`      | Vertical align center                |
 | `_`      | Vertical align baseline (default)    |
-| `v`      | Vertical align bottom                |
+| `.`      | Vertical align bottom                |
 
 **Defaults:** left horizontal, baseline vertical.
+
+**Note:** Slot names cannot start with `_` to avoid ambiguity with the baseline modifier.
 
 **Examples:**
 
 ```frel
 """layout
 | < slot1 | ! slot2 | > slot3 |
-| ^ slot4 | = slot5 | v slot6 |
+| ^ slot4 | = slot5 | . slot6 |
 """
 ```
 
@@ -179,7 +181,7 @@ Combined alignment:
 """layout
 | < ^ header |     // left, top
 | ! = center |     // center, center
-| > v footer |     // right, bottom
+| > . footer |     // right, bottom
 """
 ```
 

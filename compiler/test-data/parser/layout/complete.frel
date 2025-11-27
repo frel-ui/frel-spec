@@ -7,7 +7,7 @@ blueprint CardLayout {
            48         ~1           #
     48 | !^icon  | <^title   | >^badge  |
     ~1 |         | <_content | <--      |
-    24 |         | <vfooter  | <--      |
+    24 |         | <.footer  | <--      |
     """ .. corner { radius: 12 } .. background { color: #ffffff }
 
     at icon: {

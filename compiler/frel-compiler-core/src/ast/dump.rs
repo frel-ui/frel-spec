@@ -208,7 +208,7 @@ impl DumpVisitor {
                 VAlign::Top => "^",
                 VAlign::Center => "=",
                 VAlign::Baseline => "_",
-                VAlign::Bottom => "v",
+                VAlign::Bottom => ".",
             });
         }
 
