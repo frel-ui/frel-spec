@@ -2,7 +2,7 @@
 //
 // Shared utilities used across multiple declaration parsers.
 
-use crate::ast::{Instruction, Parameter};
+use crate::ast::{Expr, Instruction, InstructionExpr, Parameter};
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /// Parse an instruction (used in themes and blueprints)
+    /// Parse a simple instruction (used in themes)
     pub(super) fn parse_instruction(&mut self) -> Option<Instruction> {
         let name = self.expect_identifier()?;
 
@@ -77,6 +77,79 @@ impl<'a> Parser<'a> {
         };
 
         Some(Instruction { name, params })
+    }
+
+    /// Parse an instruction expression (used in blueprints)
+    ///
+    /// Instruction expressions can be:
+    /// - Simple: `width { 30 }`
+    /// - Conditional when: `when <condition> { inst } [else { inst }]`
+    /// - Ternary: `<condition> ? <inst> else <inst>`
+    /// - Reference: `theme.status_badge` (field access or identifier)
+    pub(super) fn parse_instruction_expr(&mut self) -> Option<InstructionExpr> {
+        // Check for `when` conditional
+        if self.consume(TokenKind::When).is_some() {
+            return self.parse_when_instruction_expr();
+        }
+
+        // Parse an expression, but stop before `?` so we can handle instruction ternary
+        // (which uses `? ... else` instead of expression ternary's `? ... :`)
+        let expr = self.parse_expr_before_question()?;
+
+        // Check what follows
+        if self.consume(TokenKind::Question).is_some() {
+            // Ternary: <condition> ? <inst> else <inst>
+            let then_instr = Box::new(self.parse_instruction_expr()?);
+            self.expect(TokenKind::Else)?;
+            let else_instr = Box::new(self.parse_instruction_expr()?);
+            return Some(InstructionExpr::Ternary {
+                condition: expr,
+                then_instr,
+                else_instr,
+            });
+        }
+
+        if self.check(TokenKind::LBrace) {
+            // Simple instruction: `name { params }`
+            // The expression should be an identifier
+            let name = match expr {
+                Expr::Identifier(name) => name,
+                _ => {
+                    self.error_expected("identifier for instruction name");
+                    return None;
+                }
+            };
+            self.advance(); // consume '{'
+            let params = self.parse_instruction_params()?;
+            self.expect(TokenKind::RBrace)?;
+            return Some(InstructionExpr::Simple(Instruction { name, params }));
+        }
+
+        // Reference: field access or identifier
+        Some(InstructionExpr::Reference(expr))
+    }
+
+    /// Parse when instruction expression: when <condition> { inst } [else { inst }]
+    fn parse_when_instruction_expr(&mut self) -> Option<InstructionExpr> {
+        let condition = self.parse_expr()?;
+        self.expect(TokenKind::LBrace)?;
+        let then_instr = Box::new(self.parse_instruction_expr()?);
+        self.expect(TokenKind::RBrace)?;
+
+        let else_instr = if self.consume(TokenKind::Else).is_some() {
+            self.expect(TokenKind::LBrace)?;
+            let instr = Box::new(self.parse_instruction_expr()?);
+            self.expect(TokenKind::RBrace)?;
+            Some(instr)
+        } else {
+            None
+        };
+
+        Some(InstructionExpr::When {
+            condition,
+            then_instr,
+            else_instr,
+        })
     }
 
     /// Parse instruction parameters (name: value pairs or just values)

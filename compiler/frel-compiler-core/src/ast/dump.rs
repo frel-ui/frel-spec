@@ -332,7 +332,7 @@ impl Visitor for DumpVisitor {
                 self.visit_control_stmt(ctrl);
             }
             BlueprintStmt::Instruction(instr) => {
-                self.visit_instruction(instr);
+                self.visit_instruction_expr(instr);
             }
             BlueprintStmt::EventHandler(handler) => {
                 self.visit_event_handler(handler);
@@ -382,7 +382,7 @@ impl Visitor for DumpVisitor {
 
     fn visit_postfix_item(&mut self, item: &PostfixItem) {
         match item {
-            PostfixItem::Instruction(instr) => self.visit_instruction(instr),
+            PostfixItem::Instruction(instr) => self.visit_instruction_expr(instr),
             PostfixItem::EventHandler(handler) => self.visit_event_handler(handler),
         }
     }
@@ -502,6 +502,48 @@ impl Visitor for DumpVisitor {
         self.indent();
         self.visit_blueprint_stmt(&branch.body);
         self.dedent();
+    }
+
+    fn visit_instruction_expr(&mut self, instr: &InstructionExpr) {
+        match instr {
+            InstructionExpr::Simple(simple) => self.visit_instruction(simple),
+            InstructionExpr::When {
+                condition,
+                then_instr,
+                else_instr,
+            } => {
+                self.write(&format!("WHEN {}", self.expr_inline(condition)));
+                self.indent();
+                self.visit_instruction_expr(then_instr);
+                self.dedent();
+                if let Some(else_instr) = else_instr {
+                    self.write("ELSE");
+                    self.indent();
+                    self.visit_instruction_expr(else_instr);
+                    self.dedent();
+                }
+            }
+            InstructionExpr::Ternary {
+                condition,
+                then_instr,
+                else_instr,
+            } => {
+                self.write(&format!("TERNARY {}", self.expr_inline(condition)));
+                self.indent();
+                self.write("THEN");
+                self.indent();
+                self.visit_instruction_expr(then_instr);
+                self.dedent();
+                self.write("ELSE");
+                self.indent();
+                self.visit_instruction_expr(else_instr);
+                self.dedent();
+                self.dedent();
+            }
+            InstructionExpr::Reference(expr) => {
+                self.write(&format!("INSTR_REF {}", self.expr_inline(expr)));
+            }
+        }
     }
 
     fn visit_instruction(&mut self, instr: &Instruction) {

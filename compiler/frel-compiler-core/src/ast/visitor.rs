@@ -83,7 +83,10 @@ pub trait Visitor {
     /// Visit a postfix item (instruction or event handler)
     fn visit_postfix_item(&mut self, item: &PostfixItem) -> Self::Result;
 
-    /// Visit an instruction
+    /// Visit an instruction expression
+    fn visit_instruction_expr(&mut self, instr: &InstructionExpr) -> Self::Result;
+
+    /// Visit a simple instruction
     fn visit_instruction(&mut self, instr: &Instruction) -> Self::Result;
 
     /// Visit an event handler

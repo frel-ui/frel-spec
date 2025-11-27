@@ -98,6 +98,15 @@ impl<'a> Parser<'a> {
         self.parse_expr_precedence(Precedence::None)
     }
 
+    /// Parse an expression, stopping before `?` (for instruction ternary)
+    ///
+    /// This allows instruction expressions to use `?` with a different syntax
+    /// (`condition ? inst else inst`) than expression ternary (`condition ? expr : expr`).
+    pub(super) fn parse_expr_before_question(&mut self) -> Option<Expr> {
+        // Parse with minimum precedence of Ternary, which stops before `?`
+        self.parse_expr_precedence(Precedence::Ternary)
+    }
+
     /// Parse expression with minimum precedence (Pratt parsing)
     fn parse_expr_precedence(&mut self, min_prec: Precedence) -> Option<Expr> {
         // Parse prefix/primary expression

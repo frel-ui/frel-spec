@@ -110,7 +110,7 @@ impl<'a> Parser<'a> {
                     let handler = self.parse_postfix_event_handler()?;
                     Some(BlueprintStmt::EventHandler(handler))
                 } else {
-                    let instr = self.parse_instruction()?;
+                    let instr = self.parse_instruction_expr()?;
                     Some(BlueprintStmt::Instruction(instr))
                 }
             }
@@ -374,7 +374,7 @@ impl<'a> Parser<'a> {
                 let handler = self.parse_postfix_event_handler()?;
                 items.push(PostfixItem::EventHandler(handler));
             } else {
-                let instr = self.parse_instruction()?;
+                let instr = self.parse_instruction_expr()?;
                 items.push(PostfixItem::Instruction(instr));
             }
         }

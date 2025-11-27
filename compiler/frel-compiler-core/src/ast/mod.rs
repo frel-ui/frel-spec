@@ -58,7 +58,7 @@ pub enum BlueprintStmt {
     LocalDecl(LocalDecl),
     FragmentCreation(FragmentCreation),
     Control(ControlStmt),
-    Instruction(Instruction),
+    Instruction(InstructionExpr),
     EventHandler(EventHandler),
     /// A standalone expression as content (e.g., "Hello" in text { "Hello" })
     ContentExpr(Expr),
@@ -85,7 +85,7 @@ pub struct FragmentCreation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PostfixItem {
-    Instruction(Instruction),
+    Instruction(InstructionExpr),
     EventHandler(EventHandler),
 }
 
@@ -149,11 +149,36 @@ pub struct SelectBranch {
     pub body: Box<BlueprintStmt>,
 }
 
-/// Instruction
+/// Simple instruction with name and parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instruction {
     pub name: String,
     pub params: Vec<(String, Expr)>,
+}
+
+/// Instruction expression - can be simple, conditional, or a reference
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InstructionExpr {
+    /// Simple instruction: width { 30 }, background { color: #fff }
+    Simple(Instruction),
+
+    /// Conditional when: when <condition> { inst } [else { inst }]
+    When {
+        condition: Expr,
+        then_instr: Box<InstructionExpr>,
+        else_instr: Option<Box<InstructionExpr>>,
+    },
+
+    /// Ternary conditional: <condition> ? <inst> else <inst>
+    Ternary {
+        condition: Expr,
+        then_instr: Box<InstructionExpr>,
+        else_instr: Box<InstructionExpr>,
+    },
+
+    /// Reference to instruction set (field access or identifier): theme.status_badge
+    Reference(Expr),
 }
 
 /// Event handler
