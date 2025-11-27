@@ -1,6 +1,7 @@
 // Backend parser for Frel
 
 use crate::ast::{FaBackend, FaBackendMember, FaCommand, FaField, FaMethod};
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse backend declaration
     pub(super) fn parse_backend(&mut self) -> Option<FaBackend> {
-        self.expect(TokenKind::Backend)?;
+        self.expect_contextual(contextual::BACKEND)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
         self.expect(TokenKind::LBrace)?;
@@ -84,6 +85,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::FaBackendMember;
     use crate::parser::parse;
 
     #[test]
@@ -102,5 +104,60 @@ backend Counter {
         assert!(!result.diagnostics.has_errors());
         let file = result.file.unwrap();
         assert_eq!(file.declarations.len(), 1);
+    }
+
+    #[test]
+    fn test_contextual_keywords_as_field_names() {
+        // Test that contextual keywords (theme, backend, module, etc.) can be used as field names
+        let result = parse(
+            r#"
+module test
+
+theme AppTheme {
+    primaryColor: asset Color
+    padding: u32 = 16
+}
+
+backend AppBackend {
+    theme: ref AppTheme
+    backend: String = "local"
+    module: String = "main"
+    blueprint: String = "default"
+    scheme: String = "standard"
+    enum: String = "value"
+    arena: String = "primary"
+    contract: String = "api"
+    import: String = "external"
+}
+"#,
+        );
+        assert!(
+            !result.diagnostics.has_errors(),
+            "Contextual keywords should be usable as field names. Errors: {:?}",
+            result.diagnostics
+        );
+        let file = result.file.unwrap();
+        assert_eq!(file.declarations.len(), 2);
+
+        // Verify the backend has the expected fields
+        if let crate::ast::FaTopLevelDecl::Backend(backend) = &file.declarations[1] {
+            let field_names: Vec<&str> = backend
+                .members
+                .iter()
+                .filter_map(|m| {
+                    if let FaBackendMember::Field(f) = m {
+                        Some(f.name.as_str())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            assert!(field_names.contains(&"theme"));
+            assert!(field_names.contains(&"backend"));
+            assert!(field_names.contains(&"module"));
+            assert!(field_names.contains(&"blueprint"));
+        } else {
+            panic!("Expected backend declaration");
+        }
     }
 }

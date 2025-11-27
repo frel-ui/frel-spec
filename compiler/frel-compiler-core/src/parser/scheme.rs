@@ -1,6 +1,7 @@
 // Scheme parser for Frel
 
 use crate::ast::{FaFieldInstruction, FaScheme, FaSchemeField, FaSchemeMember, FaVirtualField};
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse scheme declaration
     pub(super) fn parse_scheme(&mut self) -> Option<FaScheme> {
-        self.expect(TokenKind::Scheme)?;
+        self.expect_contextual(contextual::SCHEME)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
 

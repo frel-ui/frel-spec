@@ -12,6 +12,7 @@ use crate::ast::{
     FaEventParam, FaFragmentBody, FaFragmentCreation, FaHandlerStmt, FaLocalDecl, FaPostfixItem,
     FaSelectBranch, FaSlotBinding,
 };
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -23,7 +24,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse blueprint declaration
     pub(super) fn parse_blueprint(&mut self) -> Option<FaBlueprint> {
-        self.expect(TokenKind::Blueprint)?;
+        self.expect_contextual(contextual::BLUEPRINT)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
         self.expect(TokenKind::LBrace)?;

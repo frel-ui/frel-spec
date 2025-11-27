@@ -5,7 +5,7 @@
 // - scan.rs: Lexer implementation
 
 mod scan;
-mod token;
+pub mod token;
 
 pub use scan::Lexer;
 pub use token::{Token, TokenKind};

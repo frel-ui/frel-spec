@@ -6,6 +6,20 @@
 use crate::source::Span;
 use serde::{Deserialize, Serialize};
 
+/// Contextual keywords - only reserved at top-level positions.
+/// These can be used as identifiers (field names, parameters, etc.) inside declarations.
+pub mod contextual {
+    pub const MODULE: &str = "module";
+    pub const IMPORT: &str = "import";
+    pub const BLUEPRINT: &str = "blueprint";
+    pub const BACKEND: &str = "backend";
+    pub const CONTRACT: &str = "contract";
+    pub const SCHEME: &str = "scheme";
+    pub const ENUM: &str = "enum";
+    pub const THEME: &str = "theme";
+    pub const ARENA: &str = "arena";
+}
+
 /// A token with its kind and source span
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
@@ -27,16 +41,10 @@ impl Token {
 /// Token kinds produced by the lexer
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TokenKind {
-    // Keywords - declarations
-    Module,
-    Import,
-    Blueprint,
-    Backend,
-    Contract,
-    Scheme,
-    Enum,
-    Theme,
-    Arena,
+    // Note: Top-level declaration keywords (module, import, blueprint, backend,
+    // contract, scheme, enum, theme, arena) are CONTEXTUAL - they are lexed as
+    // Identifier and only treated as keywords at top-level positions.
+    // See is_contextual_keyword() for the list.
 
     // Keywords - blueprint/backend members
     With,
@@ -128,21 +136,12 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    /// Check if this token is a keyword
+    /// Check if this token is a keyword (always reserved)
     pub fn is_keyword(&self) -> bool {
         use TokenKind::*;
         matches!(
             self,
-            Module
-                | Import
-                | Blueprint
-                | Backend
-                | Contract
-                | Scheme
-                | Enum
-                | Theme
-                | Arena
-                | With
+            With
                 | Include
                 | Method
                 | Command
@@ -167,37 +166,33 @@ impl TokenKind {
         )
     }
 
-    /// Check if this token can start a top-level declaration
-    pub fn is_top_level_start(&self) -> bool {
-        use TokenKind::*;
+    /// Check if this is an identifier that could be a contextual keyword at top-level.
+    /// Contextual keywords are only reserved at positions where a top-level declaration
+    /// can appear, and can be used as identifiers elsewhere (field names, parameters, etc.)
+    pub fn is_contextual_keyword(s: &str) -> bool {
+        use contextual::*;
         matches!(
-            self,
-            Blueprint | Backend | Contract | Scheme | Enum | Theme | Arena
+            s,
+            MODULE | IMPORT | BLUEPRINT | BACKEND | CONTRACT | SCHEME | ENUM | THEME | ARENA
         )
     }
 
-    /// Check if this token is a synchronization point for error recovery
-    pub fn is_sync_point(&self) -> bool {
-        use TokenKind::*;
+    /// Check if this identifier can start a top-level declaration
+    pub fn is_top_level_start_str(s: &str) -> bool {
+        use contextual::*;
         matches!(
-            self,
-            RBrace | Blueprint | Backend | Contract | Scheme | Enum | Theme | Arena | Eof
+            s,
+            BLUEPRINT | BACKEND | CONTRACT | SCHEME | ENUM | THEME | ARENA
         )
     }
 
-    /// Get the keyword for an identifier, if any
+    /// Get the keyword for an identifier, if any.
+    /// Note: Contextual keywords (module, import, blueprint, etc.) are NOT included here.
+    /// They are lexed as Identifier and handled contextually in the parser.
     pub fn keyword_from_str(s: &str) -> Option<TokenKind> {
         use TokenKind::*;
         Some(match s {
-            "module" => Module,
-            "import" => Import,
-            "blueprint" => Blueprint,
-            "backend" => Backend,
-            "contract" => Contract,
-            "scheme" => Scheme,
-            "enum" => Enum,
-            "theme" => Theme,
-            "arena" => Arena,
+            // Contextual keywords are NOT here - they stay as Identifier
             "with" => With,
             "include" => Include,
             "method" => Method,
@@ -230,15 +225,8 @@ impl TokenKind {
     pub fn display_name(&self) -> &'static str {
         use TokenKind::*;
         match self {
-            Module => "'module'",
-            Import => "'import'",
-            Blueprint => "'blueprint'",
-            Backend => "'backend'",
-            Contract => "'contract'",
-            Scheme => "'scheme'",
-            Enum => "'enum'",
-            Theme => "'theme'",
-            Arena => "'arena'",
+            // Note: Contextual keywords (module, import, blueprint, etc.) are
+            // lexed as Identifier, so they're covered by the Identifier case.
             With => "'with'",
             Include => "'include'",
             Method => "'method'",
@@ -313,18 +301,30 @@ mod tests {
 
     #[test]
     fn test_keyword_lookup() {
-        assert_eq!(
-            TokenKind::keyword_from_str("blueprint"),
-            Some(TokenKind::Blueprint)
-        );
+        // Contextual keywords are NOT returned by keyword_from_str
+        assert_eq!(TokenKind::keyword_from_str("blueprint"), None);
+        assert_eq!(TokenKind::keyword_from_str("module"), None);
+        // Always-reserved keywords are returned
         assert_eq!(TokenKind::keyword_from_str("true"), Some(TokenKind::True));
+        assert_eq!(TokenKind::keyword_from_str("when"), Some(TokenKind::When));
         assert_eq!(TokenKind::keyword_from_str("foo"), None);
     }
 
     #[test]
-    fn test_is_sync_point() {
-        assert!(TokenKind::RBrace.is_sync_point());
-        assert!(TokenKind::Blueprint.is_sync_point());
-        assert!(!TokenKind::Plus.is_sync_point());
+    fn test_contextual_keywords() {
+        assert!(TokenKind::is_contextual_keyword("module"));
+        assert!(TokenKind::is_contextual_keyword("blueprint"));
+        assert!(TokenKind::is_contextual_keyword("backend"));
+        assert!(!TokenKind::is_contextual_keyword("when"));
+        assert!(!TokenKind::is_contextual_keyword("foo"));
+    }
+
+    #[test]
+    fn test_top_level_start() {
+        assert!(TokenKind::is_top_level_start_str("blueprint"));
+        assert!(TokenKind::is_top_level_start_str("backend"));
+        assert!(!TokenKind::is_top_level_start_str("module")); // module is not a declaration start
+        assert!(!TokenKind::is_top_level_start_str("import")); // import is not a declaration start
+        assert!(!TokenKind::is_top_level_start_str("when"));
     }
 }

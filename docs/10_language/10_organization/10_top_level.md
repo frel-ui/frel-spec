@@ -173,6 +173,13 @@ blueprint HomeScreen {
 Top-level declarations cannot shadow imported declarations. See [Scope](30_scope.md#shadowing) for
 details.
 
+### Contextual Keywords
+
+The keywords for top-level declarations (`blueprint`, `backend`, `scheme`, etc.) are *contextual* -
+they are only reserved at positions where a top-level declaration can appear. Inside declarations,
+these can be used as field names, parameter names, or other identifiers.
+See [Scope](30_scope.md#contextual-keywords) for details.
+
 ## Order Independence
 
 Top-level declarations can reference each other regardless of declaration order:

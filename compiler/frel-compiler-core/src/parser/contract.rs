@@ -1,6 +1,7 @@
 // Contract parser for Frel
 
 use crate::ast::{FaContract, FaContractMethod};
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse contract declaration
     pub(super) fn parse_contract(&mut self) -> Option<FaContract> {
-        self.expect(TokenKind::Contract)?;
+        self.expect_contextual(contextual::CONTRACT)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
 

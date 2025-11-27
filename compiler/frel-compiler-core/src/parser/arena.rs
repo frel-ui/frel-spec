@@ -1,6 +1,7 @@
 // Arena parser for Frel
 
 use crate::ast::FaArena;
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse arena declaration
     pub(super) fn parse_arena(&mut self) -> Option<FaArena> {
-        self.expect(TokenKind::Arena)?;
+        self.expect_contextual(contextual::ARENA)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
 

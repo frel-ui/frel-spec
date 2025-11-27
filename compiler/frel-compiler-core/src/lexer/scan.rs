@@ -686,13 +686,30 @@ mod tests {
     }
 
     #[test]
-    fn test_keywords() {
+    fn test_contextual_keywords() {
+        // Contextual keywords (top-level declarations) are lexed as Identifier
         assert_eq!(
             lex("blueprint backend scheme"),
             vec![
-                TokenKind::Blueprint,
-                TokenKind::Backend,
-                TokenKind::Scheme,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Eof
+            ]
+        );
+    }
+
+    #[test]
+    fn test_always_reserved_keywords() {
+        // Always-reserved keywords are lexed as their specific token types
+        assert_eq!(
+            lex("when else repeat with include"),
+            vec![
+                TokenKind::When,
+                TokenKind::Else,
+                TokenKind::Repeat,
+                TokenKind::With,
+                TokenKind::Include,
                 TokenKind::Eof
             ]
         );

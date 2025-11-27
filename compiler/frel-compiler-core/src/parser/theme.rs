@@ -1,6 +1,7 @@
 // Theme parser for Frel
 
 use crate::ast::{FaInstructionSet, FaTheme, FaThemeField, FaThemeMember, FaThemeVariant};
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse theme declaration
     pub(super) fn parse_theme(&mut self) -> Option<FaTheme> {
-        self.expect(TokenKind::Theme)?;
+        self.expect_contextual(contextual::THEME)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
 

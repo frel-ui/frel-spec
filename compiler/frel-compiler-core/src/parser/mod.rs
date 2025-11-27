@@ -20,6 +20,7 @@ mod types;
 
 use crate::ast;
 use crate::diagnostic::{Diagnostic, Diagnostics, Label};
+use crate::lexer::token::contextual;
 use crate::lexer::{Lexer, Token, TokenKind};
 use crate::source::Span;
 
@@ -172,6 +173,26 @@ impl<'a> Parser<'a> {
         self.current().text(self.source)
     }
 
+    /// Check if current token is an identifier with specific text
+    fn check_identifier(&self, text: &str) -> bool {
+        self.check(TokenKind::Identifier) && self.current_text() == text
+    }
+
+    /// Expect an identifier with specific text (for contextual keywords)
+    fn expect_contextual(&mut self, keyword: &str) -> Option<Token> {
+        if self.check_identifier(keyword) {
+            Some(self.advance())
+        } else {
+            self.error_expected(&format!("'{}'", keyword));
+            None
+        }
+    }
+
+    /// Check if current token can start a top-level declaration
+    fn at_top_level_start(&self) -> bool {
+        self.check(TokenKind::Identifier) && TokenKind::is_top_level_start_str(self.current_text())
+    }
+
     /// Check if the next token (after current identifier) continues an expression
     /// This distinguishes `item.name` (expression) from `item { }` (fragment creation)
     #[allow(dead_code)]
@@ -256,12 +277,12 @@ impl<'a> Parser<'a> {
     #[allow(dead_code)]
     fn synchronize(&mut self) {
         while !self.at_end() {
-            // Stop at synchronization points
-            if self.current_kind().is_sync_point() {
-                // If it's a closing brace, consume it
-                if self.check(TokenKind::RBrace) {
-                    self.advance();
-                }
+            // Stop at synchronization points: closing braces, top-level keywords, or EOF
+            if self.check(TokenKind::RBrace) {
+                self.advance();
+                return;
+            }
+            if self.at_top_level_start() || self.check(TokenKind::Eof) {
                 return;
             }
             self.advance();
@@ -271,7 +292,7 @@ impl<'a> Parser<'a> {
     /// Synchronize to the next top-level declaration
     fn synchronize_to_top_level(&mut self) {
         while !self.at_end() {
-            if self.current_kind().is_top_level_start() {
+            if self.at_top_level_start() {
                 return;
             }
             self.advance();
@@ -291,7 +312,7 @@ impl<'a> Parser<'a> {
 
         // Parse imports
         let mut imports = Vec::new();
-        while self.check(TokenKind::Import) {
+        while self.check_identifier(contextual::IMPORT) {
             if let Some(import) = self.parse_import() {
                 imports.push(import);
             } else {
@@ -318,7 +339,7 @@ impl<'a> Parser<'a> {
 
     /// Parse module declaration: module foo.bar.baz
     fn parse_module_decl(&mut self) -> Option<String> {
-        self.expect(TokenKind::Module)?;
+        self.expect_contextual(contextual::MODULE)?;
         self.parse_module_path()
     }
 
@@ -337,7 +358,7 @@ impl<'a> Parser<'a> {
 
     /// Parse import statement: import foo.bar.Baz
     fn parse_import(&mut self) -> Option<ast::FaImport> {
-        self.expect(TokenKind::Import)?;
+        self.expect_contextual(contextual::IMPORT)?;
 
         // Parse module path up to the last component
         let mut parts = vec![self.expect_identifier()?];
@@ -355,19 +376,27 @@ impl<'a> Parser<'a> {
 
     /// Parse a top-level declaration
     fn parse_top_level_decl(&mut self) -> Option<ast::FaTopLevelDecl> {
-        match self.current_kind() {
-            TokenKind::Blueprint => self.parse_blueprint().map(ast::FaTopLevelDecl::Blueprint),
-            TokenKind::Backend => self.parse_backend().map(ast::FaTopLevelDecl::Backend),
-            TokenKind::Contract => self.parse_contract().map(ast::FaTopLevelDecl::Contract),
-            TokenKind::Scheme => self.parse_scheme().map(ast::FaTopLevelDecl::Scheme),
-            TokenKind::Enum => self.parse_enum().map(ast::FaTopLevelDecl::Enum),
-            TokenKind::Theme => self.parse_theme().map(ast::FaTopLevelDecl::Theme),
-            TokenKind::Arena => self.parse_arena().map(ast::FaTopLevelDecl::Arena),
-            _ => {
-                self.error_expected("declaration (blueprint, backend, scheme, enum, contract, theme, or arena)");
-                None
+        // Top-level declaration keywords are contextual - they're lexed as Identifier
+        if self.check(TokenKind::Identifier) {
+            match self.current_text() {
+                contextual::BLUEPRINT => {
+                    return self.parse_blueprint().map(ast::FaTopLevelDecl::Blueprint)
+                }
+                contextual::BACKEND => {
+                    return self.parse_backend().map(ast::FaTopLevelDecl::Backend)
+                }
+                contextual::CONTRACT => {
+                    return self.parse_contract().map(ast::FaTopLevelDecl::Contract)
+                }
+                contextual::SCHEME => return self.parse_scheme().map(ast::FaTopLevelDecl::Scheme),
+                contextual::ENUM => return self.parse_enum().map(ast::FaTopLevelDecl::Enum),
+                contextual::THEME => return self.parse_theme().map(ast::FaTopLevelDecl::Theme),
+                contextual::ARENA => return self.parse_arena().map(ast::FaTopLevelDecl::Arena),
+                _ => {}
             }
         }
+        self.error_expected("declaration (blueprint, backend, scheme, enum, contract, theme, or arena)");
+        None
     }
 }
 

@@ -182,6 +182,56 @@ backend AppBackend {
 If you need to reference both an imported declaration and a local one, use distinct names. This
 makes code more explicit and prevents confusion about which declaration is being referenced.
 
+## Contextual Keywords
+
+Some Frel keywords are **contextual** - they are only reserved at positions where they could
+introduce a declaration, and can be used as identifiers elsewhere.
+
+### Top-Level Declaration Keywords
+
+The following keywords are only reserved at the start of a top-level declaration:
+
+- `module`
+- `import`
+- `blueprint`
+- `backend`
+- `contract`
+- `scheme`
+- `enum`
+- `theme`
+- `arena`
+
+Since top-level declarations cannot nest, these keywords can safely be used as field names,
+parameter names, or other identifiers inside declarations:
+
+```frel
+module myapp
+
+theme AppTheme {
+    primaryColor : asset Color
+    padding : u32 = 16
+}
+
+backend AppBackend {
+    theme : ref AppTheme           // ✓ 'theme' is valid as a field name
+    currentPadding : u32 = theme.padding
+}
+```
+
+### Always Reserved Keywords
+
+Keywords that can appear inside declarations are always reserved and cannot be used as identifiers:
+
+- Declaration structure: `include`, `with`, `for`
+- Backend members: `command`, `method`
+- Contract members: `call`
+- Scheme members: `virtual`
+- Theme members: `set`, `variant`
+- Control flow: `when`, `else`, `repeat`, `select`
+- Blueprint structure: `at`, `on`
+- Type modifiers: `ref`, `asset`
+- Literals: `true`, `false`, `none`
+
 ## Relationship to Runtime Closures
 
 Scope determines what *can* be referenced at compile time. At

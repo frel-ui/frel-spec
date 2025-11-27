@@ -1,6 +1,7 @@
 // Enum parser for Frel
 
 use crate::ast::FaEnum;
+use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
 use super::Parser;
@@ -8,7 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse enum declaration
     pub(super) fn parse_enum(&mut self) -> Option<FaEnum> {
-        self.expect(TokenKind::Enum)?;
+        self.expect_contextual(contextual::ENUM)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
 
