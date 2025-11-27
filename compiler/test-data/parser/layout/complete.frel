@@ -1,0 +1,51 @@
+module test.layout.complete
+
+blueprint CardLayout {
+    """layout
+    .. gap { 8 }
+    .. padding { 16 }
+           48         ~1           #
+    48 | !^icon  | <^title   | >^badge  |
+    ~1 |         | <_content | <--      |
+    24 |         | <vfooter  | <--      |
+    """ .. corner { radius: 12 } .. background { color: #ffffff }
+
+    at icon: {
+        image { item.thumbnail }
+    }
+
+    at title: {
+        text { item.name } .. font { size: 16 weight: bold }
+    }
+
+    at badge: {
+        text { item.status }
+    }
+
+    at content: {
+        text { item.description }
+    }
+
+    at footer: {
+        text { item.date }
+    }
+}
+
+blueprint FormRow {
+    """layout
+      100    ~1
+    | >_label | <_field |
+    """
+
+    at label: LabelBlueprint
+    at field: InputBlueprint
+}
+
+blueprint HeaderFooterLayout {
+    """layout
+         ~1
+    48 | header |
+    ~1 | body   |
+    32 | footer |
+    """
+}

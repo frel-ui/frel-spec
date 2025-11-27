@@ -83,6 +83,9 @@ pub trait Visitor {
     /// Visit a postfix item (instruction or event handler)
     fn visit_postfix_item(&mut self, item: &PostfixItem) -> Self::Result;
 
+    /// Visit a layout statement
+    fn visit_layout_stmt(&mut self, layout: &LayoutStmt) -> Self::Result;
+
     /// Visit an instruction expression
     fn visit_instruction_expr(&mut self, instr: &InstructionExpr) -> Self::Result;
 

@@ -1,0 +1,9 @@
+module test.layout.errors.mismatched_columns
+
+// ERROR: Rows have different column counts
+blueprint MismatchedColumns {
+    """layout
+    | a | b | c |
+    | x | y |
+    """
+}

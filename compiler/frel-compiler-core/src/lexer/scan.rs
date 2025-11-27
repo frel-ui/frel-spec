@@ -119,8 +119,14 @@ impl<'a> Lexer<'a> {
             '?' => self.lex_question(),
             '.' => self.lex_dot(),
 
-            // String literals
-            '"' => return self.lex_string(start),
+            // String literals and layout blocks
+            '"' => {
+                // Check for triple-quote layout block: """layout
+                if self.peek_char_nth(1) == Some('"') && self.peek_char_nth(2) == Some('"') {
+                    return self.lex_layout_block(start);
+                }
+                return self.lex_string(start);
+            }
 
             // Color literals (#RRGGBB or #RRGGBBAA)
             '#' => return self.lex_color(start),
@@ -657,6 +663,81 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    // --- Layout blocks ---
+
+    /// Lex a triple-quoted layout block: """layout ... """
+    fn lex_layout_block(&mut self, start: usize) -> Token {
+        // Consume opening """
+        self.advance(); // first "
+        self.advance(); // second "
+        self.advance(); // third "
+
+        // Check for block type identifier (must be "layout")
+        let block_type_start = self.current_pos;
+        while let Some((_, ch)) = self.peek_char() {
+            if ch.is_ascii_alphabetic() || ch == '_' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        let block_type = &self.source[block_type_start..self.current_pos];
+
+        if block_type != "layout" {
+            self.diagnostics.add(
+                Diagnostic::error(
+                    format!(
+                        "unknown triple-quoted block type '{}', expected 'layout'",
+                        block_type
+                    ),
+                    Span::new(block_type_start as u32, self.current_pos as u32),
+                )
+                .with_code("E0107")
+                .with_help("triple-quoted blocks must start with 'layout'"),
+            );
+            // Continue to consume until closing """ for recovery
+        }
+
+        // Scan content until closing """
+        loop {
+            match self.peek_char() {
+                Some((_, '"')) => {
+                    // Check for closing """
+                    if self.peek_char_nth(1) == Some('"') && self.peek_char_nth(2) == Some('"') {
+                        self.advance(); // first "
+                        self.advance(); // second "
+                        self.advance(); // third "
+
+                        return Token::new(
+                            TokenKind::LayoutBlock,
+                            Span::new(start as u32, self.current_pos as u32),
+                        );
+                    }
+                    // Not a closing """, just a regular " in content
+                    self.advance();
+                }
+                Some(_) => {
+                    self.advance();
+                }
+                None => {
+                    // Unclosed block
+                    self.diagnostics.add(
+                        Diagnostic::error(
+                            "unterminated layout block",
+                            Span::new(start as u32, self.current_pos as u32),
+                        )
+                        .with_code("E0108")
+                        .with_help("layout blocks must end with \"\"\""),
+                    );
+                    return Token::new(
+                        TokenKind::Error,
+                        Span::new(start as u32, self.current_pos as u32),
+                    );
+                }
+            }
+        }
+    }
+
     // --- Identifiers and keywords ---
 
     fn lex_identifier(&mut self, start: usize) -> Token {
@@ -892,5 +973,103 @@ mod tests {
         let (tokens, diags) = lexer.tokenize();
         assert!(tokens.iter().any(|t| t.kind == TokenKind::Error));
         assert!(diags.has_errors());
+    }
+
+    #[test]
+    fn test_layout_block_basic() {
+        let tokens = lex(
+            r#""""layout
+| a | b |
+""""#,
+        );
+        assert_eq!(tokens, vec![TokenKind::LayoutBlock, TokenKind::Eof]);
+    }
+
+    #[test]
+    fn test_layout_block_with_sizes() {
+        let tokens = lex(
+            r#""""layout
+     ~0.5    ~0.8
+  24 | slot1 | slot2 |
+ ~1  | slot3 | slot4 |
+""""#,
+        );
+        assert_eq!(tokens, vec![TokenKind::LayoutBlock, TokenKind::Eof]);
+    }
+
+    #[test]
+    fn test_layout_block_with_instructions() {
+        let tokens = lex(
+            r#""""layout
+.. gap { 8 }
+| a | b |
+""""#,
+        );
+        assert_eq!(tokens, vec![TokenKind::LayoutBlock, TokenKind::Eof]);
+    }
+
+    #[test]
+    fn test_layout_block_unclosed() {
+        let lexer = Lexer::new(
+            r#""""layout
+| a | b |"#,
+        );
+        let (tokens, diags) = lexer.tokenize();
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::Error));
+        assert!(diags.has_errors());
+    }
+
+    #[test]
+    fn test_layout_block_unknown_type() {
+        let lexer = Lexer::new(
+            r#""""unknown
+content
+""""#,
+        );
+        let (tokens, diags) = lexer.tokenize();
+        // Should still produce a LayoutBlock token (for error recovery)
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::LayoutBlock));
+        assert!(diags.has_errors());
+    }
+
+    #[test]
+    fn test_layout_block_with_quote_inside() {
+        // A single " inside layout block shouldn't close it
+        let tokens = lex(
+            r#""""layout
+| "quoted" |
+""""#,
+        );
+        assert_eq!(tokens, vec![TokenKind::LayoutBlock, TokenKind::Eof]);
+    }
+
+    #[test]
+    fn test_string_not_affected_by_layout() {
+        // Regular strings should still work
+        assert_eq!(
+            lex(r#""hello""#),
+            vec![TokenKind::StringLiteral, TokenKind::Eof]
+        );
+    }
+
+    #[test]
+    fn test_layout_block_followed_by_tokens() {
+        // Layout block followed by slot bindings
+        let tokens = lex(
+            r#""""layout
+| a | b |
+"""
+at slot1"#,
+        );
+        assert_eq!(
+            tokens,
+            vec![
+                TokenKind::LayoutBlock,
+                TokenKind::Newline,
+                TokenKind::At,
+                TokenKind::Identifier,
+                TokenKind::Eof
+            ]
+        );
     }
 }

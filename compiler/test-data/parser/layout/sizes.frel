@@ -1,0 +1,45 @@
+module test.layout.sizes
+
+blueprint FixedColumnSizes {
+    """layout
+      24    48   100
+    | col1 | col2 | col3 |
+    """
+}
+
+blueprint WeightColumnSizes {
+    """layout
+      ~1     ~2    ~0.5
+    | left | main | side |
+    """
+}
+
+blueprint ContentColumnSizes {
+    """layout
+      #      #     #
+    | a    | b   | c   |
+    """
+}
+
+blueprint MixedColumnSizes {
+    """layout
+      24    ~1     #
+    | icon | text | badge |
+    """
+}
+
+blueprint RowSizes {
+    """layout
+    24 | header |
+    ~1 | body   |
+    48 | footer |
+    """
+}
+
+blueprint RowAndColumnSizes {
+    """layout
+         24     ~1
+    32 | icon | title |
+    ~1 |      | body  |
+    """
+}

@@ -1,0 +1,23 @@
+module test.layout.merge
+
+blueprint MergeRight {
+    """layout
+    | wide   | <--   |
+    | left   | right |
+    """
+}
+
+blueprint MergeDown {
+    """layout
+    | header | tall   |
+    | footer | ^--    |
+    """
+}
+
+blueprint ComplexMerge {
+    """layout
+    | title   | <--   | <--    |
+    | sidebar | main  | <--    |
+    | ^--     | foot1 | foot2  |
+    """
+}

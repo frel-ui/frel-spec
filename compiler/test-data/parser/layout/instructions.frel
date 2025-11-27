@@ -1,0 +1,30 @@
+module test.layout.instructions
+
+blueprint LayoutWithInstruction {
+    """layout
+    .. gap { 8 }
+    | left | right |
+    """
+}
+
+blueprint LayoutWithMultipleInstructions {
+    """layout
+    .. gap { 8 }
+    .. padding { 16 }
+    | header |
+    | body   |
+    """
+}
+
+blueprint LayoutWithPostfix {
+    """layout
+    | content |
+    """ .. background { color: #f0f0f0 }
+}
+
+blueprint LayoutWithInstructionAndPostfix {
+    """layout
+    .. gap { 4 }
+    | a | b |
+    """ .. corner { radius: 8 }
+}

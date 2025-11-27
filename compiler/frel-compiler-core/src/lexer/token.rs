@@ -126,6 +126,9 @@ pub enum TokenKind {
     StringTemplateMiddle,  // } more ${
     StringTemplateEnd,     // } end"
 
+    // Layout block
+    LayoutBlock, // """layout ... """
+
     // Identifiers
     Identifier,
 
@@ -287,6 +290,7 @@ impl TokenKind {
             StringTemplateStart => "string template",
             StringTemplateMiddle => "string template",
             StringTemplateEnd => "string template",
+            LayoutBlock => "layout block",
             Identifier => "identifier",
             Newline => "newline",
             Eof => "end of file",

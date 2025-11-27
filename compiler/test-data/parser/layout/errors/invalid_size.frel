@@ -1,0 +1,9 @@
+module test.layout.errors.invalid_size
+
+// ERROR: Invalid size specification
+blueprint InvalidSize {
+    """layout
+      abc   ~1
+    | left | right |
+    """
+}

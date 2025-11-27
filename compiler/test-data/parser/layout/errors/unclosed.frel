@@ -1,0 +1,7 @@
+module test.layout.errors.unclosed
+
+// ERROR: Unclosed layout block
+blueprint UnclosedLayout {
+    """layout
+    | cell |
+}

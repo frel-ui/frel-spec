@@ -1,0 +1,22 @@
+module test.layout.empty_cells
+
+blueprint EmptyCell {
+    """layout
+    | label |        |
+    """
+}
+
+blueprint MultipleEmptyCells {
+    """layout
+    |        | content |        |
+    | top    |         |        |
+    """
+}
+
+blueprint EmptyWithSizes {
+    """layout
+           ~1       #
+    24 |        | badge  |
+    ~1 | content |        |
+    """
+}

@@ -1,0 +1,8 @@
+module test.layout.errors.invalid_modifier
+
+// ERROR: Invalid alignment modifier
+blueprint InvalidModifier {
+    """layout
+    | @cell |
+    """
+}

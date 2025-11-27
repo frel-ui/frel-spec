@@ -1,0 +1,31 @@
+module test.layout.modifiers
+
+blueprint HorizontalAlignment {
+    """layout
+    | <left | !center | >right |
+    """
+}
+
+blueprint VerticalAlignment {
+    """layout
+    | ^top      |
+    | =center   |
+    | _baseline |
+    | vbottom   |
+    """
+}
+
+blueprint CombinedAlignment {
+    """layout
+    | <^topleft   | !^topcenter   | >^topright   |
+    | <=midleft   | !=midcenter   | >=midright   |
+    | <_baseleft  | !_basecenter  | >_baseright  |
+    | <vbotleft   | !vbotcenter   | >vbotright   |
+    """
+}
+
+blueprint DefaultAlignment {
+    """layout
+    | cell |
+    """
+}

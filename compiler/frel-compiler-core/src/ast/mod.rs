@@ -60,6 +60,10 @@ pub enum BlueprintStmt {
     Control(ControlStmt),
     Instruction(InstructionExpr),
     EventHandler(EventHandler),
+    /// Layout grid statement
+    Layout(LayoutStmt),
+    /// Slot binding (at slot: { ... }) - used with layout statements
+    SlotBinding(SlotBinding),
     /// A standalone expression as content (e.g., "Hello" in text { "Hello" })
     ContentExpr(Expr),
 }
@@ -118,6 +122,86 @@ pub enum BlueprintValue {
         body: Vec<BlueprintStmt>,
     },
     Reference(String),
+}
+
+// ============================================================================
+// Layout Types
+// ============================================================================
+
+/// Size specification for rows/columns in a layout grid
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LayoutSize {
+    /// Fixed size in DIP: 24, 48, etc.
+    Fixed(i32),
+    /// Weight-based sizing: ~0.5, ~1, etc.
+    Weight(f64),
+    /// Content-based sizing: #
+    Content,
+}
+
+/// Horizontal alignment in a layout cell
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HAlign {
+    #[default]
+    Left,   // < (default)
+    Center, // !
+    Right,  // >
+}
+
+/// Vertical alignment in a layout cell
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VAlign {
+    Top,      // ^
+    Center,   // =
+    #[default]
+    Baseline, // _ (default)
+    Bottom,   // v
+}
+
+/// Merge direction for cell spans
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MergeDirection {
+    Left,  // <--
+    Right, // -->
+    Up,    // ^--
+    Down,  // v--
+}
+
+/// A cell in the layout grid
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayoutCell {
+    /// Slot name (None for empty cells or merge cells)
+    pub slot_name: Option<String>,
+    /// Horizontal alignment
+    pub h_align: HAlign,
+    /// Vertical alignment
+    pub v_align: VAlign,
+    /// Merge direction (if this cell merges with another)
+    pub merge: Option<MergeDirection>,
+}
+
+/// A row in the layout grid
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayoutRow {
+    /// Row size (None = default to Content)
+    pub size: Option<LayoutSize>,
+    /// Cells in this row
+    pub cells: Vec<LayoutCell>,
+}
+
+/// Layout statement - the complete layout grid definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayoutStmt {
+    /// Instructions inside the layout block
+    pub instructions: Vec<InstructionExpr>,
+    /// Column sizes (empty = all default to Content)
+    pub column_sizes: Vec<LayoutSize>,
+    /// Grid rows with their sizes and cells
+    pub rows: Vec<LayoutRow>,
 }
 
 /// Control statement

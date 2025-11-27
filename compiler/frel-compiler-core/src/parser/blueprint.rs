@@ -15,6 +15,7 @@ use crate::ast::{
 use crate::lexer::token::contextual;
 use crate::lexer::TokenKind;
 
+use super::layout::LayoutParser;
 use super::Parser;
 
 // Note: Instructions are now distinguished syntactically by the `..` prefix,
@@ -115,6 +116,9 @@ impl<'a> Parser<'a> {
                 }
             }
 
+            // Layout block: """layout ... """
+            TokenKind::LayoutBlock => self.parse_layout_stmt(),
+
             // Content expressions: string literals, numbers, colors, etc.
             TokenKind::StringLiteral
             | TokenKind::StringTemplateStart
@@ -151,14 +155,9 @@ impl<'a> Parser<'a> {
                 Some(BlueprintStmt::ContentExpr(expr))
             }
 
-            // Slot binding in default content context - error
-            TokenKind::At => {
-                self.error_expected_with_suggestion(
-                    "blueprint statement",
-                    "cannot mix default content with slot bindings; use `at content: { ... }` for the main content when using named slots",
-                );
-                None
-            }
+            // Slot binding: at slot: { ... }
+            // These are used with layout statements to bind content to named slots
+            TokenKind::At => self.parse_slot_binding_stmt(),
 
             _ => {
                 self.error_expected("blueprint statement");
@@ -657,6 +656,59 @@ impl<'a> Parser<'a> {
             }
         }
     }
+
+    /// Parse a slot binding statement: at slot: { ... }
+    fn parse_slot_binding_stmt(&mut self) -> Option<BlueprintStmt> {
+        self.expect(TokenKind::At)?;
+        let slot_name = self.expect_identifier()?;
+        self.expect(TokenKind::Colon)?;
+        let blueprint = self.parse_blueprint_value()?;
+        Some(BlueprintStmt::SlotBinding(SlotBinding {
+            slot_name,
+            blueprint,
+        }))
+    }
+
+    /// Parse a layout statement: """layout ... """
+    fn parse_layout_stmt(&mut self) -> Option<BlueprintStmt> {
+        let token = self.advance();
+        let full_text = token.text(self.source);
+
+        // Extract content between """layout and """
+        // The token text is: """layout\n...\n"""
+        let content = extract_layout_content(full_text);
+
+        // Calculate base offset for the content (after """layout\n)
+        let prefix_len = "\"\"\"layout".len();
+        // Find the first newline after """layout
+        let content_start_offset = full_text[prefix_len..]
+            .find('\n')
+            .map(|i| prefix_len + i + 1)
+            .unwrap_or(prefix_len);
+        let base_offset = token.span.start + content_start_offset as u32;
+
+        // Parse the layout content
+        let mut layout_parser = LayoutParser::new(content, base_offset, &mut self.diagnostics);
+        let grid = layout_parser.parse()?;
+
+        Some(BlueprintStmt::Layout(grid))
+    }
+}
+
+/// Extract layout content from the token text (strip """layout and """)
+fn extract_layout_content(text: &str) -> &str {
+    // Skip """layout prefix
+    let prefix = "\"\"\"layout";
+    let after_prefix = text.strip_prefix(prefix).unwrap_or(text);
+
+    // Skip leading newline if present
+    let after_newline = after_prefix.strip_prefix('\n').unwrap_or(after_prefix);
+
+    // Strip closing """
+    let before_suffix = after_newline.strip_suffix("\"\"\"").unwrap_or(after_newline);
+
+    // Strip trailing newline before """ if present
+    before_suffix.strip_suffix('\n').unwrap_or(before_suffix)
 }
 
 #[cfg(test)]
@@ -773,6 +825,69 @@ blueprint App {
 }
 "#,
         );
+        assert!(!result.diagnostics.has_errors());
+    }
+
+    #[test]
+    fn test_blueprint_with_layout() {
+        let result = parse(
+            r#"
+module test
+
+blueprint Grid {
+    """layout
+    | slot1 | slot2 |
+    | slot3 | slot4 |
+    """
+    at slot1: { text { "One" } }
+    at slot2: { text { "Two" } }
+}
+"#,
+        );
+        for diag in result.diagnostics.iter() {
+            eprintln!("Error: {:?}", diag);
+        }
+        assert!(!result.diagnostics.has_errors());
+    }
+
+    #[test]
+    fn test_blueprint_with_layout_sizes() {
+        let result = parse(
+            r#"
+module test
+
+blueprint Sized {
+    """layout
+         ~0.5    ~0.8
+      24 | slot1 | slot2 |
+     ~1  | slot3 | slot4 |
+    """
+}
+"#,
+        );
+        for diag in result.diagnostics.iter() {
+            eprintln!("Error: {:?}", diag);
+        }
+        assert!(!result.diagnostics.has_errors());
+    }
+
+    #[test]
+    fn test_blueprint_with_layout_instructions() {
+        let result = parse(
+            r#"
+module test
+
+blueprint WithInstructions {
+    """layout
+    .. gap { 8 }
+    | a | b |
+    """
+}
+"#,
+        );
+        for diag in result.diagnostics.iter() {
+            eprintln!("Error: {:?}", diag);
+        }
         assert!(!result.diagnostics.has_errors());
     }
 }

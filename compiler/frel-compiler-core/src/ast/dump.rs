@@ -171,6 +171,58 @@ impl DumpVisitor {
             UnaryOp::Pos => "+",
         }
     }
+
+    fn format_layout_size(&self, size: &LayoutSize) -> String {
+        match size {
+            LayoutSize::Fixed(n) => n.to_string(),
+            LayoutSize::Weight(w) => format!("~{}", w),
+            LayoutSize::Content => "#".to_string(),
+        }
+    }
+
+    fn format_layout_cell(&self, cell: &LayoutCell) -> String {
+        let mut parts = Vec::new();
+
+        // Merge takes precedence
+        if let Some(merge) = &cell.merge {
+            return match merge {
+                MergeDirection::Left => "<--".to_string(),
+                MergeDirection::Right => "-->".to_string(),
+                MergeDirection::Up => "^--".to_string(),
+                MergeDirection::Down => "v--".to_string(),
+            };
+        }
+
+        // Horizontal alignment (if not default)
+        if cell.h_align != HAlign::Left {
+            parts.push(match cell.h_align {
+                HAlign::Left => "<",
+                HAlign::Center => "!",
+                HAlign::Right => ">",
+            });
+        }
+
+        // Vertical alignment (if not default)
+        if cell.v_align != VAlign::Baseline {
+            parts.push(match cell.v_align {
+                VAlign::Top => "^",
+                VAlign::Center => "=",
+                VAlign::Baseline => "_",
+                VAlign::Bottom => "v",
+            });
+        }
+
+        // Slot name
+        if let Some(name) = &cell.slot_name {
+            parts.push(name.as_str());
+        }
+
+        if parts.is_empty() {
+            " ".to_string()
+        } else {
+            parts.join(" ")
+        }
+    }
 }
 
 impl Default for DumpVisitor {
@@ -337,10 +389,49 @@ impl Visitor for DumpVisitor {
             BlueprintStmt::EventHandler(handler) => {
                 self.visit_event_handler(handler);
             }
+            BlueprintStmt::Layout(layout) => {
+                self.visit_layout_stmt(layout);
+            }
+            BlueprintStmt::SlotBinding(binding) => {
+                self.visit_slot_binding(binding);
+            }
             BlueprintStmt::ContentExpr(expr) => {
                 self.write(&format!("CONTENT {}", self.expr_inline(expr)));
             }
         }
+    }
+
+    fn visit_layout_stmt(&mut self, layout: &LayoutStmt) {
+        self.write("LAYOUT");
+        self.indent();
+
+        // Instructions
+        for instr in &layout.instructions {
+            self.visit_instruction_expr(instr);
+        }
+
+        // Column sizes
+        if !layout.column_sizes.is_empty() {
+            let sizes: Vec<_> = layout
+                .column_sizes
+                .iter()
+                .map(|s| self.format_layout_size(s))
+                .collect();
+            self.write(&format!("COLUMN_SIZES {}", sizes.join(" ")));
+        }
+
+        // Rows
+        for row in &layout.rows {
+            let size = row
+                .size
+                .as_ref()
+                .map(|s| format!("{} ", self.format_layout_size(s)))
+                .unwrap_or_default();
+            let cells: Vec<_> = row.cells.iter().map(|c| self.format_layout_cell(c)).collect();
+            self.write(&format!("ROW {}| {} |", size, cells.join(" | ")));
+        }
+
+        self.dedent();
     }
 
     fn visit_local_decl(&mut self, decl: &LocalDecl) {

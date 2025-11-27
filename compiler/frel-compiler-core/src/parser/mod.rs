@@ -14,6 +14,7 @@ mod common;
 mod contract;
 mod enum_decl;
 mod expr;
+pub mod layout;
 mod scheme;
 mod theme;
 mod types;

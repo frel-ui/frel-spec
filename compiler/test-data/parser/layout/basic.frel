@@ -1,0 +1,20 @@
+module test.layout.basic
+
+blueprint BasicLayout {
+    """layout
+    | label | value |
+    """
+}
+
+blueprint TwoRows {
+    """layout
+    | header |
+    | body   |
+    """
+}
+
+blueprint ThreeColumns {
+    """layout
+    | left | center | right |
+    """
+}
