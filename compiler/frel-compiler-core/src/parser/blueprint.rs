@@ -364,6 +364,38 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Check if there's an arrow after an identifier with optional type annotation
+    /// Used for event handlers: { param -> } or { param: Type -> }
+    fn has_arrow_after_typed_param(&self) -> bool {
+        let mut offset = 1; // Start after current identifier
+
+        // Check for optional `: Type` after identifier
+        if let Some(t) = self.peek_n(offset) {
+            if t.kind == TokenKind::Colon {
+                // Skip the colon and type - we just need to find the arrow eventually
+                offset += 1;
+                // Skip tokens until we find arrow or something that indicates it's not a param
+                loop {
+                    match self.peek_n(offset) {
+                        Some(t) if t.kind == TokenKind::Arrow => return true,
+                        Some(t)
+                            if t.kind == TokenKind::RBrace
+                                || t.kind == TokenKind::LBrace
+                                || t.kind == TokenKind::Eq =>
+                        {
+                            return false
+                        }
+                        None => return false,
+                        _ => offset += 1,
+                    }
+                }
+            }
+        }
+
+        // No colon, check for direct arrow
+        matches!(self.peek_n(offset), Some(t) if t.kind == TokenKind::Arrow)
+    }
+
     /// Parse postfix items (instructions or event handlers): .. instr1 .. on_click { ... }
     fn parse_postfix_items(&mut self) -> Option<Vec<PostfixItem>> {
         let mut items = Vec::new();
@@ -382,11 +414,25 @@ impl<'a> Parser<'a> {
         Some(items)
     }
 
-    /// Parse event handler in postfix position: on_click { ... }
+    /// Parse event handler in postfix position: on_click { [param ->] body }
     fn parse_postfix_event_handler(&mut self) -> Option<EventHandler> {
         let event_name = self.expect_identifier()?;
 
         self.expect(TokenKind::LBrace)?;
+
+        // Optional parameter inside braces: { param -> body } or { param: Type -> body }
+        let param = if self.check(TokenKind::Identifier) && self.has_arrow_after_typed_param() {
+            let name = self.expect_identifier()?;
+            let type_expr = if self.consume(TokenKind::Colon).is_some() {
+                Some(self.parse_type_expr()?)
+            } else {
+                None
+            };
+            self.expect(TokenKind::Arrow)?;
+            Some(EventParam { name, type_expr })
+        } else {
+            None
+        };
 
         let mut body = Vec::new();
         while !self.check(TokenKind::RBrace) && !self.at_end() {
@@ -401,7 +447,7 @@ impl<'a> Parser<'a> {
 
         Some(EventHandler {
             event_name,
-            param: None, // Postfix event handlers don't have params
+            param,
             body,
         })
     }

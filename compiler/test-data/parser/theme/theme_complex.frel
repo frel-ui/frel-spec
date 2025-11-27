@@ -35,7 +35,7 @@ theme AppTheme {
         container
         background { color: secondaryColor }
         corner_radius { cornerRadius }
-        border { color: primaryColor borderWidth }
+        border { color: primaryColor width: borderWidth }
     }
 
     set card {

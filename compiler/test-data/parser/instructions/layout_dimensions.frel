@@ -9,7 +9,7 @@ blueprint LayoutDimensions {
         box { } .. width { expand }
         box { } .. height { container }
         box { } .. width { content }
-        box { } .. width { 100 min: 50 max: 200 }
+        box { } .. width { value: 100 min: 50 max: 200 }
         box { } .. fit_content
         box { } .. fill_width
         box { } .. fill_height
