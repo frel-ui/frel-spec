@@ -1,0 +1,5 @@
+module test
+
+theme BadTheme {
+    gradients : asset List<Color>
+}

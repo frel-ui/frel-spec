@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html>
+<head><title>Not Frel</title></head>
+<body>
+  <h1>This should not parse as Frel</h1>
+  <script>console.log('JS inside HTML');</script>
+</body>
+</html>

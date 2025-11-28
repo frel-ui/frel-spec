@@ -1,0 +1,9 @@
+module test
+
+scheme User {
+    name: String
+}
+
+theme BadTheme {
+    primary : asset User
+}
