@@ -1,0 +1,7 @@
+# This is actually Python code, not Frel
+class Example:
+    def greet(self):
+        print("Hello from Python")
+
+if __name__ == "__main__":
+    Example().greet()

@@ -1,0 +1,11 @@
+module test
+
+blueprint renderer(title : String) {
+    text { title }
+}
+
+backend DraftBackend {
+    temp_text : draft String
+    cache     : draft List<String>
+    template  : draft Blueprint<String>
+}
