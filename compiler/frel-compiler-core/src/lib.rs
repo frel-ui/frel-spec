@@ -17,7 +17,10 @@ pub mod lexer;
 pub mod parser;
 pub mod source;
 
-pub use diagnostic::{Diagnostic, Diagnostics, Severity};
+pub use diagnostic::{
+    Category, Diagnostic, DiagnosticSink, DiagnosticTag, Diagnostics, ErrorCode, Label,
+    RelatedInfo, Severity, Suggestion,
+};
 pub use error::{Error, Result};
 pub use lexer::{Token, TokenKind};
 pub use parser::ParseResult;

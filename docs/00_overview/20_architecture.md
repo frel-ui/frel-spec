@@ -146,9 +146,7 @@ One adapter is written per platform (browser, iOS, Android, desktop, etc.).
 ```
 .frel source
     ↓
-PEST Parser (frel.pest)
-    ↓
-Parse Tree
+Parser
     ↓
 AST Builder
     ↓
