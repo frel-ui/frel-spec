@@ -85,6 +85,15 @@ impl<'a> Parser<'a> {
         self.current().span
     }
 
+    /// Get the previous token's span (useful for calculating spans after parsing)
+    fn previous_span(&self) -> Span {
+        if self.cursor > 0 {
+            self.tokens[self.cursor - 1].span
+        } else {
+            Span::default()
+        }
+    }
+
     /// Peek at the next token (after current)
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.cursor + 1)
@@ -333,6 +342,7 @@ impl<'a> Parser<'a> {
 
         Some(ast::File {
             module,
+            source_path: None,
             imports,
             declarations,
         })
@@ -404,6 +414,15 @@ impl<'a> Parser<'a> {
 /// Parse Frel source code
 pub fn parse(source: &str) -> ParseResult {
     Parser::new(source).parse()
+}
+
+/// Parse source code with a known file path (for better diagnostics)
+pub fn parse_with_path(source: &str, path: &str) -> ParseResult {
+    let mut result = Parser::new(source).parse();
+    if let Some(ref mut file) = result.file {
+        file.source_path = Some(path.to_string());
+    }
+    result
 }
 
 #[cfg(test)]

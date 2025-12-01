@@ -15,6 +15,7 @@ pub mod diagnostic;
 pub mod error;
 pub mod lexer;
 pub mod parser;
+pub mod semantic;
 pub mod source;
 
 pub use diagnostic::{
@@ -24,6 +25,11 @@ pub use diagnostic::{
 pub use error::{Error, Result};
 pub use lexer::{Token, TokenKind};
 pub use parser::ParseResult;
+pub use semantic::{
+    analyze, dump_semantic, typecheck, LookupResult, ResolveResult, ResolvedType, Scope,
+    ScopeGraph, ScopeId, ScopeKind, SemanticResult, Symbol, SymbolId, SymbolKind, SymbolTable,
+    Type, TypeCheckResult, TypeChecker,
+};
 pub use source::{LineIndex, Span, Spanned};
 
 /// Compiler version
@@ -34,11 +40,22 @@ pub fn parse_file(source: &str) -> ParseResult {
     parser::parse(source)
 }
 
+/// Parse a Frel source file with a known file path (for better diagnostics)
+pub fn parse_file_with_path(source: &str, path: &str) -> ParseResult {
+    parser::parse_with_path(source, path)
+}
+
 /// Compile a Frel source file to IR
 /// Returns the AST and any diagnostics (errors, warnings)
 pub fn compile(source: &str) -> ParseResult {
     // TODO: Add semantic analysis and type checking
     parse_file(source)
+}
+
+/// Compile a Frel source file with a known file path
+pub fn compile_with_path(source: &str, path: &str) -> ParseResult {
+    // TODO: Add semantic analysis and type checking
+    parse_file_with_path(source, path)
 }
 
 #[cfg(test)]

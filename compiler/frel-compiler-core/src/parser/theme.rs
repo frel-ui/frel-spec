@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse theme declaration
     pub(super) fn parse_theme(&mut self) -> Option<Theme> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::THEME)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -22,9 +23,11 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
-        Some(Theme { name, members })
+        let span = crate::source::Span::new(start, end_span.end);
+        Some(Theme { name, members, span })
     }
 
     /// Parse a theme member
@@ -75,6 +78,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Identifier => {
                 // Field: name : [asset] type [= init]
+                let start = self.current_span().start;
                 let name = self.expect_identifier()?;
                 self.expect(TokenKind::Colon)?;
 
@@ -87,11 +91,13 @@ impl<'a> Parser<'a> {
                     None
                 };
 
+                let span = crate::source::Span::new(start, self.previous_span().end);
                 Some(ThemeMember::Field(ThemeField {
                     name,
                     is_asset,
                     type_expr,
                     init,
+                    span,
                 }))
             }
             _ => {

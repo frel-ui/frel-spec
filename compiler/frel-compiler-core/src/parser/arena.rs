@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse arena declaration
     pub(super) fn parse_arena(&mut self) -> Option<Arena> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::ARENA)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -22,12 +23,15 @@ impl<'a> Parser<'a> {
             None
         };
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
+        let span = crate::source::Span::new(start, end_span.end);
         Some(Arena {
             name,
             scheme_name,
             contract,
+            span,
         })
     }
 }

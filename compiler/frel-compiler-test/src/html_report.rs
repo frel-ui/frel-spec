@@ -1,13 +1,14 @@
 //! HTML report generator for Frel compiler tests
 //!
 //! Generates a static HTML file showing all test cases with their
-//! source code, AST dump, and JSON output (or errors for failing tests).
+//! source code, AST dump, and semantic analysis dump (or errors for failing tests).
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
 use frel_compiler_core::ast::DumpVisitor;
+use frel_compiler_core::{analyze, dump_semantic};
 
 /// Check if a test file is in an `errors` directory (direct parent only)
 fn expects_error(path: &Path) -> bool {
@@ -30,7 +31,7 @@ pub enum TestReportResult {
     /// Locked success test (has .ast.json)
     Success {
         dump: String,
-        json: String,
+        semantic: String,
     },
     /// Locked error test (has .error.txt)
     Error {
@@ -38,10 +39,10 @@ pub enum TestReportResult {
     },
     /// WIP success test - expects parse to succeed
     WipSuccess {
-        /// Whether the test passed (parse succeeded)
+        /// Whether the test passed (parse and semantic analysis succeeded)
         passed: bool,
         dump: Option<String>,
-        json: Option<String>,
+        semantic: Option<String>,
         error: Option<String>,
     },
     /// WIP error test - expects parse to fail
@@ -49,7 +50,7 @@ pub enum TestReportResult {
         /// Whether the test passed (parse failed)
         passed: bool,
         dump: Option<String>,
-        json: Option<String>,
+        semantic: Option<String>,
         error: Option<String>,
     },
 }
@@ -96,28 +97,30 @@ impl HtmlReportGenerator {
 
             let result = if ast_path.exists() {
                 // Locked success test
-                let json = fs::read_to_string(&ast_path).unwrap_or_default();
                 let dump = if dump_path.exists() {
                     fs::read_to_string(&dump_path).unwrap_or_default()
                 } else {
                     // Generate dump from parsing
                     self.generate_dump(&source)
                 };
-                TestReportResult::Success { dump, json }
+                // Generate semantic dump
+                let semantic = self.generate_semantic_dump(&source);
+                TestReportResult::Success { dump, semantic }
             } else if error_path.exists() {
                 // Locked error test
                 let error = fs::read_to_string(&error_path).unwrap_or_default();
                 TestReportResult::Error { error }
             } else if expects_error(&source_path) {
                 // WIP error test - expects parse to fail
-                let (dump, json, error) = self.parse_wip(&source);
+                let (dump, semantic, error) = self.parse_wip(&source, &source_path);
                 let passed = error.is_some(); // Test passes if parse failed
-                TestReportResult::WipError { passed, dump, json, error }
+                TestReportResult::WipError { passed, dump, semantic, error }
             } else {
                 // WIP success test - expects parse to succeed
-                let (dump, json, error) = self.parse_wip(&source);
-                let passed = error.is_none(); // Test passes if parse succeeded
-                TestReportResult::WipSuccess { passed, dump, json, error }
+                let (dump, semantic, error) = self.parse_wip(&source, &source_path);
+                // Test passes if parse and semantic analysis both succeeded
+                let passed = error.is_none();
+                TestReportResult::WipSuccess { passed, dump, semantic, error }
             };
 
             self.entries.push(TestReportEntry {
@@ -142,25 +145,48 @@ impl HtmlReportGenerator {
         }
     }
 
-    fn parse_wip(&self, source: &str) -> (Option<String>, Option<String>, Option<String>) {
+    fn generate_semantic_dump(&self, source: &str) -> String {
+        let result = frel_compiler_core::parse_file(source);
+        if let Some(ast) = result.file {
+            let semantic_result = analyze(&ast);
+            dump_semantic(&semantic_result)
+        } else {
+            String::new()
+        }
+    }
+
+    fn parse_wip(
+        &self,
+        source: &str,
+        source_path: &Path,
+    ) -> (Option<String>, Option<String>, Option<String>) {
         let result = frel_compiler_core::parse_file(source);
 
         if result.diagnostics.has_errors() {
-            let error = self.format_diagnostics(&result.diagnostics, source);
+            let error = self.format_diagnostics(&result.diagnostics, source, source_path);
             (None, None, Some(error))
         } else if let Some(ast) = result.file {
             let dump = DumpVisitor::dump(&ast);
-            let json = serde_json::to_string_pretty(&ast).ok();
-            (Some(dump), json, None)
+            // Run semantic analysis
+            let semantic_result = analyze(&ast);
+            if semantic_result.diagnostics.has_errors() {
+                let error =
+                    self.format_semantic_diagnostics(&semantic_result.diagnostics, source, source_path);
+                (Some(dump), None, Some(error))
+            } else {
+                let semantic = dump_semantic(&semantic_result);
+                (Some(dump), Some(semantic), None)
+            }
         } else {
             (None, None, Some("Parse returned no AST and no errors".to_string()))
         }
     }
 
-    fn format_diagnostics(
+    fn format_semantic_diagnostics(
         &self,
         diagnostics: &frel_compiler_core::Diagnostics,
         source: &str,
+        source_path: &Path,
     ) -> String {
         let line_index = frel_compiler_core::LineIndex::new(source);
         let mut output = String::new();
@@ -168,11 +194,37 @@ impl HtmlReportGenerator {
         for diag in diagnostics.iter() {
             let loc = line_index.line_col(diag.span.start);
             output.push_str(&format!(
-                "error[{}]: {}\n",
+                "semantic error[{}]: {} at {}:{}:{}\n",
                 diag.code.as_deref().unwrap_or("E????"),
-                diag.message
+                diag.message,
+                source_path.display(),
+                loc.line,
+                loc.col
             ));
-            output.push_str(&format!(" --> {}:{}\n", loc.line, loc.col));
+        }
+
+        output
+    }
+
+    fn format_diagnostics(
+        &self,
+        diagnostics: &frel_compiler_core::Diagnostics,
+        source: &str,
+        source_path: &Path,
+    ) -> String {
+        let line_index = frel_compiler_core::LineIndex::new(source);
+        let mut output = String::new();
+
+        for diag in diagnostics.iter() {
+            let loc = line_index.line_col(diag.span.start);
+            output.push_str(&format!(
+                "error[{}]: {} at {}:{}:{}\n",
+                diag.code.as_deref().unwrap_or("E????"),
+                diag.message,
+                source_path.display(),
+                loc.line,
+                loc.col
+            ));
         }
 
         output
@@ -250,9 +302,6 @@ impl HtmlReportGenerator {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frel Compiler Test Results</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f5;
@@ -648,59 +697,65 @@ impl HtmlReportGenerator {
 
         // Content based on result type
         match &entry.result {
-            TestReportResult::Success { dump, json } => {
+            TestReportResult::Success { dump, semantic } => {
                 let dump_lines = dump.lines().count();
-                let row_lines = source_lines.max(dump_lines);
+                let semantic_lines = semantic.lines().count();
+                let row_lines = source_lines.max(dump_lines).max(semantic_lines);
 
                 html.push_str("<div class=\"test-content\">\n");
 
-                // Source panel - full height
+                // Source panel
                 html.push_str(&self.generate_panel("Source", &entry.source, "frel", false, row_lines));
 
-                // Dump panel - full height
-                html.push_str(&self.generate_panel("Dump", dump, "dump", false, row_lines));
+                // Dump panel
+                html.push_str(&self.generate_panel("AST Dump", dump, "dump", false, row_lines));
 
-                // JSON panel (expandable) - same height as others
-                html.push_str(&self.generate_panel("JSON", json, "json", true, row_lines));
+                // Semantic panel (not expandable)
+                html.push_str(&self.generate_panel("Semantic", semantic, "semantic", false, row_lines));
 
                 html.push_str("</div>\n");
             }
             TestReportResult::Error { error } => {
-                // For error tests, size by source only
-                let row_lines = source_lines;
+                // For error tests, size by max of source and error
+                let error_lines = error.lines().count();
+                let row_lines = source_lines.max(error_lines);
 
                 html.push_str("<div class=\"test-content two-cols\">\n");
 
                 // Source panel
                 html.push_str(&self.generate_panel("Source", &entry.source, "frel", false, row_lines));
 
-                // Error panel (expandable)
-                html.push_str(&self.generate_panel("Error", error, "error", true, row_lines));
+                // Error panel (not expandable)
+                html.push_str(&self.generate_panel("Error", error, "error", false, row_lines));
 
                 html.push_str("</div>\n");
             }
-            TestReportResult::WipSuccess { dump, json, error, .. }
-            | TestReportResult::WipError { dump, json, error, .. } => {
+            TestReportResult::WipSuccess { dump, semantic, error, .. }
+            | TestReportResult::WipError { dump, semantic, error, .. } => {
                 if let Some(error_msg) = error {
-                    let row_lines = source_lines;
+                    // For error cases, size by max of source and error
+                    let error_lines = error_msg.lines().count();
+                    let row_lines = source_lines.max(error_lines);
 
                     html.push_str("<div class=\"test-content two-cols\">\n");
                     html.push_str(&self.generate_panel("Source", &entry.source, "frel", false, row_lines));
-                    html.push_str(&self.generate_panel("Error", error_msg, "error", true, row_lines));
+                    html.push_str(&self.generate_panel("Error", error_msg, "error", false, row_lines));
                     html.push_str("</div>\n");
                 } else {
                     let dump_str = dump.as_deref().unwrap_or("");
+                    let semantic_str = semantic.as_deref().unwrap_or("");
                     let dump_lines = dump_str.lines().count();
-                    let row_lines = source_lines.max(dump_lines);
+                    let semantic_lines = semantic_str.lines().count();
+                    let row_lines = source_lines.max(dump_lines).max(semantic_lines);
 
                     html.push_str("<div class=\"test-content\">\n");
                     html.push_str(&self.generate_panel("Source", &entry.source, "frel", false, row_lines));
-                    html.push_str(&self.generate_panel("Dump", dump_str, "dump", false, row_lines));
+                    html.push_str(&self.generate_panel("AST Dump", dump_str, "dump", false, row_lines));
                     html.push_str(&self.generate_panel(
-                        "JSON",
-                        json.as_deref().unwrap_or(""),
-                        "json",
-                        true,
+                        "Semantic",
+                        semantic_str,
+                        "semantic",
+                        false,
                         row_lines,
                     ));
                     html.push_str("</div>\n");
@@ -772,13 +827,7 @@ impl HtmlReportGenerator {
         match lang {
             "frel" => highlight_frel(code),
             "dump" => highlight_dump(code),
-            "json" => {
-                // Use class for highlight.js to process
-                format!(
-                    "<code class=\"language-json\">{}</code>",
-                    html_escape(code)
-                )
-            }
+            "semantic" => highlight_semantic(code),
             "error" => format!(
                 "<code style=\"color: var(--error-color);\">{}</code>",
                 html_escape(code)
@@ -792,11 +841,6 @@ impl HtmlReportGenerator {
 <div id="backdrop" class="overlay-backdrop" onclick="closeExpandedPanel()"></div>
 
 <script>
-    // Initialize highlight.js for JSON
-    document.querySelectorAll('code.language-json').forEach((el) => {
-        hljs.highlightElement(el);
-    });
-
     let currentExpandedPanel = null;
     let originalParent = null;
     let originalNextSibling = null;
@@ -830,11 +874,6 @@ impl HtmlReportGenerator {
         // Show backdrop
         document.getElementById('backdrop').classList.add('active');
         document.body.style.overflow = 'hidden';
-
-        // Re-apply highlight.js if needed
-        panel.querySelectorAll('code.language-json').forEach((el) => {
-            hljs.highlightElement(el);
-        });
     }
 
     function closeExpandedPanel() {
@@ -1085,6 +1124,105 @@ fn highlight_dump(code: &str) -> String {
                 } else {
                     result.push_str(&html_escape(word));
                 }
+            } else {
+                result.push_str(&html_escape(word));
+            }
+        }
+
+        result.push('\n');
+    }
+
+    result
+}
+
+/// Syntax highlighting for semantic analysis dump output
+fn highlight_semantic(code: &str) -> String {
+    // Section headers
+    let section_keywords = [
+        "SEMANTIC_RESULT", "SCOPES", "SYMBOLS", "TYPE_RESOLUTIONS",
+        "EXPR_TYPES", "DIAGNOSTICS",
+    ];
+
+    // Symbol/scope kinds
+    let kind_keywords = [
+        "SCOPE", "BACKEND", "BLUEPRINT", "SCHEME", "CONTRACT", "THEME",
+        "ENUM", "ENUM_VARIANT", "FIELD", "VIRTUAL_FIELD", "METHOD",
+        "COMMAND", "QUERY", "PARAMETER", "LOCAL_VAR", "IMPORT", "IN",
+    ];
+
+    // Attribute keywords
+    let attr_keywords = ["kind", "name", "span", "body_scope", "scopes", "symbols", "errors"];
+
+    let mut result = String::new();
+
+    for line in code.lines() {
+        let trimmed = line.trim_start();
+        let indent = &line[..line.len() - trimmed.len()];
+        result.push_str(indent);
+
+        let mut words = trimmed.split_whitespace().peekable();
+        let mut first = true;
+
+        while let Some(word) = words.next() {
+            if !first {
+                result.push(' ');
+            }
+            first = false;
+
+            if section_keywords.contains(&word) {
+                result.push_str(&format!(
+                    "<span class=\"dump-node\">{}</span>",
+                    html_escape(word)
+                ));
+            } else if kind_keywords.contains(&word) {
+                result.push_str(&format!(
+                    "<span class=\"dump-attr\">{}</span>",
+                    html_escape(word)
+                ));
+            } else if word.starts_with('#') {
+                // Symbol/scope IDs like #0, #1
+                result.push_str(&format!(
+                    "<span class=\"dump-type\">{}</span>",
+                    html_escape(word)
+                ));
+            } else if word.starts_with('"') || word.ends_with('"') {
+                result.push_str(&format!(
+                    "<span class=\"dump-value\">{}</span>",
+                    html_escape(word)
+                ));
+            } else if word.contains('=') {
+                // Attribute like scopes=5
+                let parts: Vec<&str> = word.splitn(2, '=').collect();
+                if parts.len() == 2 {
+                    let attr = parts[0];
+                    let val = parts[1];
+                    if attr_keywords.contains(&attr) {
+                        result.push_str(&format!(
+                            "<span class=\"dump-attr\">{}</span>=<span class=\"dump-value\">{}</span>",
+                            html_escape(attr),
+                            html_escape(val)
+                        ));
+                    } else {
+                        result.push_str(&format!(
+                            "{}=<span class=\"dump-value\">{}</span>",
+                            html_escape(attr),
+                            html_escape(val)
+                        ));
+                    }
+                } else {
+                    result.push_str(&html_escape(word));
+                }
+            } else if word.starts_with('[') && word.ends_with(']') {
+                // Error codes like [E0201]
+                result.push_str(&format!(
+                    "<span style=\"color: var(--error-color);\">{}</span>",
+                    html_escape(word)
+                ));
+            } else if word == "->" {
+                result.push_str(&format!(
+                    "<span class=\"frel-operator\">{}</span>",
+                    html_escape(word)
+                ));
             } else {
                 result.push_str(&html_escape(word));
             }

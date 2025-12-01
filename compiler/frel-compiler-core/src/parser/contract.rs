@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse contract declaration
     pub(super) fn parse_contract(&mut self) -> Option<Contract> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::CONTRACT)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -22,13 +23,16 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
-        Some(Contract { name, methods })
+        let span = crate::source::Span::new(start, end_span.end);
+        Some(Contract { name, methods, span })
     }
 
     /// Parse a contract method
     fn parse_contract_method(&mut self) -> Option<ContractMethod> {
+        let start = self.current_span().start;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list()?;
 
@@ -38,10 +42,12 @@ impl<'a> Parser<'a> {
             None
         };
 
+        let span = crate::source::Span::new(start, self.previous_span().end);
         Some(ContractMethod {
             name,
             params,
             return_type,
+            span,
         })
     }
 }

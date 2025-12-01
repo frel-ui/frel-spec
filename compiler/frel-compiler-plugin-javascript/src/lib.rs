@@ -20,6 +20,7 @@ mod tests {
     fn test_generate_empty_module() {
         let file = ast::File {
             module: "test".to_string(),
+            source_path: None,
             imports: vec![],
             declarations: vec![],
         };

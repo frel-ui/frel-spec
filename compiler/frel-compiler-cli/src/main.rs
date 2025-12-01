@@ -68,8 +68,8 @@ fn compile(input: &Path, output: Option<&Path>, target: &str) -> Result<()> {
     let source = fs::read_to_string(input)
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
-    // Parse and compile
-    let result = frel_compiler_core::compile(&source);
+    // Parse and compile with file path for better diagnostics
+    let result = frel_compiler_core::compile_with_path(&source, &input.display().to_string());
 
     // Check for errors
     if result.diagnostics.has_errors() {
@@ -77,9 +77,10 @@ fn compile(input: &Path, output: Option<&Path>, target: &str) -> Result<()> {
         for diag in result.diagnostics.iter() {
             let loc = line_index.line_col(diag.span.start);
             eprintln!(
-                "error[{}]: {} at {}:{}",
+                "error[{}]: {} at {}:{}:{}",
                 diag.code.as_deref().unwrap_or("E????"),
                 diag.message,
+                input.display(),
                 loc.line,
                 loc.col
             );
@@ -114,8 +115,8 @@ fn check(input: &Path) -> Result<()> {
     let source = fs::read_to_string(input)
         .with_context(|| format!("Failed to read input file: {}", input.display()))?;
 
-    // Parse and check
-    let result = frel_compiler_core::compile(&source);
+    // Parse and check with file path for better diagnostics
+    let result = frel_compiler_core::compile_with_path(&source, &input.display().to_string());
 
     // Check for errors
     if result.diagnostics.has_errors() {
@@ -123,9 +124,10 @@ fn check(input: &Path) -> Result<()> {
         for diag in result.diagnostics.iter() {
             let loc = line_index.line_col(diag.span.start);
             eprintln!(
-                "error[{}]: {} at {}:{}",
+                "error[{}]: {} at {}:{}:{}",
                 diag.code.as_deref().unwrap_or("E????"),
                 diag.message,
+                input.display(),
                 loc.line,
                 loc.col
             );

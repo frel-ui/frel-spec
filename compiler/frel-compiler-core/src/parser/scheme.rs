@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse scheme declaration
     pub(super) fn parse_scheme(&mut self) -> Option<Scheme> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::SCHEME)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -22,26 +23,32 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
-        Some(Scheme { name, members })
+        let span = crate::source::Span::new(start, end_span.end);
+        Some(Scheme { name, members, span })
     }
 
     /// Parse a scheme member
     fn parse_scheme_member(&mut self) -> Option<SchemeMember> {
         if self.check(TokenKind::Virtual) {
+            let start = self.current_span().start;
             self.advance();
             let name = self.expect_identifier()?;
             self.expect(TokenKind::Colon)?;
             let type_expr = self.parse_type_expr()?;
             self.expect(TokenKind::Eq)?;
             let expr = self.parse_expr()?;
+            let span = crate::source::Span::new(start, self.previous_span().end);
             Some(SchemeMember::Virtual(VirtualField {
                 name,
                 type_expr,
                 expr,
+                span,
             }))
         } else if self.check(TokenKind::Identifier) {
+            let start = self.current_span().start;
             let name = self.expect_identifier()?;
             self.expect(TokenKind::Colon)?;
             let type_expr = self.parse_type_expr()?;
@@ -54,10 +61,12 @@ impl<'a> Parser<'a> {
                 }
             }
 
+            let span = crate::source::Span::new(start, self.previous_span().end);
             Some(SchemeMember::Field(SchemeField {
                 name,
                 type_expr,
                 instructions,
+                span,
             }))
         } else {
             self.error_expected("scheme field");

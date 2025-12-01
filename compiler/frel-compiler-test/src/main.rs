@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 use frel_compiler_core::ast::DumpVisitor;
+use frel_compiler_core::analyze;
 use similar::{ChangeTag, TextDiff};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -328,7 +329,8 @@ fn run_test(test: &TestCase, update: bool, format: OutputFormat) -> TestResult {
     }
 }
 
-/// WIP Success test (not update mode): just check that parsing succeeds
+/// WIP Success test (not update mode): check that parsing succeeds
+/// (semantic analysis is run but errors are not treated as failures for WIP tests)
 fn run_wip_success_test(test: &TestCase) -> TestResult {
     let source = match fs::read_to_string(&test.source_path) {
         Ok(s) => s,
@@ -343,18 +345,24 @@ fn run_wip_success_test(test: &TestCase) -> TestResult {
     let result = frel_compiler_core::parse_file(&source);
 
     if result.diagnostics.has_errors() {
-        let error_msg = format_diagnostics(&result.diagnostics, &source);
-        TestResult::Failed {
+        let error_msg = format_diagnostics(&result.diagnostics, &source, &test.source_path);
+        return TestResult::Failed {
             message: format!("Expected parse to succeed but got errors:\n{}", error_msg),
             diff: None,
+        };
+    }
+
+    match result.file {
+        Some(ast) => {
+            // Run semantic analysis (for coverage), but don't fail on semantic errors
+            // since these are parser tests, not semantic tests
+            let _semantic_result = analyze(&ast);
+            TestResult::Passed
         }
-    } else if result.file.is_some() {
-        TestResult::Passed
-    } else {
-        TestResult::Failed {
+        None => TestResult::Failed {
             message: "Parse returned no AST and no errors".to_string(),
             diff: None,
-        }
+        },
     }
 }
 
@@ -397,7 +405,7 @@ fn run_wip_success_update(test: &TestCase, format: OutputFormat) -> TestResult {
     let result = frel_compiler_core::parse_file(&source);
 
     if result.diagnostics.has_errors() {
-        let error_msg = format_diagnostics(&result.diagnostics, &source);
+        let error_msg = format_diagnostics(&result.diagnostics, &source, &test.source_path);
         return TestResult::Failed {
             message: format!("Cannot update: parse failed with errors:\n{}", error_msg),
             diff: None,
@@ -413,6 +421,9 @@ fn run_wip_success_update(test: &TestCase, format: OutputFormat) -> TestResult {
             }
         }
     };
+
+    // Run semantic analysis (for coverage), but don't fail on semantic errors
+    let _semantic_result = analyze(&ast);
 
     // Write JSON if needed
     if format == OutputFormat::Json || format == OutputFormat::Both {
@@ -472,7 +483,7 @@ fn run_wip_error_update(test: &TestCase) -> TestResult {
     }
 
     let error_path = test.source_path.with_extension("error.txt");
-    let error_msg = format_diagnostics(&result.diagnostics, &source);
+    let error_msg = format_diagnostics(&result.diagnostics, &source, &test.source_path);
     if let Err(e) = fs::write(&error_path, &error_msg) {
         return TestResult::Failed {
             message: format!("Failed to write error file: {}", e),
@@ -505,7 +516,7 @@ fn run_success_test(
     let result = frel_compiler_core::parse_file(&source);
 
     if result.diagnostics.has_errors() {
-        let error_msg = format_diagnostics(&result.diagnostics, &source);
+        let error_msg = format_diagnostics(&result.diagnostics, &source, &test.source_path);
         return TestResult::Failed {
             message: format!("Parse failed unexpectedly:\n{}", error_msg),
             diff: None,
@@ -521,6 +532,10 @@ fn run_success_test(
             }
         }
     };
+
+    // Run semantic analysis (for coverage), but don't fail on semantic errors
+    // since these are primarily parser tests
+    let _semantic_result = analyze(&ast);
 
     // Check JSON format
     if format == OutputFormat::Json || format == OutputFormat::Both {
@@ -628,7 +643,7 @@ fn run_error_test(test: &TestCase, expected_error: &Path, update: bool) -> TestR
         };
     }
 
-    let actual_error = format_diagnostics(&result.diagnostics, &source);
+    let actual_error = format_diagnostics(&result.diagnostics, &source, &test.source_path);
 
     if update {
         // Update mode: write actual error to expected file
@@ -667,18 +682,24 @@ fn run_error_test(test: &TestCase, expected_error: &Path, update: bool) -> TestR
     }
 }
 
-fn format_diagnostics(diagnostics: &frel_compiler_core::Diagnostics, source: &str) -> String {
+fn format_diagnostics(
+    diagnostics: &frel_compiler_core::Diagnostics,
+    source: &str,
+    file_path: &Path,
+) -> String {
     let line_index = frel_compiler_core::LineIndex::new(source);
     let mut output = String::new();
 
     for diag in diagnostics.iter() {
         let loc = line_index.line_col(diag.span.start);
         output.push_str(&format!(
-            "error[{}]: {}\n",
+            "error[{}]: {} at {}:{}:{}\n",
             diag.code.as_deref().unwrap_or("E????"),
-            diag.message
+            diag.message,
+            file_path.display(),
+            loc.line,
+            loc.col
         ));
-        output.push_str(&format!(" --> {}:{}\n", loc.line, loc.col));
     }
 
     output

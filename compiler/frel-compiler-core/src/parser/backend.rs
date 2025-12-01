@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse backend declaration
     pub(super) fn parse_backend(&mut self) -> Option<Backend> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::BACKEND)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
@@ -24,12 +25,15 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
+        let span = crate::source::Span::new(start, end_span.end);
         Some(Backend {
             name,
             params,
             members,
+            span,
         })
     }
 
@@ -42,25 +46,31 @@ impl<'a> Parser<'a> {
                 Some(BackendMember::Include(name))
             }
             TokenKind::Method => {
+                let start = self.current_span().start;
                 self.advance();
                 let name = self.expect_identifier()?;
                 let params = self.parse_param_list()?;
                 self.expect(TokenKind::Colon)?;
                 let return_type = self.parse_type_expr()?;
+                let span = crate::source::Span::new(start, self.previous_span().end);
                 Some(BackendMember::Method(Method {
                     name,
                     params,
                     return_type,
+                    span,
                 }))
             }
             TokenKind::Command => {
+                let start = self.current_span().start;
                 self.advance();
                 let name = self.expect_identifier()?;
                 let params = self.parse_param_list()?;
-                Some(BackendMember::Command(Command { name, params }))
+                let span = crate::source::Span::new(start, self.previous_span().end);
+                Some(BackendMember::Command(Command { name, params, span }))
             }
             TokenKind::Identifier => {
                 // Field: name : type [= init]
+                let start = self.current_span().start;
                 let name = self.expect_identifier()?;
                 self.expect(TokenKind::Colon)?;
                 let type_expr = self.parse_type_expr()?;
@@ -69,10 +79,12 @@ impl<'a> Parser<'a> {
                 } else {
                     None
                 };
+                let span = crate::source::Span::new(start, self.previous_span().end);
                 Some(BackendMember::Field(Field {
                     name,
                     type_expr,
                     init,
+                    span,
                 }))
             }
             _ => {

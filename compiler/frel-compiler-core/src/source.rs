@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 /// A span representing a range of bytes in source code
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Span {
     /// Start byte offset (inclusive)
     pub start: u32,
@@ -46,6 +46,12 @@ impl Span {
     /// Extract the text this span covers from source
     pub fn text<'a>(&self, source: &'a str) -> &'a str {
         &source[self.start as usize..self.end as usize]
+    }
+
+    /// Check if this span is the default (0..0)
+    /// Used for serde skip_serializing_if
+    pub fn is_default(&self) -> bool {
+        self.start == 0 && self.end == 0
     }
 }
 

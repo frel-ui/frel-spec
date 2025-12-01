@@ -12,12 +12,16 @@ pub mod visitor;
 pub use dump::DumpVisitor;
 pub use visitor::Visitor;
 
+use crate::source::Span;
 use serde::{Deserialize, Serialize};
 
 /// A Frel source file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct File {
+    /// The logical module name from the `module` statement
     pub module: String,
+    /// The source file path (for diagnostics)
+    pub source_path: Option<String>,
     pub imports: Vec<Import>,
     pub declarations: Vec<TopLevelDecl>,
 }
@@ -48,6 +52,7 @@ pub struct Blueprint {
     pub name: String,
     pub params: Vec<Parameter>,
     pub body: Vec<BlueprintStmt>,
+    pub span: Span,
 }
 
 /// Blueprint statement
@@ -294,6 +299,7 @@ pub struct Backend {
     pub name: String,
     pub params: Vec<Parameter>,
     pub members: Vec<BackendMember>,
+    pub span: Span,
 }
 
 /// Backend member
@@ -312,6 +318,7 @@ pub struct Field {
     pub name: String,
     pub type_expr: TypeExpr,
     pub init: Option<Expr>,
+    pub span: Span,
 }
 
 /// Method declaration
@@ -320,6 +327,7 @@ pub struct Method {
     pub name: String,
     pub params: Vec<Parameter>,
     pub return_type: TypeExpr,
+    pub span: Span,
 }
 
 /// Command declaration
@@ -327,6 +335,7 @@ pub struct Method {
 pub struct Command {
     pub name: String,
     pub params: Vec<Parameter>,
+    pub span: Span,
 }
 
 /// Contract declaration
@@ -334,6 +343,7 @@ pub struct Command {
 pub struct Contract {
     pub name: String,
     pub methods: Vec<ContractMethod>,
+    pub span: Span,
 }
 
 /// Contract method
@@ -342,6 +352,7 @@ pub struct ContractMethod {
     pub name: String,
     pub params: Vec<Parameter>,
     pub return_type: Option<TypeExpr>,
+    pub span: Span,
 }
 
 /// Scheme declaration
@@ -349,6 +360,7 @@ pub struct ContractMethod {
 pub struct Scheme {
     pub name: String,
     pub members: Vec<SchemeMember>,
+    pub span: Span,
 }
 
 /// Scheme member
@@ -365,6 +377,7 @@ pub struct SchemeField {
     pub name: String,
     pub type_expr: TypeExpr,
     pub instructions: Vec<FieldInstruction>,
+    pub span: Span,
 }
 
 /// Virtual field
@@ -373,6 +386,7 @@ pub struct VirtualField {
     pub name: String,
     pub type_expr: TypeExpr,
     pub expr: Expr,
+    pub span: Span,
 }
 
 /// Field instruction (used in schemes)
@@ -387,6 +401,7 @@ pub struct FieldInstruction {
 pub struct Enum {
     pub name: String,
     pub variants: Vec<String>,
+    pub span: Span,
 }
 
 /// Theme declaration
@@ -394,6 +409,7 @@ pub struct Enum {
 pub struct Theme {
     pub name: String,
     pub members: Vec<ThemeMember>,
+    pub span: Span,
 }
 
 /// Theme member
@@ -413,6 +429,7 @@ pub struct ThemeField {
     pub is_asset: bool,
     pub type_expr: TypeExpr,
     pub init: Option<Expr>,
+    pub span: crate::source::Span,
 }
 
 /// Instruction set
@@ -435,6 +452,7 @@ pub struct Arena {
     pub name: String,
     pub scheme_name: String,
     pub contract: Option<String>,
+    pub span: Span,
 }
 
 /// Parameter

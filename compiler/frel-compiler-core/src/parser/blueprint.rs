@@ -25,6 +25,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse blueprint declaration
     pub(super) fn parse_blueprint(&mut self) -> Option<Blueprint> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::BLUEPRINT)?;
         let name = self.expect_identifier()?;
         let params = self.parse_param_list_opt()?;
@@ -32,9 +33,11 @@ impl<'a> Parser<'a> {
 
         let body = self.parse_blueprint_body()?;
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
-        Some(Blueprint { name, params, body })
+        let span = crate::source::Span::new(start, end_span.end);
+        Some(Blueprint { name, params, body, span })
     }
 
     /// Parse blueprint body (list of statements)

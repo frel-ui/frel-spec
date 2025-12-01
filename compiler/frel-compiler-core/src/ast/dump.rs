@@ -940,6 +940,7 @@ mod tests {
     fn test_dump_simple_file() {
         let file = File {
             module: "test".to_string(),
+            source_path: None,
             imports: vec![],
             declarations: vec![],
         };
@@ -952,10 +953,12 @@ mod tests {
     fn test_dump_enum() {
         let file = File {
             module: "test".to_string(),
+            source_path: None,
             imports: vec![],
             declarations: vec![TopLevelDecl::Enum(Enum {
                 name: "Status".to_string(),
                 variants: vec!["Active".to_string(), "Inactive".to_string()],
+                span: Default::default(),
             })],
         };
 
@@ -967,6 +970,7 @@ mod tests {
     fn test_dump_backend_compact() {
         let file = File {
             module: "test".to_string(),
+            source_path: None,
             imports: vec![],
             declarations: vec![TopLevelDecl::Backend(Backend {
                 name: "Counter".to_string(),
@@ -976,8 +980,10 @@ mod tests {
                         name: "count".to_string(),
                         type_expr: TypeExpr::Named("i32".to_string()),
                         init: Some(Expr::Int(0)),
+                        span: Default::default(),
                     }),
                 ],
+                span: Default::default(),
             })],
         };
 

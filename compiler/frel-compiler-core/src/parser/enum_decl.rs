@@ -9,6 +9,7 @@ use super::Parser;
 impl<'a> Parser<'a> {
     /// Parse enum declaration
     pub(super) fn parse_enum(&mut self) -> Option<Enum> {
+        let start = self.current_span().start;
         self.expect_contextual(contextual::ENUM)?;
         let name = self.expect_identifier()?;
         self.expect(TokenKind::LBrace)?;
@@ -23,9 +24,11 @@ impl<'a> Parser<'a> {
             }
         }
 
+        let end_span = self.current_span();
         self.expect(TokenKind::RBrace)?;
 
-        Some(Enum { name, variants })
+        let span = crate::source::Span::new(start, end_span.end);
+        Some(Enum { name, variants, span })
     }
 }
 
