@@ -618,9 +618,10 @@ impl Resolver {
                     self.resolve_name(name, Span::default());
                 }
                 ast::ThemeMember::Field(field) => {
-                    self.define_simple(&field.name, SymbolKind::Field, body_scope, Span::default());
+                    self.define_simple(&field.name, SymbolKind::Field, body_scope, field.span);
                     if let Some(init) = &field.init {
                         self.current_scope = body_scope;
+                        self.context_span = field.span;
                         self.resolve_expr(init);
                         self.current_scope = module_scope;
                     }
