@@ -400,12 +400,30 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
+        // First pass: resolve all field types and store in symbol_types
+        // This is needed so that field references in initializers can be resolved
+        for member in &be.members {
+            if let ast::BackendMember::Field(field) = member {
+                let field_type = self.resolve_type_expr(&field.type_expr, field.span);
+                // Look up the field's symbol and store its type
+                if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
+                    self.symbol_types.insert(field_symbol_id, field_type);
+                }
+            }
+        }
+
+        // Second pass: check all field initializers
         for member in &be.members {
             if let ast::BackendMember::Field(field) = member {
                 if let Some(init) = &field.init {
                     self.context_span = field.span;
-                    let _init_type = self.infer_expr_type(init);
-                    // TODO: Check that init_type is compatible with field.type_expr
+                    // Get the expected type (already resolved in first pass)
+                    if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
+                        let expected_type = self.symbol_types.get(&field_symbol_id).cloned().unwrap_or(Type::Unknown);
+                        // Check the initializer against the expected type
+                        let _init_type = self.check_expr_type(init, &expected_type);
+                        // TODO: Check that init_type is compatible with expected_type
+                    }
                 }
             }
         }
@@ -591,14 +609,75 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
+        // First pass: resolve all field types and store in symbol_types
+        // This is needed so that field references in virtual field expressions can be resolved
+        for member in &sc.members {
+            match member {
+                ast::SchemeMember::Field(field) => {
+                    let field_type = self.resolve_type_expr(&field.type_expr, field.span);
+                    if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
+                        self.symbol_types.insert(field_symbol_id, field_type);
+                    }
+                }
+                ast::SchemeMember::Virtual(virt) => {
+                    let virt_type = self.resolve_type_expr(&virt.type_expr, virt.span);
+                    if let Some(virt_symbol_id) = self.symbols.lookup_local(self.current_scope, &virt.name) {
+                        self.symbol_types.insert(virt_symbol_id, virt_type);
+                    }
+                }
+            }
+        }
+
+        // Second pass: check virtual field expressions
         for member in &sc.members {
             if let ast::SchemeMember::Virtual(virt) = member {
-                let _expr_type = self.infer_expr_type(&virt.expr);
-                // TODO: Check compatibility with declared type
+                self.context_span = virt.span;
+                // Get the expected type (already resolved in first pass)
+                if let Some(virt_symbol_id) = self.symbols.lookup_local(self.current_scope, &virt.name) {
+                    let expected_type = self.symbol_types.get(&virt_symbol_id).cloned().unwrap_or(Type::Unknown);
+                    // Check the expression against the expected type
+                    let _expr_type = self.check_expr_type(&virt.expr, &expected_type);
+                    // TODO: Check that expr_type is compatible with expected_type
+                }
             }
         }
 
         self.current_scope = saved_scope;
+        self.context_span = Span::default();
+    }
+
+    /// Check an expression against an expected type (bidirectional type checking)
+    ///
+    /// This is used when we have a declared type and want to check the expression
+    /// against it, allowing better type inference for literals like empty lists.
+    pub fn check_expr_type(&mut self, expr: &ast::Expr, expected: &Type) -> Type {
+        match expr {
+            // For empty lists, use the expected element type
+            ast::Expr::List(items) if items.is_empty() => {
+                if let Type::List(elem_ty) = expected {
+                    let ty = Type::List(elem_ty.clone());
+                    self.expr_types.insert(self.context_span, ty.clone());
+                    ty
+                } else {
+                    // Expected type is not a list, infer as unknown
+                    let ty = Type::List(Box::new(Type::Unknown));
+                    self.expr_types.insert(self.context_span, ty.clone());
+                    ty
+                }
+            }
+            // For null, use the expected nullable inner type
+            ast::Expr::Null => {
+                let ty = if let Type::Nullable(inner) = expected {
+                    Type::Nullable(inner.clone())
+                } else {
+                    Type::Nullable(Box::new(Type::Unknown))
+                };
+                self.expr_types.insert(self.context_span, ty.clone());
+                ty
+            }
+            // For other expressions, infer normally
+            _ => self.infer_expr_type(expr),
+        }
     }
 
     /// Infer the type of an expression
@@ -1443,6 +1522,49 @@ backend Calculator {
             error.span.start > 0 || error.span.end > 0,
             "Error span should not be default: {:?}",
             error.span
+        );
+    }
+
+    #[test]
+    fn test_empty_list_uses_expected_type() {
+        // Test that empty list literals use the expected type from field declaration
+        let source = r#"
+module test
+
+backend TodoBackend {
+    items : List<String> = []
+}
+"#;
+        let result = typecheck_source(source);
+        assert!(!result.has_errors(), "Should have no errors");
+
+        // Check that the expr_types contains List<String>, not List<unknown>
+        let has_string_list = result.expr_types.values().any(|ty| {
+            matches!(ty, Type::List(inner) if **inner == Type::String)
+        });
+        assert!(has_string_list, "Empty list should be typed as List<String>");
+    }
+
+    #[test]
+    fn test_field_references_in_expressions() {
+        // Test that field references in initializers resolve to the correct type
+        let source = r#"
+module test
+
+backend Calculator {
+    a : i32 = 10
+    b : i32 = 20
+    sum : i32 = a + b
+    product : i32 = a * b
+    isPositive : bool = sum > 0
+}
+"#;
+        let result = typecheck_source(source);
+        // Should have no errors - field types should be resolved correctly
+        assert!(
+            !result.has_errors(),
+            "Field references should resolve correctly, got errors: {:?}",
+            result.diagnostics
         );
     }
 }

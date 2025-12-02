@@ -543,7 +543,7 @@ impl std::fmt::Display for Type {
             Type::Ref(inner) => write!(f, "ref {}", inner),
             Type::Draft(inner) => write!(f, "draft {}", inner),
             Type::Asset(inner) => write!(f, "asset {}", inner),
-            Type::List(elem) => write!(f, "[{}]", elem),
+            Type::List(elem) => write!(f, "list<{}>", elem),
             Type::Set(elem) => write!(f, "set<{}>", elem),
             Type::Map(k, v) => write!(f, "map<{}, {}>", k, v),
             Type::Tree(elem) => write!(f, "tree<{}>", elem),
@@ -683,7 +683,7 @@ mod tests {
         );
         assert_eq!(
             format!("{}", Type::List(Box::new(Type::I32))),
-            "[i32]"
+            "list<i32>"
         );
         assert_eq!(
             format!(

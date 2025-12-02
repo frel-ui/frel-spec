@@ -238,7 +238,7 @@ impl<'a> SemanticDumper<'a> {
             Type::Ref(inner) => format!("ref {}", self.format_type(inner)),
             Type::Draft(inner) => format!("draft {}", self.format_type(inner)),
             Type::Asset(inner) => format!("asset {}", self.format_type(inner)),
-            Type::List(elem) => format!("[{}]", self.format_type(elem)),
+            Type::List(elem) => format!("list<{}>", self.format_type(elem)),
             Type::Set(elem) => format!("set<{}>", self.format_type(elem)),
             Type::Map(k, v) => format!("map<{}, {}>", self.format_type(k), self.format_type(v)),
             Type::Tree(elem) => format!("tree<{}>", self.format_type(elem)),
