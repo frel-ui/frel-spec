@@ -117,26 +117,26 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn resolve_backend_types(&mut self, be: &ast::Backend) {
-        // Resolve parameter types
+        // Resolve parameter types (use backend span as fallback since Parameter has no span)
         for param in &be.params {
-            self.resolve_type_expr(&param.type_expr, Span::default());
+            self.resolve_type_expr(&param.type_expr, be.span);
         }
 
         // Resolve member types
         for member in &be.members {
             match member {
                 ast::BackendMember::Field(field) => {
-                    self.resolve_type_expr(&field.type_expr, Span::default());
+                    self.resolve_type_expr(&field.type_expr, field.span);
                 }
                 ast::BackendMember::Method(method) => {
                     for param in &method.params {
-                        self.resolve_type_expr(&param.type_expr, Span::default());
+                        self.resolve_type_expr(&param.type_expr, method.span);
                     }
-                    self.resolve_type_expr(&method.return_type, Span::default());
+                    self.resolve_type_expr(&method.return_type, method.span);
                 }
                 ast::BackendMember::Command(cmd) => {
                     for param in &cmd.params {
-                        self.resolve_type_expr(&param.type_expr, Span::default());
+                        self.resolve_type_expr(&param.type_expr, cmd.span);
                     }
                 }
                 ast::BackendMember::Include(_) => {}
@@ -145,82 +145,84 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn resolve_blueprint_types(&mut self, bp: &ast::Blueprint) {
+        // Use blueprint span for parameters since Parameter has no span
         for param in &bp.params {
-            self.resolve_type_expr(&param.type_expr, Span::default());
+            self.resolve_type_expr(&param.type_expr, bp.span);
         }
 
         for stmt in &bp.body {
-            self.resolve_blueprint_stmt_types(stmt);
+            self.resolve_blueprint_stmt_types(stmt, bp.span);
         }
     }
 
-    fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt) {
+    fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt, context_span: Span) {
         match stmt {
             ast::BlueprintStmt::LocalDecl(decl) => {
-                self.resolve_type_expr(&decl.type_expr, Span::default());
+                // LocalDecl has no span, use context
+                self.resolve_type_expr(&decl.type_expr, context_span);
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
                 if let Some(body) = &frag.body {
-                    self.resolve_fragment_body_types(body);
+                    self.resolve_fragment_body_types(body, context_span);
                 }
             }
             ast::BlueprintStmt::Control(ctrl) => {
-                self.resolve_control_stmt_types(ctrl);
+                self.resolve_control_stmt_types(ctrl, context_span);
             }
             ast::BlueprintStmt::Layout(layout) => {
                 // Layout doesn't have explicit types
                 let _ = layout;
             }
             ast::BlueprintStmt::SlotBinding(binding) => {
-                self.resolve_slot_binding_types(binding);
+                self.resolve_slot_binding_types(binding, context_span);
             }
             _ => {}
         }
     }
 
-    fn resolve_fragment_body_types(&mut self, body: &ast::FragmentBody) {
+    fn resolve_fragment_body_types(&mut self, body: &ast::FragmentBody, context_span: Span) {
         match body {
             ast::FragmentBody::Default(stmts) => {
                 for stmt in stmts {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
             ast::FragmentBody::Slots(slots) => {
                 for slot in slots {
-                    self.resolve_slot_binding_types(slot);
+                    self.resolve_slot_binding_types(slot, context_span);
                 }
             }
             ast::FragmentBody::InlineBlueprint { body, .. } => {
                 for stmt in body {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
         }
     }
 
-    fn resolve_slot_binding_types(&mut self, binding: &ast::SlotBinding) {
+    fn resolve_slot_binding_types(&mut self, binding: &ast::SlotBinding, context_span: Span) {
         if let ast::BlueprintValue::Inline { body, .. } = &binding.blueprint {
             for stmt in body {
-                self.resolve_blueprint_stmt_types(stmt);
+                self.resolve_blueprint_stmt_types(stmt, context_span);
             }
         }
     }
 
-    fn resolve_control_stmt_types(&mut self, ctrl: &ast::ControlStmt) {
+    fn resolve_control_stmt_types(&mut self, ctrl: &ast::ControlStmt, context_span: Span) {
         match ctrl {
             ast::ControlStmt::When {
                 then_stmt,
                 else_stmt,
                 ..
             } => {
-                self.resolve_blueprint_stmt_types(then_stmt);
+                self.resolve_blueprint_stmt_types(then_stmt, context_span);
                 if let Some(else_stmt) = else_stmt {
-                    self.resolve_blueprint_stmt_types(else_stmt);
+                    self.resolve_blueprint_stmt_types(else_stmt, context_span);
                 }
             }
             ast::ControlStmt::Repeat { body, .. } => {
                 for stmt in body {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
             ast::ControlStmt::Select {
@@ -229,10 +231,10 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 for branch in branches {
-                    self.resolve_blueprint_stmt_types(&branch.body);
+                    self.resolve_blueprint_stmt_types(&branch.body, context_span);
                 }
                 if let Some(else_stmt) = else_branch {
-                    self.resolve_blueprint_stmt_types(else_stmt);
+                    self.resolve_blueprint_stmt_types(else_stmt, context_span);
                 }
             }
         }
@@ -242,10 +244,10 @@ impl<'a> TypeChecker<'a> {
         for member in &sc.members {
             match member {
                 ast::SchemeMember::Field(field) => {
-                    self.resolve_type_expr(&field.type_expr, Span::default());
+                    self.resolve_type_expr(&field.type_expr, field.span);
                 }
                 ast::SchemeMember::Virtual(virt) => {
-                    self.resolve_type_expr(&virt.type_expr, Span::default());
+                    self.resolve_type_expr(&virt.type_expr, virt.span);
                 }
             }
         }
@@ -253,11 +255,12 @@ impl<'a> TypeChecker<'a> {
 
     fn resolve_contract_types(&mut self, ct: &ast::Contract) {
         for method in &ct.methods {
+            // Use method span for parameters since Parameter has no span
             for param in &method.params {
-                self.resolve_type_expr(&param.type_expr, Span::default());
+                self.resolve_type_expr(&param.type_expr, method.span);
             }
             if let Some(ret) = &method.return_type {
-                self.resolve_type_expr(ret, Span::default());
+                self.resolve_type_expr(ret, method.span);
             }
         }
     }
@@ -265,7 +268,7 @@ impl<'a> TypeChecker<'a> {
     fn resolve_theme_types(&mut self, th: &ast::Theme) {
         for member in &th.members {
             if let ast::ThemeMember::Field(field) = member {
-                self.resolve_type_expr(&field.type_expr, Span::default());
+                self.resolve_type_expr(&field.type_expr, field.span);
             }
         }
     }
@@ -730,7 +733,8 @@ impl<'a> TypeChecker<'a> {
             }
         };
 
-        self.expr_types.insert(Span::default(), ty.clone());
+        // Use context_span since Expr doesn't carry its own span
+        self.expr_types.insert(self.context_span, ty.clone());
         ty
     }
 
@@ -1099,23 +1103,24 @@ impl<'a> TypeCheckerWithRegistry<'a> {
     }
 
     fn resolve_backend_types(&mut self, be: &ast::Backend) {
+        // Use backend span as fallback for parameters since Parameter has no span
         for param in &be.params {
-            self.resolve_type_expr(&param.type_expr, Span::default());
+            self.resolve_type_expr(&param.type_expr, be.span);
         }
         for member in &be.members {
             match member {
                 ast::BackendMember::Field(field) => {
-                    self.resolve_type_expr(&field.type_expr, Span::default());
+                    self.resolve_type_expr(&field.type_expr, field.span);
                 }
                 ast::BackendMember::Method(method) => {
                     for param in &method.params {
-                        self.resolve_type_expr(&param.type_expr, Span::default());
+                        self.resolve_type_expr(&param.type_expr, method.span);
                     }
-                    self.resolve_type_expr(&method.return_type, Span::default());
+                    self.resolve_type_expr(&method.return_type, method.span);
                 }
                 ast::BackendMember::Command(cmd) => {
                     for param in &cmd.params {
-                        self.resolve_type_expr(&param.type_expr, Span::default());
+                        self.resolve_type_expr(&param.type_expr, cmd.span);
                     }
                 }
                 ast::BackendMember::Include(_) => {}
@@ -1124,81 +1129,83 @@ impl<'a> TypeCheckerWithRegistry<'a> {
     }
 
     fn resolve_blueprint_types(&mut self, bp: &ast::Blueprint) {
+        // Use blueprint span for parameters since Parameter has no span
         for param in &bp.params {
-            self.resolve_type_expr(&param.type_expr, Span::default());
+            self.resolve_type_expr(&param.type_expr, bp.span);
         }
         for stmt in &bp.body {
-            self.resolve_blueprint_stmt_types(stmt);
+            self.resolve_blueprint_stmt_types(stmt, bp.span);
         }
     }
 
-    fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt) {
+    fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt, context_span: Span) {
         match stmt {
             ast::BlueprintStmt::LocalDecl(decl) => {
-                self.resolve_type_expr(&decl.type_expr, Span::default());
+                // LocalDecl has no span, use context
+                self.resolve_type_expr(&decl.type_expr, context_span);
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
                 if let Some(body) = &frag.body {
-                    self.resolve_fragment_body_types(body);
+                    self.resolve_fragment_body_types(body, context_span);
                 }
             }
             ast::BlueprintStmt::Control(ctrl) => {
-                self.resolve_control_stmt_types(ctrl);
+                self.resolve_control_stmt_types(ctrl, context_span);
             }
             ast::BlueprintStmt::SlotBinding(binding) => {
-                self.resolve_slot_binding_types(binding);
+                self.resolve_slot_binding_types(binding, context_span);
             }
             _ => {}
         }
     }
 
-    fn resolve_fragment_body_types(&mut self, body: &ast::FragmentBody) {
+    fn resolve_fragment_body_types(&mut self, body: &ast::FragmentBody, context_span: Span) {
         match body {
             ast::FragmentBody::Default(stmts) => {
                 for stmt in stmts {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
             ast::FragmentBody::Slots(slots) => {
                 for slot in slots {
-                    self.resolve_slot_binding_types(slot);
+                    self.resolve_slot_binding_types(slot, context_span);
                 }
             }
             ast::FragmentBody::InlineBlueprint { body, .. } => {
                 for stmt in body {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
         }
     }
 
-    fn resolve_slot_binding_types(&mut self, binding: &ast::SlotBinding) {
+    fn resolve_slot_binding_types(&mut self, binding: &ast::SlotBinding, context_span: Span) {
         if let ast::BlueprintValue::Inline { body, .. } = &binding.blueprint {
             for stmt in body {
-                self.resolve_blueprint_stmt_types(stmt);
+                self.resolve_blueprint_stmt_types(stmt, context_span);
             }
         }
     }
 
-    fn resolve_control_stmt_types(&mut self, ctrl: &ast::ControlStmt) {
+    fn resolve_control_stmt_types(&mut self, ctrl: &ast::ControlStmt, context_span: Span) {
         match ctrl {
             ast::ControlStmt::When { then_stmt, else_stmt, .. } => {
-                self.resolve_blueprint_stmt_types(then_stmt);
+                self.resolve_blueprint_stmt_types(then_stmt, context_span);
                 if let Some(else_stmt) = else_stmt {
-                    self.resolve_blueprint_stmt_types(else_stmt);
+                    self.resolve_blueprint_stmt_types(else_stmt, context_span);
                 }
             }
             ast::ControlStmt::Repeat { body, .. } => {
                 for stmt in body {
-                    self.resolve_blueprint_stmt_types(stmt);
+                    self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
             }
             ast::ControlStmt::Select { branches, else_branch, .. } => {
                 for branch in branches {
-                    self.resolve_blueprint_stmt_types(&branch.body);
+                    self.resolve_blueprint_stmt_types(&branch.body, context_span);
                 }
                 if let Some(else_stmt) = else_branch {
-                    self.resolve_blueprint_stmt_types(else_stmt);
+                    self.resolve_blueprint_stmt_types(else_stmt, context_span);
                 }
             }
         }
@@ -1208,10 +1215,10 @@ impl<'a> TypeCheckerWithRegistry<'a> {
         for member in &sc.members {
             match member {
                 ast::SchemeMember::Field(field) => {
-                    self.resolve_type_expr(&field.type_expr, Span::default());
+                    self.resolve_type_expr(&field.type_expr, field.span);
                 }
                 ast::SchemeMember::Virtual(virt) => {
-                    self.resolve_type_expr(&virt.type_expr, Span::default());
+                    self.resolve_type_expr(&virt.type_expr, virt.span);
                 }
             }
         }
@@ -1219,11 +1226,12 @@ impl<'a> TypeCheckerWithRegistry<'a> {
 
     fn resolve_contract_types(&mut self, ct: &ast::Contract) {
         for method in &ct.methods {
+            // Use method span for parameters since Parameter has no span
             for param in &method.params {
-                self.resolve_type_expr(&param.type_expr, Span::default());
+                self.resolve_type_expr(&param.type_expr, method.span);
             }
             if let Some(ret) = &method.return_type {
-                self.resolve_type_expr(ret, Span::default());
+                self.resolve_type_expr(ret, method.span);
             }
         }
     }
@@ -1231,7 +1239,7 @@ impl<'a> TypeCheckerWithRegistry<'a> {
     fn resolve_theme_types(&mut self, th: &ast::Theme) {
         for member in &th.members {
             if let ast::ThemeMember::Field(field) = member {
-                self.resolve_type_expr(&field.type_expr, Span::default());
+                self.resolve_type_expr(&field.type_expr, field.span);
             }
         }
     }

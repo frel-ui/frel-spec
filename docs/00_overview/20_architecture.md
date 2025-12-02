@@ -57,6 +57,8 @@ Frel follows a three-layer architecture that separates concerns between compilat
 
 Located in `compiler/`
 
+[Compiler architecture](/docs/30_compiler/00_compiler_overview.md)
+
 **frel-core**
 - hand-written (well, AI written) lexer/parser
 - AST construction from parse tree
@@ -140,22 +142,6 @@ One adapter is written per platform (browser, iOS, Android, desktop, etc.).
 | Kotlin        | Desktop  | Skia     | `host/kotlin/adapters/desktop/` |
 
 ## Data Flow
-
-### Compilation Flow
-
-```
-.frel source
-    ↓
-Parser
-    ↓
-AST Builder
-    ↓
-Semantic Analysis & Type Checking
-    ↓
-Code Generator Plugin
-    ↓
-Host Language Module
-```
 
 ### Runtime Flow
 
