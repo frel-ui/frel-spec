@@ -26,9 +26,11 @@ pub use error::{Error, Result};
 pub use lexer::{Token, TokenKind};
 pub use parser::ParseResult;
 pub use semantic::{
-    analyze, dump_semantic, typecheck, LookupResult, ResolveResult, ResolvedType, Scope,
-    ScopeGraph, ScopeId, ScopeKind, SemanticResult, Symbol, SymbolId, SymbolKind, SymbolTable,
-    Type, TypeCheckResult, TypeChecker,
+    analyze, analyze_module, build_signature, dump_semantic, resolve_with_registry, typecheck,
+    typecheck_with_registry, ExportedDecl, LookupResult, Module, ModuleAnalysisResult,
+    ModuleSignature, ResolveResult, ResolvedType, Scope, ScopeGraph, ScopeId, ScopeKind,
+    SemanticResult, SignatureRegistry, SignatureResult, Symbol, SymbolId, SymbolKind, SymbolTable,
+    Type, TypeCheckResult, TypeChecker, SIGNATURE_VERSION,
 };
 pub use source::{LineIndex, Span, Spanned};
 

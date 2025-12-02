@@ -119,6 +119,8 @@ pub struct Symbol {
     pub body_scope: Option<ScopeId>,
     /// For imports, the resolved symbol (if resolved)
     pub resolved_import: Option<SymbolId>,
+    /// Source module for external/imported symbols (None = local)
+    pub source_module: Option<String>,
 }
 
 impl Symbol {
@@ -137,6 +139,7 @@ impl Symbol {
             def_span,
             body_scope: None,
             resolved_import: None,
+            source_module: None,
         }
     }
 
@@ -144,6 +147,11 @@ impl Symbol {
     pub fn with_body_scope(mut self, body_scope: ScopeId) -> Self {
         self.body_scope = body_scope.into();
         self
+    }
+
+    /// Check if this symbol is from an external module (imported)
+    pub fn is_external(&self) -> bool {
+        self.source_module.is_some()
     }
 }
 
@@ -209,6 +217,37 @@ impl SymbolTable {
         if let Some(symbol) = self.symbols.get_mut(id.0 as usize) {
             symbol.body_scope = Some(body_scope);
         }
+        Some(id)
+    }
+
+    /// Define an external symbol imported from another module
+    ///
+    /// Returns the symbol ID, or None if a symbol with that name already exists
+    /// in the scope (duplicate definition).
+    pub fn define_external(
+        &mut self,
+        name: impl Into<String>,
+        kind: SymbolKind,
+        scope: ScopeId,
+        def_span: Span,
+        source_module: String,
+    ) -> Option<SymbolId> {
+        let name = name.into();
+        let key = (scope, name.clone());
+
+        // Check for duplicate in same scope
+        if self.name_lookup.contains_key(&key) {
+            return None;
+        }
+
+        let id = SymbolId(self.symbols.len() as u32);
+        let mut symbol = Symbol::new(id, name, kind, scope, def_span);
+        symbol.source_module = Some(source_module);
+        self.symbols.push(symbol);
+
+        self.name_lookup.insert(key, id);
+        self.scope_symbols.entry(scope).or_default().push(id);
+
         Some(id)
     }
 

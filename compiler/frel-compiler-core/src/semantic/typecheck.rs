@@ -1034,6 +1034,292 @@ pub fn typecheck(
     TypeChecker::new(scopes, symbols, imports).check(file)
 }
 
+/// Run type checking with access to external module signatures
+///
+/// This extends basic type checking by resolving imported types against
+/// the provided SignatureRegistry, enabling cross-module type checking.
+pub fn typecheck_with_registry(
+    file: &ast::File,
+    scopes: &ScopeGraph,
+    symbols: &SymbolTable,
+    imports: &HashMap<String, String>,
+    registry: &super::signature::SignatureRegistry,
+) -> TypeCheckResult {
+    TypeCheckerWithRegistry::new(scopes, symbols, imports, registry).check(file)
+}
+
+/// Type checker with access to external module signatures
+///
+/// Note: With the unified symbol approach, external symbols are imported into the
+/// local SymbolTable during name resolution, so the registry parameter is kept
+/// for API compatibility but the registry is not used during type checking.
+struct TypeCheckerWithRegistry<'a> {
+    inner: TypeChecker<'a>,
+}
+
+impl<'a> TypeCheckerWithRegistry<'a> {
+    fn new(
+        scopes: &'a ScopeGraph,
+        symbols: &'a SymbolTable,
+        imports: &'a HashMap<String, String>,
+        _registry: &'a super::signature::SignatureRegistry,
+    ) -> Self {
+        Self {
+            inner: TypeChecker::new(scopes, symbols, imports),
+        }
+    }
+
+    fn check(mut self, file: &ast::File) -> TypeCheckResult {
+        // First pass: resolve all type annotations (with registry support)
+        self.resolve_declarations(file);
+
+        // Second pass: type check expressions
+        self.inner.check_declarations(file);
+
+        TypeCheckResult {
+            expr_types: self.inner.expr_types,
+            type_resolutions: self.inner.type_resolutions,
+            diagnostics: self.inner.diagnostics,
+        }
+    }
+
+    /// Resolve type annotations in all declarations
+    fn resolve_declarations(&mut self, file: &ast::File) {
+        for decl in &file.declarations {
+            match decl {
+                ast::TopLevelDecl::Backend(be) => self.resolve_backend_types(be),
+                ast::TopLevelDecl::Blueprint(bp) => self.resolve_blueprint_types(bp),
+                ast::TopLevelDecl::Scheme(sc) => self.resolve_scheme_types(sc),
+                ast::TopLevelDecl::Contract(ct) => self.resolve_contract_types(ct),
+                ast::TopLevelDecl::Theme(th) => self.resolve_theme_types(th),
+                ast::TopLevelDecl::Enum(_) => {}
+                ast::TopLevelDecl::Arena(_ar) => {}
+            }
+        }
+    }
+
+    fn resolve_backend_types(&mut self, be: &ast::Backend) {
+        for param in &be.params {
+            self.resolve_type_expr(&param.type_expr, Span::default());
+        }
+        for member in &be.members {
+            match member {
+                ast::BackendMember::Field(field) => {
+                    self.resolve_type_expr(&field.type_expr, Span::default());
+                }
+                ast::BackendMember::Method(method) => {
+                    for param in &method.params {
+                        self.resolve_type_expr(&param.type_expr, Span::default());
+                    }
+                    self.resolve_type_expr(&method.return_type, Span::default());
+                }
+                ast::BackendMember::Command(cmd) => {
+                    for param in &cmd.params {
+                        self.resolve_type_expr(&param.type_expr, Span::default());
+                    }
+                }
+                ast::BackendMember::Include(_) => {}
+            }
+        }
+    }
+
+    fn resolve_blueprint_types(&mut self, bp: &ast::Blueprint) {
+        for param in &bp.params {
+            self.resolve_type_expr(&param.type_expr, Span::default());
+        }
+        for stmt in &bp.body {
+            self.resolve_blueprint_stmt_types(stmt);
+        }
+    }
+
+    fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt) {
+        match stmt {
+            ast::BlueprintStmt::LocalDecl(decl) => {
+                self.resolve_type_expr(&decl.type_expr, Span::default());
+            }
+            ast::BlueprintStmt::FragmentCreation(frag) => {
+                if let Some(body) = &frag.body {
+                    self.resolve_fragment_body_types(body);
+                }
+            }
+            ast::BlueprintStmt::Control(ctrl) => {
+                self.resolve_control_stmt_types(ctrl);
+            }
+            ast::BlueprintStmt::SlotBinding(binding) => {
+                self.resolve_slot_binding_types(binding);
+            }
+            _ => {}
+        }
+    }
+
+    fn resolve_fragment_body_types(&mut self, body: &ast::FragmentBody) {
+        match body {
+            ast::FragmentBody::Default(stmts) => {
+                for stmt in stmts {
+                    self.resolve_blueprint_stmt_types(stmt);
+                }
+            }
+            ast::FragmentBody::Slots(slots) => {
+                for slot in slots {
+                    self.resolve_slot_binding_types(slot);
+                }
+            }
+            ast::FragmentBody::InlineBlueprint { body, .. } => {
+                for stmt in body {
+                    self.resolve_blueprint_stmt_types(stmt);
+                }
+            }
+        }
+    }
+
+    fn resolve_slot_binding_types(&mut self, binding: &ast::SlotBinding) {
+        if let ast::BlueprintValue::Inline { body, .. } = &binding.blueprint {
+            for stmt in body {
+                self.resolve_blueprint_stmt_types(stmt);
+            }
+        }
+    }
+
+    fn resolve_control_stmt_types(&mut self, ctrl: &ast::ControlStmt) {
+        match ctrl {
+            ast::ControlStmt::When { then_stmt, else_stmt, .. } => {
+                self.resolve_blueprint_stmt_types(then_stmt);
+                if let Some(else_stmt) = else_stmt {
+                    self.resolve_blueprint_stmt_types(else_stmt);
+                }
+            }
+            ast::ControlStmt::Repeat { body, .. } => {
+                for stmt in body {
+                    self.resolve_blueprint_stmt_types(stmt);
+                }
+            }
+            ast::ControlStmt::Select { branches, else_branch, .. } => {
+                for branch in branches {
+                    self.resolve_blueprint_stmt_types(&branch.body);
+                }
+                if let Some(else_stmt) = else_branch {
+                    self.resolve_blueprint_stmt_types(else_stmt);
+                }
+            }
+        }
+    }
+
+    fn resolve_scheme_types(&mut self, sc: &ast::Scheme) {
+        for member in &sc.members {
+            match member {
+                ast::SchemeMember::Field(field) => {
+                    self.resolve_type_expr(&field.type_expr, Span::default());
+                }
+                ast::SchemeMember::Virtual(virt) => {
+                    self.resolve_type_expr(&virt.type_expr, Span::default());
+                }
+            }
+        }
+    }
+
+    fn resolve_contract_types(&mut self, ct: &ast::Contract) {
+        for method in &ct.methods {
+            for param in &method.params {
+                self.resolve_type_expr(&param.type_expr, Span::default());
+            }
+            if let Some(ret) = &method.return_type {
+                self.resolve_type_expr(ret, Span::default());
+            }
+        }
+    }
+
+    fn resolve_theme_types(&mut self, th: &ast::Theme) {
+        for member in &th.members {
+            if let ast::ThemeMember::Field(field) = member {
+                self.resolve_type_expr(&field.type_expr, Span::default());
+            }
+        }
+    }
+
+    /// Resolve a TypeExpr to a Type, looking up imports in the registry
+    fn resolve_type_expr(&mut self, type_expr: &TypeExpr, span: Span) -> Type {
+        let ty = match type_expr {
+            TypeExpr::Named(name) => self.resolve_named_type(name, span),
+            TypeExpr::Nullable(inner) => {
+                let inner_ty = self.resolve_type_expr(inner, span);
+                Type::Nullable(Box::new(inner_ty))
+            }
+            TypeExpr::Ref(inner) => {
+                let inner_ty = self.resolve_type_expr(inner, span);
+                Type::Ref(Box::new(inner_ty))
+            }
+            TypeExpr::Draft(inner) => {
+                let inner_ty = self.resolve_type_expr(inner, span);
+                Type::Draft(Box::new(inner_ty))
+            }
+            TypeExpr::Asset(inner) => {
+                let inner_ty = self.resolve_type_expr(inner, span);
+                Type::Asset(Box::new(inner_ty))
+            }
+            TypeExpr::List(elem) => {
+                let elem_ty = self.resolve_type_expr(elem, span);
+                Type::List(Box::new(elem_ty))
+            }
+            TypeExpr::Set(elem) => {
+                let elem_ty = self.resolve_type_expr(elem, span);
+                Type::Set(Box::new(elem_ty))
+            }
+            TypeExpr::Map(key, value) => {
+                let key_ty = self.resolve_type_expr(key, span);
+                let value_ty = self.resolve_type_expr(value, span);
+                Type::Map(Box::new(key_ty), Box::new(value_ty))
+            }
+            TypeExpr::Tree(elem) => {
+                let elem_ty = self.resolve_type_expr(elem, span);
+                Type::Tree(Box::new(elem_ty))
+            }
+            TypeExpr::Blueprint(params) => {
+                let _param_types: Vec<_> = params
+                    .iter()
+                    .map(|p| self.resolve_type_expr(p, span))
+                    .collect();
+                Type::Unknown
+            }
+            TypeExpr::Accessor(inner) => {
+                let inner_ty = self.resolve_type_expr(inner, span);
+                Type::Accessor(Box::new(inner_ty))
+            }
+        };
+
+        self.inner.type_resolutions.insert(span, ty.clone());
+        ty
+    }
+
+    /// Resolve a named type, looking up imports in the registry
+    ///
+    /// External symbols are already imported into the symbol table by resolve_with_registry,
+    /// so this just uses normal symbol lookup.
+    fn resolve_named_type(&mut self, name: &str, span: Span) -> Type {
+        // First try intrinsic types
+        if let Some(ty) = Type::from_intrinsic_name(name) {
+            return ty;
+        }
+
+        // Look up in symbol table (includes imported external symbols)
+        if let Some(symbol_id) = self.inner.symbols.lookup_in_scope_chain(
+            self.inner.current_scope,
+            name,
+            self.inner.scopes,
+        ) {
+            if let Some(symbol) = self.inner.symbols.get(symbol_id) {
+                return self.inner.symbol_to_type(symbol);
+            }
+        }
+
+        // Type not found
+        self.inner.diagnostics.add(
+            Diagnostic::from_code(&codes::E0402, span, format!("unknown type `{}`", name))
+                .with_help("Check the spelling or make sure the type is defined or imported."),
+        );
+        Type::Error
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

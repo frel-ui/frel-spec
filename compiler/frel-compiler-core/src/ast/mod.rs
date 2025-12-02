@@ -31,6 +31,7 @@ pub struct File {
 pub struct Import {
     pub module: String,
     pub name: String,
+    pub span: Span,
 }
 
 /// Top-level declaration
@@ -429,7 +430,7 @@ pub struct ThemeField {
     pub is_asset: bool,
     pub type_expr: TypeExpr,
     pub init: Option<Expr>,
-    pub span: crate::source::Span,
+    pub span: Span,
 }
 
 /// Instruction set

@@ -816,6 +816,90 @@ pub fn resolve(file: &ast::File) -> ResolveResult {
     Resolver::new().resolve(file)
 }
 
+/// Resolve names in a file AST with access to external module signatures
+///
+/// This extends basic resolution by resolving imported names against
+/// the provided SignatureRegistry, enabling cross-module type checking.
+pub fn resolve_with_registry(
+    file: &ast::File,
+    registry: &super::signature::SignatureRegistry,
+) -> ResolveResult {
+    ResolverWithRegistry::new(registry).resolve(file)
+}
+
+/// Name resolver with access to external module signatures
+struct ResolverWithRegistry<'a> {
+    inner: Resolver,
+    registry: &'a super::signature::SignatureRegistry,
+}
+
+impl<'a> ResolverWithRegistry<'a> {
+    fn new(registry: &'a super::signature::SignatureRegistry) -> Self {
+        Self {
+            inner: Resolver::new(),
+            registry,
+        }
+    }
+
+    fn resolve(mut self, file: &ast::File) -> ResolveResult {
+        // Create root/module scope
+        self.inner.current_scope = self.inner.scopes.create_root(Span::default());
+
+        // Collect imports and validate them against registry
+        self.collect_and_validate_imports(file);
+
+        // First pass: collect all top-level declarations
+        self.inner.collect_top_level_declarations(file);
+
+        // Second pass: resolve within each declaration body
+        self.inner.resolve_declarations(file);
+
+        ResolveResult {
+            scopes: self.inner.scopes,
+            symbols: self.inner.symbols,
+            diagnostics: self.inner.diagnostics,
+            resolutions: self.inner.resolutions,
+            imports: self.inner.imports,
+        }
+    }
+
+    fn collect_and_validate_imports(&mut self, file: &ast::File) {
+        for import in &file.imports {
+            // Validate that the import exists in the registry
+            if let Some(export) = self.registry.resolve_import(&import.module, &import.name) {
+                // Import the external symbol into the local symbol table
+                // This allows type checking to use normal symbol lookup
+                self.inner.symbols.define_external(
+                    &export.name,
+                    export.kind,
+                    ScopeId::ROOT,
+                    import.span,
+                    import.module.clone(),
+                );
+
+                // Store the imported name mapping to its module (for diagnostics)
+                self.inner.imports.insert(import.name.clone(), import.module.clone());
+            } else {
+                // Check if the module exists at all
+                if self.registry.get(&import.module).is_none() {
+                    self.inner.diagnostics.error(
+                        format!("module '{}' not found", import.module),
+                        import.span,
+                    );
+                } else {
+                    self.inner.diagnostics.error(
+                        format!(
+                            "'{}' is not exported from module '{}'",
+                            import.name, import.module
+                        ),
+                        import.span,
+                    );
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -12,15 +12,24 @@
 pub mod dump;
 pub mod resolve;
 pub mod scope;
+pub mod signature;
+pub mod signature_builder;
 pub mod symbol;
 pub mod typecheck;
 pub mod types;
+pub mod module_analysis;
 
 pub use dump::dump as dump_semantic;
-pub use resolve::{resolve, ResolveResult, Resolver};
+pub use resolve::{resolve, resolve_with_registry, ResolveResult, Resolver};
 pub use scope::{Scope, ScopeGraph, ScopeId, ScopeKind};
+pub use signature::{
+    ExportedDecl, ModuleSignature, SerializableScope, SerializableScopeGraph,
+    SerializableSymbol, SerializableSymbolTable, SignatureRegistry, SIGNATURE_VERSION,
+};
+pub use signature_builder::{build_signature, SignatureResult};
+pub use module_analysis::{analyze_module, ModuleAnalysisResult};
 pub use symbol::{LookupResult, Symbol, SymbolId, SymbolKind, SymbolTable};
-pub use typecheck::{typecheck, TypeCheckResult, TypeChecker};
+pub use typecheck::{typecheck, typecheck_with_registry, TypeCheckResult, TypeChecker};
 pub use types::{ResolvedType, Type};
 
 use crate::ast;
@@ -87,6 +96,37 @@ pub fn analyze(file: &ast::File) -> SemanticResult {
         resolutions: resolve_result.resolutions,
         expr_types: typecheck_result.expr_types,
         type_resolutions: typecheck_result.type_resolutions,
+    }
+}
+
+/// A module compilation unit (one or more files with the same module declaration)
+#[derive(Debug)]
+pub struct Module {
+    /// Module path (e.g., "test.data")
+    pub path: String,
+    /// Files that make up this module (each has source_path and spans)
+    pub files: Vec<ast::File>,
+}
+
+impl Module {
+    /// Create a new module from a single file
+    pub fn from_file(file: ast::File) -> Self {
+        let path = file.module.clone();
+        Self {
+            path,
+            files: vec![file],
+        }
+    }
+
+    /// Create a new module from multiple files
+    /// All files must have the same module path
+    pub fn from_files(path: String, files: Vec<ast::File>) -> Self {
+        Self { path, files }
+    }
+
+    /// Add a file to this module
+    pub fn add_file(&mut self, file: ast::File) {
+        self.files.push(file);
     }
 }
 
@@ -161,4 +201,5 @@ backend A { }
         assert!(!result.success());
         assert_eq!(result.error_count(), 1);
     }
+
 }

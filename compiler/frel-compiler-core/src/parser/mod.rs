@@ -369,20 +369,23 @@ impl<'a> Parser<'a> {
 
     /// Parse import statement: import foo.bar.Baz
     fn parse_import(&mut self) -> Option<ast::Import> {
+        let start = self.current().span.start;
         self.expect_contextual(contextual::IMPORT)?;
 
         // Parse module path up to the last component
         let mut parts = vec![self.expect_identifier()?];
+        let mut end = self.previous_span().end;
 
         while self.consume(TokenKind::Dot).is_some() {
             parts.push(self.expect_identifier()?);
+            end = self.previous_span().end;
         }
 
         // Last part is the name, rest is module path
         let name = parts.pop()?;
         let module = parts.join(".");
 
-        Some(ast::Import { module, name })
+        Some(ast::Import { module, name, span: Span::new(start, end) })
     }
 
     /// Parse a top-level declaration
