@@ -158,8 +158,8 @@ impl<'a> TypeChecker<'a> {
     fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt, context_span: Span) {
         match stmt {
             ast::BlueprintStmt::LocalDecl(decl) => {
-                // LocalDecl has no span, use context
-                self.resolve_type_expr(&decl.type_expr, context_span);
+                // LocalDecl now has its own span
+                self.resolve_type_expr(&decl.type_expr, decl.span);
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
                 if let Some(body) = &frag.body {
@@ -443,18 +443,40 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
+        // First pass: resolve all LocalDecl types and store in symbol_types
+        // This is needed so that field references in later initializers can be resolved
+        for stmt in &bp.body {
+            if let ast::BlueprintStmt::LocalDecl(decl) = stmt {
+                let decl_type = self.resolve_type_expr(&decl.type_expr, decl.span);
+                // Look up the local's symbol and store its type
+                if let Some(local_symbol_id) = self.symbols.lookup_local(self.current_scope, &decl.name) {
+                    self.symbol_types.insert(local_symbol_id, decl_type);
+                }
+            }
+        }
+
+        // Second pass: check all statements
         for stmt in &bp.body {
             self.check_blueprint_stmt(stmt);
         }
 
         self.current_scope = saved_scope;
+        self.context_span = Span::default();
     }
 
     fn check_blueprint_stmt(&mut self, stmt: &ast::BlueprintStmt) {
         match stmt {
             ast::BlueprintStmt::LocalDecl(decl) => {
-                let _init_type = self.infer_expr_type(&decl.init);
-                // TODO: Check compatibility with declared type
+                self.context_span = decl.span;
+                // Get the expected type (already resolved in first pass)
+                if let Some(local_symbol_id) = self.symbols.lookup_local(self.current_scope, &decl.name) {
+                    let expected_type = self.symbol_types.get(&local_symbol_id).cloned().unwrap_or(Type::Unknown);
+                    // Check the initializer against the expected type
+                    let _init_type = self.check_expr_type(&decl.init, &expected_type);
+                    // TODO: Check that init_type is compatible with expected_type
+                } else {
+                    let _init_type = self.infer_expr_type(&decl.init);
+                }
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
                 for arg in &frag.args {
@@ -1220,8 +1242,8 @@ impl<'a> TypeCheckerWithRegistry<'a> {
     fn resolve_blueprint_stmt_types(&mut self, stmt: &ast::BlueprintStmt, context_span: Span) {
         match stmt {
             ast::BlueprintStmt::LocalDecl(decl) => {
-                // LocalDecl has no span, use context
-                self.resolve_type_expr(&decl.type_expr, context_span);
+                // LocalDecl now has its own span
+                self.resolve_type_expr(&decl.type_expr, decl.span);
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
                 if let Some(body) = &frag.body {

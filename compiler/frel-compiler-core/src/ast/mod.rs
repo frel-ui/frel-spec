@@ -80,6 +80,7 @@ pub struct LocalDecl {
     pub name: String,
     pub type_expr: TypeExpr,
     pub init: Expr,
+    pub span: Span,
 }
 
 /// Fragment creation

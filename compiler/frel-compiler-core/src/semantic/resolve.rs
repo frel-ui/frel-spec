@@ -275,7 +275,7 @@ impl Resolver {
                     &decl.name,
                     SymbolKind::LocalVar,
                     self.current_scope,
-                    Span::default(),
+                    decl.span,
                 );
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {

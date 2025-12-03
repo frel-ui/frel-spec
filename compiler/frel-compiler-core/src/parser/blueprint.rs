@@ -81,15 +81,19 @@ impl<'a> Parser<'a> {
 
             // Local declaration: name : type = expr
             TokenKind::Identifier if self.is_local_decl_start() => {
+                let start = self.current_span().start;
                 let name = self.expect_identifier()?;
                 self.expect(TokenKind::Colon)?;
                 let type_expr = self.parse_type_expr()?;
                 self.expect(TokenKind::Eq)?;
                 let init = self.parse_expr()?;
+                let end = self.previous_span().end;
+                let span = crate::source::Span::new(start, end);
                 Some(BlueprintStmt::LocalDecl(LocalDecl {
                     name,
                     type_expr,
                     init,
+                    span,
                 }))
             }
 
