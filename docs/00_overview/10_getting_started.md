@@ -74,6 +74,7 @@ frel/
 │   ├── frel-compiler-core/        # Core: parser, AST, type checker
 │   ├── frel-compiler-plugin-javascript/  # JavaScript code generation
 │   ├── frel-compiler-cli/         # CLI binary (frelc)
+│   ├── frel-compiler-server/      # Compiler server (frel-server)
 │   ├── frel-compiler-test/        # Compiler testing tool
 │   └── test-data/                 # Compiler test data
 │
@@ -129,6 +130,38 @@ cargo test
 cd compiler
 cargo run --bin frelc -- compile ../examples/counter/src/counter.frel
 ```
+
+### Compiler Server
+
+The compiler server (`frel-server`) provides an always-compiled daemon with HTTP API, optimized for AI-assisted workflows.
+
+**Starting the server:**
+```bash
+cd compiler
+cargo run --package frel-compiler-server -- ../examples/counter
+```
+
+**One-shot compilation (for CI):**
+```bash
+cd compiler
+cargo run --package frel-compiler-server -- ../examples/counter --once
+```
+
+**With custom port and output:**
+```bash
+cargo run --package frel-compiler-server -- /path/to/project --port 8080 --output dist/
+```
+
+**HTTP API endpoints:**
+- `GET /status` - Server status (initialized, error_count, module_count)
+- `GET /modules` - List all modules with status
+- `GET /diagnostics` - All diagnostics
+- `GET /diagnostics/{module}` - Module-specific diagnostics
+- `GET /ast/{module}` - JSON-serialized AST
+- `GET /generated/{module}` - Generated JavaScript
+- `POST /notify` - Push file change notification
+
+For full documentation, see [Compiler Server](/docs/30_compiler/10_compiler_server.md).
 
 ### Compiler Testing
 

@@ -31,7 +31,7 @@ pub struct ModulesResponse {
     pub modules: Vec<ModuleInfo>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct DiagnosticInfo {
     pub severity: String,
     pub code: Option<String>,
@@ -61,6 +61,40 @@ pub struct GeneratedResponse {
     pub javascript: String,
 }
 
+// === Scope dump types ===
+
+#[derive(Serialize)]
+pub struct ScopeInfo {
+    pub id: u32,
+    pub kind: String,
+    pub parent: Option<u32>,
+    pub name: Option<String>,
+    pub children: Vec<u32>,
+    pub symbols: Vec<SymbolInfo>,
+}
+
+#[derive(Serialize)]
+pub struct SymbolInfo {
+    pub id: u32,
+    pub name: String,
+    pub kind: String,
+    pub body_scope: Option<u32>,
+    pub source_module: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ScopeResponse {
+    pub module: String,
+    pub scopes: Vec<ScopeInfo>,
+}
+
+#[derive(Serialize)]
+pub struct SourceResponse {
+    pub path: String,
+    pub content: String,
+    pub module: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct NotifyRequest {
     pub path: String,
@@ -72,6 +106,54 @@ pub struct NotifyResponse {
     pub modules_rebuilt: Vec<String>,
     pub duration_ms: u64,
     pub error_count: usize,
+}
+
+#[derive(Deserialize)]
+pub struct WriteRequest {
+    pub path: String,
+    pub content: String,
+}
+
+#[derive(Serialize)]
+pub struct WriteResponse {
+    pub success: bool,
+    pub modules_rebuilt: Vec<String>,
+    pub duration_ms: u64,
+    pub error_count: usize,
+}
+
+// === Expectations types (for compiler development mode) ===
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ModuleExpectations {
+    pub module: String,
+    pub ast: Option<serde_json::Value>,
+    pub diagnostics: Vec<DiagnosticInfo>,
+    pub generated_js: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ExpectationsResponse {
+    pub module: String,
+    pub exists: bool,
+    pub expectations: Option<ModuleExpectations>,
+}
+
+#[derive(Serialize)]
+pub struct SaveExpectationsResponse {
+    pub success: bool,
+    pub module: String,
+}
+
+#[derive(Serialize)]
+pub struct CompareResponse {
+    pub module: String,
+    pub has_differences: bool,
+    pub ast_matches: bool,
+    pub diagnostics_match: bool,
+    pub generated_js_matches: bool,
+    pub current: ModuleExpectations,
+    pub expected: Option<ModuleExpectations>,
 }
 
 // === Handlers ===
@@ -289,6 +371,55 @@ pub async fn get_module_generated(
     }))
 }
 
+/// GET /scope/{module} - Get scope dump for a module
+pub async fn get_module_scope(
+    state: web::Data<SharedState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let module_path = path.into_inner();
+    let state = state.read().await;
+
+    if let Some(entry) = state.analysis_cache.get(&module_path) {
+        let mut scopes = Vec::new();
+
+        // Iterate through all scopes in the scope graph
+        for scope in entry.result.scopes.iter() {
+            // Get symbols defined in this scope
+            let symbols: Vec<SymbolInfo> = entry
+                .result
+                .symbols
+                .symbols_in_scope(scope.id)
+                .map(|sym| SymbolInfo {
+                    id: sym.id.0,
+                    name: sym.name.clone(),
+                    kind: sym.kind.as_str().to_string(),
+                    body_scope: sym.body_scope.map(|s| s.0),
+                    source_module: sym.source_module.clone(),
+                })
+                .collect();
+
+            scopes.push(ScopeInfo {
+                id: scope.id.0,
+                kind: scope.kind.as_str().to_string(),
+                parent: scope.parent.map(|p| p.0),
+                name: scope.name.clone(),
+                children: scope.children.iter().map(|c| c.0).collect(),
+                symbols,
+            });
+        }
+
+        return HttpResponse::Ok().json(ScopeResponse {
+            module: module_path,
+            scopes,
+        });
+    }
+
+    HttpResponse::NotFound().json(serde_json::json!({
+        "error": "Module not found or not compiled",
+        "module": module_path
+    }))
+}
+
 /// POST /notify - Notify server of a file change
 pub async fn post_notify(
     state: web::Data<SharedState>,
@@ -309,6 +440,70 @@ pub async fn post_notify(
     })
 }
 
+/// POST /write - Write content to a file and trigger recompilation
+pub async fn post_write(
+    state: web::Data<SharedState>,
+    body: web::Json<WriteRequest>,
+) -> impl Responder {
+    let path = PathBuf::from(&body.path);
+
+    // Write file to disk
+    if let Err(e) = std::fs::write(&path, &body.content) {
+        return HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": format!("Failed to write file: {}", e),
+            "path": path.display().to_string()
+        }));
+    }
+
+    // Trigger recompilation
+    let result = {
+        let mut state = state.write().await;
+        compiler::handle_file_change(&mut state, &path)
+    };
+
+    HttpResponse::Ok().json(WriteResponse {
+        success: true,
+        modules_rebuilt: result.modules_rebuilt,
+        duration_ms: result.duration.as_millis() as u64,
+        error_count: result.error_count,
+    })
+}
+
+/// GET /source/{path} - Get source file content
+pub async fn get_source(
+    state: web::Data<SharedState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let file_path = PathBuf::from(path.into_inner());
+    let state = state.read().await;
+
+    // Check if we have this file in cache
+    if let Some(entry) = state.sources.get(&file_path) {
+        let module = state.module_index.module_for_file(&file_path).map(|s| s.to_string());
+        return HttpResponse::Ok().json(SourceResponse {
+            path: file_path.display().to_string(),
+            content: entry.content.clone(),
+            module,
+        });
+    }
+
+    // Try to read from disk if not in cache
+    match std::fs::read_to_string(&file_path) {
+        Ok(content) => {
+            let module = state.module_index.module_for_file(&file_path).map(|s| s.to_string());
+            HttpResponse::Ok().json(SourceResponse {
+                path: file_path.display().to_string(),
+                content,
+                module,
+            })
+        }
+        Err(_) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": "File not found",
+            "path": file_path.display().to_string()
+        })),
+    }
+}
+
 /// GET /events - SSE endpoint for compilation events
 pub async fn get_events() -> impl Responder {
     // TODO: Implement SSE stream
@@ -316,4 +511,180 @@ pub async fn get_events() -> impl Responder {
     HttpResponse::Ok()
         .content_type("text/event-stream")
         .body("data: {\"type\": \"connected\"}\n\n")
+}
+
+// === Expectations handlers (for compiler development mode) ===
+
+fn expectations_dir(state: &crate::state::ProjectState) -> PathBuf {
+    state.root.join(".grove-expectations")
+}
+
+fn expectations_file(state: &crate::state::ProjectState, module: &str) -> PathBuf {
+    let sanitized = module.replace('/', "_").replace('\\', "_");
+    expectations_dir(state).join(format!("{}.json", sanitized))
+}
+
+fn get_current_module_state(
+    state: &crate::state::ProjectState,
+    module_path: &str,
+) -> ModuleExpectations {
+    // Get AST
+    let ast = state
+        .module_index
+        .files_for_module(module_path)
+        .first()
+        .and_then(|file_path| state.parse_cache.get(file_path))
+        .map(|entry| serde_json::to_value(&entry.file).unwrap_or(serde_json::Value::Null));
+
+    // Get diagnostics
+    let mut diagnostics = Vec::new();
+    if let Some(entry) = state.analysis_cache.get(module_path) {
+        for diag in entry.result.diagnostics.iter() {
+            diagnostics.push(DiagnosticInfo {
+                severity: format!("{:?}", diag.severity).to_lowercase(),
+                code: diag.code.clone(),
+                message: diag.message.clone(),
+                file: None,
+                line: None,
+                column: None,
+            });
+        }
+    }
+    for file_path in state.module_index.files_for_module(module_path) {
+        if let Some(entry) = state.parse_cache.get(file_path) {
+            for diag in entry.diagnostics.iter() {
+                diagnostics.push(DiagnosticInfo {
+                    severity: format!("{:?}", diag.severity).to_lowercase(),
+                    code: diag.code.clone(),
+                    message: diag.message.clone(),
+                    file: Some(file_path.display().to_string()),
+                    line: None,
+                    column: None,
+                });
+            }
+        }
+    }
+
+    // Get generated JS
+    let generated_js = state
+        .analysis_cache
+        .get(module_path)
+        .map(|entry| entry.generated_js.clone());
+
+    ModuleExpectations {
+        module: module_path.to_string(),
+        ast,
+        diagnostics,
+        generated_js,
+    }
+}
+
+/// GET /expectations/{module} - Get expected results for a module
+pub async fn get_expectations(
+    state: web::Data<SharedState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let module_path = path.into_inner();
+    let state = state.read().await;
+
+    let exp_file = expectations_file(&state, &module_path);
+
+    if exp_file.exists() {
+        match std::fs::read_to_string(&exp_file) {
+            Ok(content) => match serde_json::from_str::<ModuleExpectations>(&content) {
+                Ok(expectations) => {
+                    return HttpResponse::Ok().json(ExpectationsResponse {
+                        module: module_path,
+                        exists: true,
+                        expectations: Some(expectations),
+                    });
+                }
+                Err(_) => {}
+            },
+            Err(_) => {}
+        }
+    }
+
+    HttpResponse::Ok().json(ExpectationsResponse {
+        module: module_path,
+        exists: false,
+        expectations: None,
+    })
+}
+
+/// POST /expectations/{module}/save - Save current results as expected
+pub async fn save_expectations(
+    state: web::Data<SharedState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let module_path = path.into_inner();
+    let state = state.read().await;
+
+    let current = get_current_module_state(&state, &module_path);
+    let exp_dir = expectations_dir(&state);
+    let exp_file = expectations_file(&state, &module_path);
+
+    // Create expectations directory if it doesn't exist
+    if let Err(e) = std::fs::create_dir_all(&exp_dir) {
+        return HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": format!("Failed to create expectations directory: {}", e)
+        }));
+    }
+
+    // Write expectations file
+    match serde_json::to_string_pretty(&current) {
+        Ok(json) => match std::fs::write(&exp_file, json) {
+            Ok(_) => HttpResponse::Ok().json(SaveExpectationsResponse {
+                success: true,
+                module: module_path,
+            }),
+            Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": format!("Failed to write expectations file: {}", e)
+            })),
+        },
+        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": format!("Failed to serialize expectations: {}", e)
+        })),
+    }
+}
+
+/// GET /compare/{module} - Compare current results with expected
+pub async fn compare_expectations(
+    state: web::Data<SharedState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let module_path = path.into_inner();
+    let state = state.read().await;
+
+    let current = get_current_module_state(&state, &module_path);
+    let exp_file = expectations_file(&state, &module_path);
+
+    let expected = if exp_file.exists() {
+        std::fs::read_to_string(&exp_file)
+            .ok()
+            .and_then(|content| serde_json::from_str::<ModuleExpectations>(&content).ok())
+    } else {
+        None
+    };
+
+    let (ast_matches, diagnostics_match, generated_js_matches) = if let Some(ref exp) = expected {
+        let ast_matches = current.ast == exp.ast;
+        let diagnostics_match = current.diagnostics == exp.diagnostics;
+        let generated_js_matches = current.generated_js == exp.generated_js;
+        (ast_matches, diagnostics_match, generated_js_matches)
+    } else {
+        (true, true, true) // No expectations = no differences
+    };
+
+    let has_differences = !ast_matches || !diagnostics_match || !generated_js_matches;
+
+    HttpResponse::Ok().json(CompareResponse {
+        module: module_path,
+        has_differences,
+        ast_matches,
+        diagnostics_match,
+        generated_js_matches,
+        current,
+        expected,
+    })
 }

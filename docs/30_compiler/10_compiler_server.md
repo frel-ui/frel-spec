@@ -176,6 +176,39 @@ Returns generated JavaScript for a module (empty if module has errors).
 }
 ```
 
+### Get Scope Dump
+
+```
+GET /scope/{module}
+```
+
+Returns the scope graph and symbol table for a module, useful for debugging the compiler's semantic analysis.
+
+**Response:**
+```json
+{
+  "module": "examples.counter",
+  "scopes": [
+    {
+      "id": 0,
+      "kind": "module",
+      "parent": null,
+      "name": null,
+      "children": [1, 2],
+      "symbols": [
+        {
+          "id": 0,
+          "name": "Counter",
+          "kind": "blueprint",
+          "body_scope": 1,
+          "source_module": null
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### Push File Change
 
 ```
@@ -188,6 +221,47 @@ Content-Type: application/json
 ```
 
 Notifies the server of a file change (alternative to file watching).
+
+**Response:**
+```json
+{
+  "success": true,
+  "modules_rebuilt": ["examples.counter"],
+  "duration_ms": 45,
+  "error_count": 0
+}
+```
+
+### Get Source File
+
+```
+GET /source/{path}
+```
+
+Returns the content of a source file.
+
+**Response:**
+```json
+{
+  "path": "/path/to/counter.frel",
+  "content": "module examples.counter\n...",
+  "module": "examples.counter"
+}
+```
+
+### Write File
+
+```
+POST /write
+Content-Type: application/json
+
+{
+  "path": "/path/to/file.frel",
+  "content": "module examples.counter\n..."
+}
+```
+
+Writes content to a file and triggers recompilation.
 
 **Response:**
 ```json
@@ -217,6 +291,71 @@ data: {"type": "file_changed", "path": "/path/to/file.frel"}
 
 data: {"type": "module_updated", "module": "examples.counter", "has_errors": false}
 ```
+
+### Expectations API (Compiler Dev Mode)
+
+These endpoints support the Grove IDE's compiler development mode for saving and comparing expected compilation results.
+
+#### Get Expectations
+
+```
+GET /expectations/{module}
+```
+
+Returns saved expected results for a module.
+
+**Response:**
+```json
+{
+  "module": "examples.counter",
+  "exists": true,
+  "expectations": {
+    "module": "examples.counter",
+    "ast": { ... },
+    "diagnostics": [],
+    "generated_js": "// Generated code..."
+  }
+}
+```
+
+#### Save Expectations
+
+```
+POST /expectations/{module}/save
+```
+
+Saves current compilation results as expected for future comparison.
+
+**Response:**
+```json
+{
+  "success": true,
+  "module": "examples.counter"
+}
+```
+
+#### Compare Results
+
+```
+GET /compare/{module}
+```
+
+Compares current compilation results with saved expectations.
+
+**Response:**
+```json
+{
+  "module": "examples.counter",
+  "has_differences": false,
+  "ast_matches": true,
+  "diagnostics_match": true,
+  "generated_js_matches": true,
+  "current": { ... },
+  "expected": { ... }
+}
+```
+
+Expectations are stored in `.grove-expectations/` directory in the project root.
 
 ## Compilation Flow
 

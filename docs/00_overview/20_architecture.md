@@ -17,7 +17,7 @@ Frel follows a three-layer architecture that separates concerns between compilat
 │                  Compiler (Rust)                            │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │  frel-core   │─>│    Plugin    │─>│    frelc     │       │
-│  │ Parser, AST  │  │ (per target) │  │              │       │
+│  │ Parser, AST  │  │ (per target) │  │  frel-server │       │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
 └─────────────────────┬───────────────────────────────────────┘
                       │ generates
@@ -74,6 +74,13 @@ Located in `compiler/`
 - Command-line interface
 - File compilation
 - Error reporting
+
+**frel-server** (Compiler Server)
+- Always-compiled daemon for project directories
+- HTTP/JSON API for status, diagnostics, AST, generated code
+- File watching with automatic recompilation
+- Optimized for AI-assisted workflows
+- See [Compiler Server](/docs/30_compiler/10_compiler_server.md)
 
 ### 2. Runtime (Host Language)
 

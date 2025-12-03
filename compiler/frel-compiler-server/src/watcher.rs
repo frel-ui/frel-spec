@@ -6,12 +6,17 @@ use std::time::Duration;
 
 use anyhow::Result;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use tokio::sync::watch;
 
 use crate::compiler;
 use crate::state::SharedState;
 
-/// Run the file watcher
-pub async fn run_watcher(state: SharedState, root: impl AsRef<Path>) -> Result<()> {
+/// Run the file watcher with shutdown support
+pub async fn run_watcher(
+    state: SharedState,
+    root: impl AsRef<Path>,
+    shutdown: watch::Receiver<bool>,
+) -> Result<()> {
     let root = root.as_ref().to_path_buf();
 
     // Create a channel for file system events
@@ -34,8 +39,14 @@ pub async fn run_watcher(state: SharedState, root: impl AsRef<Path>) -> Result<(
 
     // Process events
     loop {
-        // Use recv_timeout to allow periodic checks
-        match rx.recv_timeout(Duration::from_millis(500)) {
+        // Check for shutdown signal
+        if *shutdown.borrow() {
+            println!("File watcher shutting down...");
+            break;
+        }
+
+        // Use recv_timeout to allow periodic shutdown checks
+        match rx.recv_timeout(Duration::from_millis(200)) {
             Ok(event) => {
                 // Filter for .frel files and clone them
                 let frel_paths: Vec<_> = event
