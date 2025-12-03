@@ -1,5 +1,7 @@
 module blueprint.fragment_with_args
 
+import test.blueprint
+
 blueprint Child(value: i32, label: String) {
     text { "${label}: ${value}" }
 }

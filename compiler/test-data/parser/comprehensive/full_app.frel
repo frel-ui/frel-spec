@@ -1,7 +1,8 @@
 module comprehensive.full_app
 
-import test.data.User
-import test.themes.AppTheme
+import test.blueprint
+import test.data
+import test.theme
 
 enum TaskStatus { Todo InProgress Done Cancelled }
 

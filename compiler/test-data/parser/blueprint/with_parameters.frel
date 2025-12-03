@@ -1,5 +1,7 @@
 module blueprint.with_parameters
 
+import test.blueprint
+
 blueprint Greeting(name: String) {
     text { "Hello, ${name}!" }
 }

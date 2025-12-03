@@ -196,6 +196,11 @@ impl SerializableSymbolTable {
         self.symbols.iter()
     }
 
+    /// Get all symbols defined in a specific scope
+    pub fn symbols_in_scope(&self, scope: ScopeId) -> impl Iterator<Item = &SerializableSymbol> {
+        self.symbols.iter().filter(move |s| s.scope == scope)
+    }
+
     pub fn len(&self) -> usize {
         self.symbols.len()
     }

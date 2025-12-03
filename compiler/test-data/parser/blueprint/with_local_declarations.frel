@@ -1,5 +1,7 @@
 module blueprint.with_local_declarations
 
+import test.blueprint
+
 blueprint Counter {
     count : i32 = 0
     doubled : i32 = count * 2

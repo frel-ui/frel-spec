@@ -918,12 +918,13 @@ impl<'a> ResolverWithRegistry<'a> {
             if let Some(module_sig) = self.registry.get(&import.path) {
                 // Whole-module import: import all exports
                 for export in module_sig.all_exports() {
-                    self.inner.symbols.define_external(
+                    self.import_external_with_body(
                         &export.name,
                         export.kind,
-                        ScopeId::ROOT,
                         import.span,
-                        import.path.clone(),
+                        &import.path,
+                        export.body_scope,
+                        module_sig,
                     );
                     self.inner
                         .imports
@@ -931,25 +932,28 @@ impl<'a> ResolverWithRegistry<'a> {
                 }
             } else if let Some((module, name)) = import.path.rsplit_once('.') {
                 // Single-declaration import
-                if let Some(export) = self.registry.resolve_import(module, name) {
-                    self.inner.symbols.define_external(
-                        &export.name,
-                        export.kind,
-                        ScopeId::ROOT,
-                        import.span,
-                        module.to_string(),
-                    );
-                    self.inner
-                        .imports
-                        .insert(name.to_string(), module.to_string());
-                } else if self.registry.get(module).is_none() {
-                    self.inner.diagnostics.error(
-                        format!("module '{}' not found", module),
-                        import.span,
-                    );
+                if let Some(module_sig) = self.registry.get(module) {
+                    if let Some(export) = module_sig.get_export(name) {
+                        self.import_external_with_body(
+                            &export.name,
+                            export.kind,
+                            import.span,
+                            module,
+                            export.body_scope,
+                            module_sig,
+                        );
+                        self.inner
+                            .imports
+                            .insert(name.to_string(), module.to_string());
+                    } else {
+                        self.inner.diagnostics.error(
+                            format!("'{}' is not exported from module '{}'", name, module),
+                            import.span,
+                        );
+                    }
                 } else {
                     self.inner.diagnostics.error(
-                        format!("'{}' is not exported from module '{}'", name, module),
+                        format!("module '{}' not found", module),
                         import.span,
                     );
                 }
@@ -958,6 +962,65 @@ impl<'a> ResolverWithRegistry<'a> {
                 self.inner.diagnostics.error(
                     format!("module '{}' not found", import.path),
                     import.span,
+                );
+            }
+        }
+    }
+
+    /// Import an external declaration, including its body scope and member symbols
+    fn import_external_with_body(
+        &mut self,
+        name: &str,
+        kind: SymbolKind,
+        span: Span,
+        source_module: &str,
+        body_scope: Option<ScopeId>,
+        module_sig: &super::signature::ModuleSignature,
+    ) {
+        // Define the external symbol
+        let symbol_id = self.inner.symbols.define_external(
+            name,
+            kind,
+            ScopeId::ROOT,
+            span,
+            source_module.to_string(),
+        );
+
+        // If the symbol has a body scope, create a local copy with its members
+        if let (Some(symbol_id), Some(orig_body_scope)) = (symbol_id, body_scope) {
+            // Get the scope kind from the original scope
+            let scope_kind = module_sig
+                .get_scope(orig_body_scope)
+                .map(|s| s.kind)
+                .unwrap_or(ScopeKind::Block);
+
+            // Create a new body scope in our local scope graph
+            let local_body_scope = self.inner.scopes.create_named_scope(
+                scope_kind,
+                ScopeId::ROOT,
+                name,
+                span,
+            );
+
+            // Set the body scope on the imported symbol
+            if let Some(symbol) = self.inner.symbols.get_mut(symbol_id) {
+                symbol.body_scope = Some(local_body_scope);
+            }
+
+            // Copy all member symbols from the original body scope
+            let members: Vec<_> = module_sig
+                .symbols
+                .symbols_in_scope(orig_body_scope)
+                .map(|s| (s.name.clone(), s.kind))
+                .collect();
+
+            for (member_name, member_kind) in members {
+                self.inner.symbols.define_external(
+                    &member_name,
+                    member_kind,
+                    local_body_scope,
+                    span,
+                    source_module.to_string(),
                 );
             }
         }

@@ -1,5 +1,7 @@
 module blueprint.errors.multiple_with
 
+import test.blueprint
+
 backend A {
     x : i32 = 0
 }

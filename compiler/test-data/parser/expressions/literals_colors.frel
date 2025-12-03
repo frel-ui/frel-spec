@@ -1,5 +1,7 @@
 module expressions.literals_colors
 
+import test.blueprint
+
 blueprint ColorLiterals {
     column {
         box { } .. background { color: #FF0000 }

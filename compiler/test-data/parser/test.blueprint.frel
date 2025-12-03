@@ -1,4 +1,4 @@
-module builtin
+module test.blueprint
 
 blueprint text() {
 }
@@ -16,4 +16,10 @@ blueprint text_editor() {
 }
 
 blueprint button() {
+}
+
+blueprint icon() {
+}
+
+blueprint box() {
 }

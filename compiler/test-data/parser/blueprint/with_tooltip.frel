@@ -1,5 +1,7 @@
 module blueprint.with_tooltip
 
+import test.blueprint
+
 // Valid: all slots use `at` syntax
 blueprint ButtonWithTooltip {
     button {

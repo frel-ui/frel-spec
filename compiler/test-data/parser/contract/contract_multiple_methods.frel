@@ -1,5 +1,8 @@
 module contract.contract_multiple_methods
 
+scheme User {
+}
+
 contract UserAPI {
     get_user(id: Uuid) : User
     list_users(page: u32, limit: u32) : List<User>

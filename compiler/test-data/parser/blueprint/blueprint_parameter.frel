@@ -1,6 +1,6 @@
 module blueprint.blueprint_parameter
 
-import builtin
+import test.blueprint
 
 blueprint Container(content: Blueprint) {
     column {

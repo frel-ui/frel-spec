@@ -1,5 +1,7 @@
 module blueprint.with_multiple_parameters
 
+import test.blueprint
+
 blueprint UserCard(
     name: String,
     age: i32,

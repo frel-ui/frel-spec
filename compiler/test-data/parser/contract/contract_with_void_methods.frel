@@ -1,5 +1,8 @@
 module contract.contract_with_void_methods
 
+scheme User {
+}
+
 contract UserAPI {
     update_user(id: Uuid, data: User)
     delete_user(id: Uuid)

@@ -1,5 +1,7 @@
 module blueprint.nested_fragments
 
+import test.blueprint
+
 blueprint Layout {
     column {
         row {

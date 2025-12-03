@@ -1,8 +1,11 @@
 module instructions.chained_instructions
 
+import test.blueprint
+import test.theme
+
 blueprint ChainedInstructions {
     text { "Styled" }
-        .. font { size: 18 weight: 700 color: Black }
+        .. font { size: 18 weight: 700 color: AppTheme.Black }
         .. padding { 12 }
         .. background { color: #F0F0F0 }
         .. corner_radius { 4 }
@@ -10,7 +13,7 @@ blueprint ChainedInstructions {
 
     box {
         .. width { 300 } .. height { 200 } .. padding { 16 }
-        .. background { color: White } .. corner_radius { 8 }
+        .. background { color: AppTheme.White } .. corner_radius { 8 }
         .. shadow { color: #00000040 offset_x: 0 offset_y: 2 blur: 8 }
 
         text { "Card content" }

@@ -1,5 +1,7 @@
 module blueprint.with_default_parameters
 
+import test.blueprint
+
 blueprint Button(
     label: String = "Click me",
     size: i32 = 24,

@@ -995,6 +995,7 @@ impl<'a> TypeChecker<'a> {
                     SymbolKind::Scheme => Type::Scheme(symbol_id),
                     SymbolKind::Enum => Type::Enum(symbol_id),
                     SymbolKind::Contract => Type::Contract(symbol_id),
+                    SymbolKind::Theme => Type::Theme(symbol_id),
                     _ => Type::Unknown,
                 };
             }

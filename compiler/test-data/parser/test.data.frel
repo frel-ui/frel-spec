@@ -1,0 +1,10 @@
+module test.data
+
+scheme User {
+}
+
+scheme Item {
+}
+
+scheme Product {
+}

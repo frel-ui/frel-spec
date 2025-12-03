@@ -1,0 +1,6 @@
+module test.backend
+
+backend UserBackend {
+    userId : Uuid
+    user : User = UserAPI.get_user(userId)
+}

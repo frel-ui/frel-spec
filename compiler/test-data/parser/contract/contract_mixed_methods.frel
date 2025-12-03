@@ -1,5 +1,8 @@
 module contract.contract_mixed_methods
 
+scheme Product {
+}
+
 contract ProductAPI {
     get_product(id: Uuid) : Product
     list_products(category: String, page: u32) : List<Product>

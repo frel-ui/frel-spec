@@ -1,10 +1,9 @@
 module blueprint.complex_blueprint
 
-import builtin
-
-import test.backends.UserBackend
-import test.data.User
-import test.themes.AppTheme
+import test.blueprint
+import test.backend
+import test.data
+import test.theme
 
 blueprint UserProfile(userId: Uuid) {
     with UserBackend(userId)
