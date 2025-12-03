@@ -1,5 +1,7 @@
 module instructions.layout_gap
 
+import test.blueprint
+
 blueprint LayoutGap {
     column {
         .. gap { 16 }

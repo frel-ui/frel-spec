@@ -1,5 +1,7 @@
 module instructions.layout_alignment
 
+import test.blueprint
+
 blueprint LayoutAlignment {
     column {
         .. align_items { horizontal: center vertical: top }

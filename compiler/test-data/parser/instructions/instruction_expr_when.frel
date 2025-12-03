@@ -1,5 +1,7 @@
 module instructions.instruction_expr_when
 
+import test.blueprint
+
 blueprint InstructionExprWhen {
     // when without else
     box { }

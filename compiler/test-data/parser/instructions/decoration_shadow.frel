@@ -1,5 +1,7 @@
 module instructions.decoration_shadow
 
+import test.blueprint
+
 blueprint DecorationShadow {
     column {
         box { } .. shadow { color: #00000080 offset_x: 0 offset_y: 2 blur: 4 }

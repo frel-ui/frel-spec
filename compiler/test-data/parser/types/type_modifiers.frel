@@ -1,5 +1,7 @@
 module types.type_modifiers
 
+import test.blueprint
+
 scheme Article {
     id    : Uuid .. identity
     title : String

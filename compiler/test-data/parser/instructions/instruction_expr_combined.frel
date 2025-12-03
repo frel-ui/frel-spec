@@ -1,5 +1,7 @@
 module instructions.instruction_expr_combined
 
+import test.blueprint
+
 blueprint InstructionExprCombined {
     // conditional with reference in then branch
     box { }

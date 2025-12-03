@@ -1,5 +1,7 @@
 module contract.contract_complex_types
 
+import test.data
+
 contract DataAPI {
     get_items() : List<Item>
     get_item_map() : Map<String, Item>

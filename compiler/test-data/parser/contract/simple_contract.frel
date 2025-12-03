@@ -1,5 +1,7 @@
 module contract.simple_contract
 
+import test.data
+
 contract UserAPI {
     get_user(id: Uuid) : User
 }

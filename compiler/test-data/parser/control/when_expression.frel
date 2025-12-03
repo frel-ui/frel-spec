@@ -1,5 +1,7 @@
 module control.when_expression
 
+import test.blueprint
+
 blueprint WhenExpression {
     count : i32 = 5
     threshold : i32 = 10

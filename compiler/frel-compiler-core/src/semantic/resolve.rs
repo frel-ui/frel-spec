@@ -318,8 +318,10 @@ impl Resolver {
                 );
             }
             ast::BlueprintStmt::FragmentCreation(frag) => {
-                // Resolve the fragment blueprint name
-                self.resolve_name(&frag.name, Span::default());
+                // Resolve the fragment blueprint name (skip for anonymous blocks which have empty names)
+                if !frag.name.is_empty() {
+                    self.resolve_name(&frag.name, Span::default());
+                }
                 // Resolve arguments
                 for arg in &frag.args {
                     self.resolve_expr(&arg.value);

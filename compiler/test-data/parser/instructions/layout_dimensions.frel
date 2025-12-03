@@ -1,5 +1,7 @@
 module instructions.layout_dimensions
 
+import test.blueprint
+
 blueprint LayoutDimensions {
     column {
         box { } .. width { 100 }

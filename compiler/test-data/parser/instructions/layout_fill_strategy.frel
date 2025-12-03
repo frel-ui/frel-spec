@@ -1,5 +1,7 @@
 module instructions.layout_fill_strategy
 
+import test.blueprint
+
 blueprint LayoutFillStrategy {
     row {
         .. fill_strategy { constrain }

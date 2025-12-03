@@ -1,5 +1,7 @@
 module instructions.text_styling
 
+import test.blueprint
+
 blueprint TextStyling {
     column {
         text { "Normal" }

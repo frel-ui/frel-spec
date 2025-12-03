@@ -1,5 +1,7 @@
 module edge_cases.unicode_identifiers
 
+import test.blueprint
+
 blueprint UnicodeStrings {
     greeting : String = "Hello, 世界!"
     emoji : String = "Status: ✅ Complete"

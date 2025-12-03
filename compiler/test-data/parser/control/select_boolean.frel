@@ -1,5 +1,7 @@
 module control.select_boolean
 
+import test.blueprint
+
 blueprint SelectBoolean {
     value : i32 = 15
 

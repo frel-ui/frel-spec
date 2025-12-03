@@ -1,5 +1,7 @@
 module instructions.pointer_events
 
+import test.blueprint
+
 blueprint PointerEvents {
     column {
         box { } .. pointer_events { enabled }

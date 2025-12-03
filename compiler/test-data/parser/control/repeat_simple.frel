@@ -1,5 +1,7 @@
 module control.repeat_simple
 
+import test.blueprint
+
 backend ListBackend {
     items : List<String> = ["Apple", "Banana", "Cherry"]
 }

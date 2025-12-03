@@ -1,5 +1,7 @@
 module instructions.instruction_expr_ternary
 
+import test.blueprint
+
 blueprint InstructionExprTernary {
     // simple ternary
     box { }

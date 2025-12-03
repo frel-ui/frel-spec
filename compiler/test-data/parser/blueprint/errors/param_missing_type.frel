@@ -1,5 +1,7 @@
 module blueprint.errors.param_missing_type
 
+import test.blueprint
+
 blueprint Greeting(name) {
     text { name }
 }

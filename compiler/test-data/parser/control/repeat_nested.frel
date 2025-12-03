@@ -1,5 +1,7 @@
 module control.repeat_nested
 
+import test.blueprint
+
 scheme Category {
     name : String
     items : List<String>

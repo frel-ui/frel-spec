@@ -1,5 +1,7 @@
 module instructions.event_handler_multiple_statements
 
+import test.blueprint
+
 backend CounterBackend {
     count : i32 = 0
     lastAction : String = ""

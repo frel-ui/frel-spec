@@ -1,5 +1,7 @@
 module instructions.focus_instructions
 
+import test.blueprint
+
 blueprint FocusInstructions {
     column {
         box { } .. focusable

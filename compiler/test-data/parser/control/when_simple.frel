@@ -1,5 +1,7 @@
 module control.when_simple
 
+import test.blueprint
+
 blueprint WhenSimple {
     showContent : bool = true
 

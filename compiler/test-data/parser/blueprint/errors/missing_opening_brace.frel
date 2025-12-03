@@ -1,5 +1,7 @@
 module blueprint.errors.missing_opening_brace
 
+import test.blueprint
+
 blueprint Hello
     text { "Hello" }
 }

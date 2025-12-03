@@ -1,5 +1,7 @@
 module instructions.event_handler_it
 
+import test.blueprint
+
 backend EventBackend {
     lastX : f32 = 0.0
     lastY : f32 = 0.0

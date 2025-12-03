@@ -1,5 +1,7 @@
 module control.select_with_blocks
 
+import test.blueprint
+
 enum ViewMode { List Grid Detail }
 
 blueprint SelectWithBlocks {

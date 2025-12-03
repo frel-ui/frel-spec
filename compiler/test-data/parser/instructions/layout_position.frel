@@ -1,5 +1,7 @@
 module instructions.layout_position
 
+import test.blueprint
+
 blueprint LayoutPosition {
     box {
         .. width { 400 }

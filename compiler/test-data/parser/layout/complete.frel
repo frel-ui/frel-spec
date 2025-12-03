@@ -1,5 +1,7 @@
 module layout.complete
 
+import test.blueprint
+
 blueprint CardLayout {
     """layout
     .. gap { 8 }

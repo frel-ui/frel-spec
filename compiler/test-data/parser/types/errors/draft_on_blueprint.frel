@@ -1,5 +1,7 @@
 module types.errors.draft_on_blueprint
 
+import test.blueprint
+
 blueprint renderer(title : String) {
     text { title }
 }

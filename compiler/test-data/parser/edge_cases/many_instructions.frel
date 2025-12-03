@@ -1,5 +1,7 @@
 module edge_cases.many_instructions
 
+import test.blueprint
+
 blueprint ManyInstructions {
     box { }
         .. width { 300 }

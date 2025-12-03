@@ -1,5 +1,7 @@
 module control.control_combined
 
+import test.blueprint
+
 enum Status { Loading Ready Error }
 
 scheme Item {

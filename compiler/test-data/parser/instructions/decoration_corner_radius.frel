@@ -1,5 +1,7 @@
 module instructions.decoration_corner_radius
 
+import test.blueprint
+
 blueprint DecorationCornerRadius {
     column {
         box { } .. corner_radius { 8 }

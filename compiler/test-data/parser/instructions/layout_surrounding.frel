@@ -1,5 +1,7 @@
 module instructions.layout_surrounding
 
+import test.blueprint
+
 blueprint LayoutSurrounding {
     column {
         box { } .. padding { 16 }

@@ -1,5 +1,7 @@
 module types.draft_types
 
+import test.blueprint
+
 blueprint renderer(title : String) {
     text { title }
 }

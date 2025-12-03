@@ -1,5 +1,7 @@
 module control.repeat_with_key
 
+import test.blueprint
+
 scheme Todo {
     id : Uuid .. identity
     text : String

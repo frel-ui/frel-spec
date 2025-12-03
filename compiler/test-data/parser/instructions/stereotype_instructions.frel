@@ -1,5 +1,7 @@
 module instructions.stereotype_instructions
 
+import test.blueprint
+
 blueprint StereotypeInstructions {
     column {
         button { "Cancel" } .. stereotype { cancel }

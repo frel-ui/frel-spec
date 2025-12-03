@@ -1,5 +1,7 @@
 module instructions.instruction_expr_reference
 
+import test.blueprint
+
 blueprint InstructionExprReference {
     // simple field access reference
     box { }

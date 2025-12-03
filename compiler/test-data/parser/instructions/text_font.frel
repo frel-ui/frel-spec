@@ -1,5 +1,7 @@
 module instructions.text_font
 
+import test.blueprint
+
 blueprint TextFont {
     column {
         text { "Default" }

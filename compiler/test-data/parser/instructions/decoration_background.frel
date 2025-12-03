@@ -1,5 +1,7 @@
 module instructions.decoration_background
 
+import test.blueprint
+
 blueprint DecorationBackground {
     column {
         box { } .. background { color: White }

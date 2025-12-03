@@ -1,5 +1,7 @@
 module instructions.errors.missing_instruction_value
 
+import test.blueprint
+
 blueprint Bad {
     box { } .. width
 }

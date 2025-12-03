@@ -1,5 +1,7 @@
 module instructions.decoration_cursor
 
+import test.blueprint
+
 blueprint DecorationCursor {
     column {
         box { } .. cursor { default }

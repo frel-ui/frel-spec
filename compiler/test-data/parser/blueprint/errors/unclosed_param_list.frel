@@ -1,5 +1,7 @@
 module blueprint.errors.unclosed_param_list
 
+import test.blueprint
+
 blueprint Greeting(name: String {
     text { name }
 }

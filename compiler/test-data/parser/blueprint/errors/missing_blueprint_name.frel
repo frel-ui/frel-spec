@@ -1,5 +1,7 @@
 module blueprint.errors.missing_blueprint_name
 
+import test.blueprint
+
 blueprint {
     text { "Hello" }
 }

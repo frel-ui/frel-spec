@@ -1,5 +1,7 @@
 module edge_cases.long_identifiers
 
+import test.blueprint
+
 scheme VeryLongSchemeNameThatDescribesExactlyWhatThisSchemeIsFor {
     veryLongFieldNameThatDescribesExactlyWhatThisFieldContains : String
     anotherVeryLongFieldNameForADifferentPurpose : i32

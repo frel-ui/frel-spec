@@ -1,5 +1,7 @@
 module instructions.decoration_tint
 
+import test.blueprint
+
 blueprint DecorationTint {
     column {
         icon { "close" } .. tint { Black }

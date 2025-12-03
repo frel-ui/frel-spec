@@ -1,5 +1,7 @@
 module instructions.event_handlers
 
+import test.blueprint
+
 backend EventBackend {
     count : i32 = 0
     message : String = ""

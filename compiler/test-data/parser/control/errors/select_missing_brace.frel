@@ -1,5 +1,7 @@
 module control.errors.select_missing_brace
 
+import test.blueprint
+
 blueprint Bad {
     x : i32 = 5
 

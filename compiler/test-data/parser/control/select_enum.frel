@@ -1,5 +1,7 @@
 module control.select_enum
 
+import test.blueprint
+
 enum Status { Pending Active Completed Cancelled }
 
 blueprint SelectEnum {

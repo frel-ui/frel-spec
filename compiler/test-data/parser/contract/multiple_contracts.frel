@@ -1,5 +1,7 @@
 module contract.multiple_contracts
 
+import test.data
+
 contract UserAPI {
     get_user(id: Uuid) : User
     update_user(id: Uuid, data: User)

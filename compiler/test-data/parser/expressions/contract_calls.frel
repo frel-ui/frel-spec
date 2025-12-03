@@ -1,5 +1,7 @@
 module expressions.contract_calls
 
+import test.blueprint
+
 scheme User {
     id : Uuid .. identity
     name : String

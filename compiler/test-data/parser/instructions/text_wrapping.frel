@@ -1,5 +1,7 @@
 module instructions.text_wrapping
 
+import test.blueprint
+
 blueprint TextWrapping {
     column {
         text { "No wrap" } .. text_wrap { none }

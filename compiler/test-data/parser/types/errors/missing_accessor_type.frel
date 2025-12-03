@@ -1,5 +1,7 @@
 module types.errors.missing_accessor_type
 
+import test.blueprint
+
 blueprint BadAccessor(accessor: Accessor) {
     text_editor { accessor }
 }

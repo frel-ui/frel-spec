@@ -1,5 +1,7 @@
 module edge_cases.deeply_nested
 
+import test.blueprint
+
 blueprint DeeplyNested {
     box {
         column {
