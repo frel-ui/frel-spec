@@ -1,4 +1,4 @@
-module test
+module blueprint.blueprint_parameter
 
 blueprint Container(content: Blueprint) {
     column {

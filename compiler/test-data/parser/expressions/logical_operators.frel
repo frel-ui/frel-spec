@@ -1,4 +1,4 @@
-module test
+module expressions.logical_operators
 
 blueprint Logical {
     a : bool = true

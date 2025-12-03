@@ -56,6 +56,7 @@ interface SidebarProps {
 
 function Sidebar({ modules, selectedModule, selectedFile, onSelectModule, onSelectFile }: SidebarProps) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState('');
 
   const toggleModule = (modulePath: string) => {
     setExpandedModules(prev => {
@@ -75,11 +76,24 @@ function Sidebar({ modules, selectedModule, selectedFile, onSelectModule, onSele
     return parts[parts.length - 1];
   };
 
+  // Filter and sort modules alphabetically
+  const filteredModules = modules
+    .filter(mod => mod.path.toLowerCase().includes(filter.toLowerCase()))
+    .sort((a, b) => a.path.localeCompare(b.path));
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">Modules</div>
+      <div className="module-filter">
+        <input
+          type="text"
+          placeholder="Filter modules..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+      </div>
       <div className="module-list">
-        {modules.map((mod) => {
+        {filteredModules.map((mod) => {
           const isExpanded = expandedModules.has(mod.path) || selectedModule === mod.path;
           return (
             <div key={mod.path} className="module-group">
@@ -109,9 +123,9 @@ function Sidebar({ modules, selectedModule, selectedFile, onSelectModule, onSele
             </div>
           );
         })}
-        {modules.length === 0 && (
+        {filteredModules.length === 0 && (
           <div className="empty-state">
-            <p>No modules found</p>
+            <p>{filter ? 'No matching modules' : 'No modules found'}</p>
           </div>
         )}
       </div>

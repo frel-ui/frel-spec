@@ -1,4 +1,4 @@
-module test
+module instructions.text_font
 
 blueprint TextFont {
     column {

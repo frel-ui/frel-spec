@@ -1,4 +1,4 @@
-module test
+module theme.errors.missing_theme_name
 
 theme {
     padding : u32 = 16

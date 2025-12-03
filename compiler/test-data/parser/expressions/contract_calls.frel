@@ -1,4 +1,4 @@
-module test
+module expressions.contract_calls
 
 scheme User {
     id : Uuid .. identity

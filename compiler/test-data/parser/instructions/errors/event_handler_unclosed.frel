@@ -1,4 +1,4 @@
-module test
+module instructions.errors.event_handler_unclosed
 
 blueprint Bad {
     button { "Click" } .. on_click { count = 1

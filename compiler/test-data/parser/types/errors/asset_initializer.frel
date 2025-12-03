@@ -1,4 +1,4 @@
-module test
+module types.errors.asset_initializer
 
 theme BadTheme {
     primary : asset Color = #FFFFFF

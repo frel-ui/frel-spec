@@ -1,4 +1,4 @@
-module myapp.screens
+module module.module_with_import_and_declaration
 
 import myapp.widgets.Button
 

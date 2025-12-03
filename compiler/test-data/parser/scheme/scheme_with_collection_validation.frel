@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_collection_validation
 
 scheme Survey {
     title : String

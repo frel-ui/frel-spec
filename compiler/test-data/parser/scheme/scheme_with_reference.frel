@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_reference
 
 scheme Location {
     id : Uuid .. identity

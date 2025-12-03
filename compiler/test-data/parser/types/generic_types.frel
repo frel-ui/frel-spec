@@ -1,4 +1,4 @@
-module test
+module types.generic_types
 
 scheme DataTypes {
     stringList : List<String>

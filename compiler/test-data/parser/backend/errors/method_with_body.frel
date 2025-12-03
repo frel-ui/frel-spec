@@ -1,4 +1,4 @@
-module test
+module backend.errors.method_with_body
 
 backend Counter {
     count : i32 = 0

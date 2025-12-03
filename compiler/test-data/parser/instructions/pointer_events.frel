@@ -1,4 +1,4 @@
-module test
+module instructions.pointer_events
 
 blueprint PointerEvents {
     column {

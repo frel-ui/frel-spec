@@ -1,4 +1,4 @@
-module test
+module arena.errors.unclosed_brace
 
 scheme User {
     id : Uuid .. identity

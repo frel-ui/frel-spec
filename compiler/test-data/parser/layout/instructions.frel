@@ -1,4 +1,4 @@
-module test.layout.instructions
+module layout.instructions
 
 blueprint LayoutWithInstruction {
     """layout

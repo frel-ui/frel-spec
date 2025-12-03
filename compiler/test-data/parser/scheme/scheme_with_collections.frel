@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_collections
 
 scheme Container {
     items : List<String>

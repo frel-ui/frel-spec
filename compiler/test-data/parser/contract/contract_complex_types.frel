@@ -1,4 +1,4 @@
-module test
+module contract.contract_complex_types
 
 contract DataAPI {
     get_items() : List<Item>

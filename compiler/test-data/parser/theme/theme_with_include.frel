@@ -1,4 +1,4 @@
-module test
+module theme.theme_with_include
 
 theme BaseTheme {
     padding : u32 = 16

@@ -1,4 +1,4 @@
-module test
+module arena.errors.missing_arena_name
 
 scheme User {
     id : Uuid .. identity

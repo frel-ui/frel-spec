@@ -1,4 +1,4 @@
-module test
+module edge_cases.unicode_identifiers
 
 blueprint UnicodeStrings {
     greeting : String = "Hello, 世界!"

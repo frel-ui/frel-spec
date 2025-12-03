@@ -1,4 +1,4 @@
-module test
+module types.blueprint_types
 
 blueprint WithBlueprintTypes(
     noParams: Blueprint,

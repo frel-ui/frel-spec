@@ -1,4 +1,4 @@
-module test
+module expressions.literals_bool
 
 blueprint BoolLiterals {
     t : bool = true

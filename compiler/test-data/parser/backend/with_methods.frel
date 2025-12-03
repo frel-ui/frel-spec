@@ -1,4 +1,4 @@
-module test
+module backend.with_methods
 
 backend Analytics {
     rawData : List<i32> = []

@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_all_intrinsic_types
 
 scheme AllTypes {
     signed8 : i8

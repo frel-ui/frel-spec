@@ -1,4 +1,4 @@
-module test
+module instructions.decoration_shadow
 
 blueprint DecorationShadow {
     column {

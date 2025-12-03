@@ -1,4 +1,4 @@
-module test
+module backend.errors.unclosed_brace
 
 backend Counter {
     count : i32 = 0

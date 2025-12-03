@@ -1,4 +1,4 @@
-module test
+module instructions.instruction_expr_ternary
 
 blueprint InstructionExprTernary {
     // simple ternary

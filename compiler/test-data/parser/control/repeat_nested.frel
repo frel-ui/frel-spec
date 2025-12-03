@@ -1,4 +1,4 @@
-module test
+module control.repeat_nested
 
 scheme Category {
     name : String

@@ -1,4 +1,4 @@
-module test
+module control.repeat_with_index
 
 backend ListBackend {
     items : List<String> = ["First", "Second", "Third"]

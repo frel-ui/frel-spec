@@ -1,4 +1,4 @@
-module test
+module arena.arena_with_contract
 
 scheme Message {
     id : Uuid .. identity

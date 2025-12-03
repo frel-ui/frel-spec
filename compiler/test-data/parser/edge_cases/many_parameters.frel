@@ -1,4 +1,4 @@
-module test
+module edge_cases.many_parameters
 
 blueprint ManyParams(
     p1: String,

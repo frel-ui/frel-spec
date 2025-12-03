@@ -1,4 +1,4 @@
-module test
+module control.when_simple
 
 blueprint WhenSimple {
     showContent : bool = true

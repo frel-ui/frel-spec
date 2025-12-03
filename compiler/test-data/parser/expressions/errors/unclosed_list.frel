@@ -1,4 +1,4 @@
-module test
+module expressions.errors.unclosed_list
 
 backend Bad {
     items : List<i32> = [1, 2, 3

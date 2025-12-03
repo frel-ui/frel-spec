@@ -1,4 +1,4 @@
-module test
+module expressions.method_calls
 
 backend Calculator {
     a : f64 = 10.0

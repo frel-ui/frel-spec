@@ -1,4 +1,4 @@
-module test.layout.empty_cells
+module layout.empty_cells
 
 blueprint EmptyCell {
     """layout

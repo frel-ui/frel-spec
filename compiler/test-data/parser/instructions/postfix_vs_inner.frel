@@ -1,4 +1,4 @@
-module test
+module instructions.postfix_vs_inner
 
 blueprint PostfixVsInner {
     text { "Postfix style" } .. font { size: 24 } .. padding { 8 }

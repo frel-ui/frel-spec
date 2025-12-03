@@ -1,4 +1,4 @@
-module test
+module theme.theme_with_multiple_sets
 
 theme AppTheme {
     primaryColor : asset Color

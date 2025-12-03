@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.unclosed_param_list
 
 blueprint Greeting(name: String {
     text { name }

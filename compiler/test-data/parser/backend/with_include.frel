@@ -1,4 +1,4 @@
-module test
+module backend.with_include
 
 backend BaseBackend {
     value : i32 = 0

@@ -1,4 +1,4 @@
-module test
+module instructions.event_handler_it
 
 backend EventBackend {
     lastX : f32 = 0.0

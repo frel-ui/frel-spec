@@ -1,4 +1,4 @@
-module test
+module types.type_modifiers
 
 scheme Article {
     id    : Uuid .. identity

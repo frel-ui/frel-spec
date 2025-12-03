@@ -1,4 +1,4 @@
-module test
+module expressions.errors.missing_operand
 
 blueprint Bad {
     x : i32 = 1 +

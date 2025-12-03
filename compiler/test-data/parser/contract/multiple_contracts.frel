@@ -1,4 +1,4 @@
-module test
+module contract.multiple_contracts
 
 contract UserAPI {
     get_user(id: Uuid) : User

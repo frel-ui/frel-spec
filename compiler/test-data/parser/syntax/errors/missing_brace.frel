@@ -1,4 +1,4 @@
-module test
+module syntax.errors.missing_brace
 
 blueprint Hello
     text { "Hello" }

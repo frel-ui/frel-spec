@@ -1,4 +1,4 @@
-module test
+module expressions.literals_floats
 
 blueprint FloatLiterals {
     zero : f64 = 0.0

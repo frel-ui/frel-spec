@@ -1,4 +1,4 @@
-module test
+module instructions.instruction_expr_combined
 
 blueprint InstructionExprCombined {
     // conditional with reference in then branch

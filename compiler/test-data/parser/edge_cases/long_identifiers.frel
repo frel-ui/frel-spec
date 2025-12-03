@@ -1,4 +1,4 @@
-module very.long.module.path.that.goes.on.and.on.and.on
+module edge_cases.long_identifiers
 
 scheme VeryLongSchemeNameThatDescribesExactlyWhatThisSchemeIsFor {
     veryLongFieldNameThatDescribesExactlyWhatThisFieldContains : String

@@ -1,4 +1,4 @@
-module test
+module theme.errors.variant_missing_name
 
 theme AppTheme {
     padding : u32 = 16

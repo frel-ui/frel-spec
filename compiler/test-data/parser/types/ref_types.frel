@@ -1,4 +1,4 @@
-module test
+module types.ref_types
 
 scheme Category {
     id : Uuid .. identity

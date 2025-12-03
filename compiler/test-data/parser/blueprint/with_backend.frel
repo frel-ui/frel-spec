@@ -1,4 +1,4 @@
-module test
+module blueprint.with_backend
 
 backend CounterBackend {
     count : i32 = 0

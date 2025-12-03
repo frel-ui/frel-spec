@@ -1,4 +1,4 @@
-module test
+module scheme.errors.unclosed_brace
 
 scheme User {
     name : String

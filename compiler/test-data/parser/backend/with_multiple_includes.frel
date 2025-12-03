@@ -1,4 +1,4 @@
-module test
+module backend.with_multiple_includes
 
 backend ValidationBackend {
     errors : List<String> = []

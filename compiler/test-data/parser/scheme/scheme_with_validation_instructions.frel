@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_validation_instructions
 
 scheme UserRegistration {
     username : String .. min_len { 3 } .. max_len { 20 }

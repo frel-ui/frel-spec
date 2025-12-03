@@ -1,4 +1,4 @@
-module test
+module blueprint.anonymous_blueprint_it
 
 blueprint TextWrapper(content: Blueprint<String>) {
     hw : String = "Hello!"

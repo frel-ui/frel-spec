@@ -1,4 +1,4 @@
-module test
+module instructions.layout_fill_strategy
 
 blueprint LayoutFillStrategy {
     row {

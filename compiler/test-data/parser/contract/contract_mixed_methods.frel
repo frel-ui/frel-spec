@@ -1,4 +1,4 @@
-module test
+module contract.contract_mixed_methods
 
 contract ProductAPI {
     get_product(id: Uuid) : Product

@@ -1,4 +1,4 @@
-module test
+module blueprint.simple_text
 
 blueprint Hello {
     text { "Hello, World!" }

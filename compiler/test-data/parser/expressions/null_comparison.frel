@@ -1,4 +1,4 @@
-module test
+module expressions.null_comparison
 
 blueprint NullComparison {
     maybeValue : String? = null

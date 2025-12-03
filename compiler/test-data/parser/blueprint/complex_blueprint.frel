@@ -1,4 +1,4 @@
-module test.ui
+module blueprint.complex_blueprint
 
 import test.backends.UserBackend
 import test.data.User

@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_enum_field
 
 enum Priority { Low Medium High Critical }
 

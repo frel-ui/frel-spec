@@ -1,4 +1,4 @@
-module test
+module expressions.enum_access
 
 enum Status { Pending Active Completed }
 

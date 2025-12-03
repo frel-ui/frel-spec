@@ -1,4 +1,4 @@
-module test
+module expressions.arithmetic_operators
 
 blueprint Arithmetic {
     a : i32 = 10

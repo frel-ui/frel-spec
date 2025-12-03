@@ -1,4 +1,4 @@
-module test
+module backend.simple_backend
 
 backend SimpleBackend {
     value : string = "hello"

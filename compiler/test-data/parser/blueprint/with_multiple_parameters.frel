@@ -1,4 +1,4 @@
-module test
+module blueprint.with_multiple_parameters
 
 blueprint UserCard(
     name: String,

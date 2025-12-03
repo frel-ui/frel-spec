@@ -1,4 +1,4 @@
-module test
+module edge_cases.deeply_nested
 
 blueprint DeeplyNested {
     box {

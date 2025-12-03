@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.missing_opening_brace
 
 blueprint Hello
     text { "Hello" }

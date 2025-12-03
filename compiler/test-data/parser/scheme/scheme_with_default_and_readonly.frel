@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_default_and_readonly
 
 scheme Document {
     id : Uuid .. identity .. readonly { true }

@@ -1,4 +1,4 @@
-module test
+module expressions.errors.unclosed_paren
 
 blueprint Bad {
     x : i32 = (1 + 2

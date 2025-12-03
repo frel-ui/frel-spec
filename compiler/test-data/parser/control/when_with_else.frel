@@ -1,4 +1,4 @@
-module test
+module control.when_with_else
 
 blueprint WhenElse {
     isLoggedIn : bool = false

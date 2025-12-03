@@ -1,4 +1,4 @@
-module test
+module blueprint.with_local_declarations
 
 blueprint Counter {
     count : i32 = 0

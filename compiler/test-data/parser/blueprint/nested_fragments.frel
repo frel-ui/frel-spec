@@ -1,4 +1,4 @@
-module test
+module blueprint.nested_fragments
 
 blueprint Layout {
     column {

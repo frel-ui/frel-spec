@@ -1,4 +1,4 @@
-module test
+module blueprint.named_slots
 
 blueprint Article(header: Blueprint, content: Blueprint, footer: Blueprint) {
     column {

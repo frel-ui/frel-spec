@@ -1,3 +1,3 @@
-module myapp.screens
+module module.module_with_single_import
 
 import myapp.widgets.Button

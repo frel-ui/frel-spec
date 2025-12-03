@@ -1,4 +1,4 @@
-module test.themes
+module theme.theme_complex
 
 theme BaseTheme {
     padding : u32 = 16

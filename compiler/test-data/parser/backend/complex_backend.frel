@@ -1,4 +1,4 @@
-module test.backends
+module backend.complex_backend
 
 import test.data.User
 import test.contracts.UserAPI

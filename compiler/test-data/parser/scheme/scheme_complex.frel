@@ -1,4 +1,4 @@
-module test.data
+module scheme.scheme_complex
 
 import other.module.Category
 

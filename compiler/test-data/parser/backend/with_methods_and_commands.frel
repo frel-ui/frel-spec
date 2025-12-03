@@ -1,4 +1,4 @@
-module test
+module backend.with_methods_and_commands
 
 backend ShoppingCart {
     items : List<String> = []

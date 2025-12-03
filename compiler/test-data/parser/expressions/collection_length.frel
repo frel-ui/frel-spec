@@ -1,4 +1,4 @@
-module test
+module expressions.collection_length
 
 backend ItemsBackend {
     items : List<String> = ["a", "b", "c"]

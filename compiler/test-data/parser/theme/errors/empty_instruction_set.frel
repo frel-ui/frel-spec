@@ -1,4 +1,4 @@
-module test
+module theme.errors.empty_instruction_set
 
 theme AppTheme {
     set empty_set { }

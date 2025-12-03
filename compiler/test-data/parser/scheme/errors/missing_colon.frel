@@ -1,4 +1,4 @@
-module test
+module scheme.errors.missing_colon
 
 scheme User {
     name String

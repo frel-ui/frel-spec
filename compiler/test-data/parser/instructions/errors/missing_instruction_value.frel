@@ -1,4 +1,4 @@
-module test
+module instructions.errors.missing_instruction_value
 
 blueprint Bad {
     box { } .. width

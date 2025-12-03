@@ -1,4 +1,4 @@
-module test
+module contract.errors.unclosed_brace
 
 contract UserAPI {
     get_user(id: Uuid) : User

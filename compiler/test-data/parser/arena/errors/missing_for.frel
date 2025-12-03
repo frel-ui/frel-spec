@@ -1,4 +1,4 @@
-module test
+module arena.errors.missing_for
 
 scheme User {
     id : Uuid .. identity

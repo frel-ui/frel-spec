@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_datetime_validation
 
 scheme Event {
     name : String

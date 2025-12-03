@@ -1,4 +1,4 @@
-module test
+module contract.errors.param_missing_type
 
 contract UserAPI {
     get_user(id) : User

@@ -1,4 +1,4 @@
-module test
+module types.errors.asset_on_collection
 
 theme BadTheme {
     gradients : asset List<Color>

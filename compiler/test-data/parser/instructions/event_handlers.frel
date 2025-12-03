@@ -1,4 +1,4 @@
-module test
+module instructions.event_handlers
 
 backend EventBackend {
     count : i32 = 0

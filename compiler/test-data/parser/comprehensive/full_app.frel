@@ -1,4 +1,4 @@
-module test.app
+module comprehensive.full_app
 
 import test.data.User
 import test.themes.AppTheme

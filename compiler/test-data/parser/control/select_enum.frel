@@ -1,4 +1,4 @@
-module test
+module control.select_enum
 
 enum Status { Pending Active Completed Cancelled }
 

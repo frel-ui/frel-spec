@@ -1,4 +1,4 @@
-module test
+module arena.multiple_arenas
 
 scheme User {
     id : Uuid .. identity

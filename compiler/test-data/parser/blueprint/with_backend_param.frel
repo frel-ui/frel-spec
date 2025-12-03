@@ -1,4 +1,4 @@
-module test
+module blueprint.with_backend_param
 
 backend EditorBackend {
     content : String = ""

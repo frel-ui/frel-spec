@@ -1,4 +1,4 @@
-module test
+module arena.simple_arena
 
 scheme User {
     id : Uuid .. identity

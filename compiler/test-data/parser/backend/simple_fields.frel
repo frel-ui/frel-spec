@@ -1,4 +1,4 @@
-module test
+module backend.simple_fields
 
 backend Counter {
     count : i32 = 0

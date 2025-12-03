@@ -1,4 +1,4 @@
-module test
+module types.tree_and_nested_collections
 
 scheme Node { id : Uuid .. identity }
 

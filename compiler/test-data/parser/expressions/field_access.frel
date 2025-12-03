@@ -1,4 +1,4 @@
-module test
+module expressions.field_access
 
 scheme User {
     name : String

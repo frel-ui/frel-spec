@@ -1,4 +1,4 @@
-module test
+module contract.simple_contract
 
 contract UserAPI {
     get_user(id: Uuid) : User

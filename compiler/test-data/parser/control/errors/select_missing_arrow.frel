@@ -1,4 +1,4 @@
-module test
+module control.errors.select_missing_arrow
 
 blueprint Bad {
     x : i32 = 5

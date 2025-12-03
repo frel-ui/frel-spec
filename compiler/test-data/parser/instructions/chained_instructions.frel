@@ -1,4 +1,4 @@
-module test
+module instructions.chained_instructions
 
 blueprint ChainedInstructions {
     text { "Styled" }

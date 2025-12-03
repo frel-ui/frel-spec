@@ -1,4 +1,4 @@
-module test
+module control.select_with_blocks
 
 enum ViewMode { List Grid Detail }
 

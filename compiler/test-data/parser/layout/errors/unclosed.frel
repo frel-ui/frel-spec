@@ -1,4 +1,4 @@
-module test.layout.errors.unclosed
+module layout.errors.unclosed
 
 // ERROR: Unclosed layout block
 blueprint UnclosedLayout {

@@ -1,4 +1,4 @@
-module test
+module edge_cases.many_instructions
 
 blueprint ManyInstructions {
     box { }

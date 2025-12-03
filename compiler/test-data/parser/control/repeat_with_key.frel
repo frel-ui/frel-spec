@@ -1,4 +1,4 @@
-module test
+module control.repeat_with_key
 
 scheme Todo {
     id : Uuid .. identity

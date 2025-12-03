@@ -1,4 +1,4 @@
-module test
+module backend.with_commands
 
 backend TodoBackend {
     items : List<String> = []

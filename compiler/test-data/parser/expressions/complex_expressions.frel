@@ -1,4 +1,4 @@
-module test
+module expressions.complex_expressions
 
 backend ExprBackend {
     a : i32 = 10

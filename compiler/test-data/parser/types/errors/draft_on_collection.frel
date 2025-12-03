@@ -1,4 +1,4 @@
-module test
+module types.errors.draft_on_collection
 
 backend InvalidDraftBackend {
     cache : draft List<String>

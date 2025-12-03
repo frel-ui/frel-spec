@@ -1,4 +1,4 @@
-module test.all_types
+module edge_cases.all_declaration_types
 
 import other.module.Something
 

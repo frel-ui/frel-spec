@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.unclosed_brace
 
 blueprint Hello {
     text { "Hello" }

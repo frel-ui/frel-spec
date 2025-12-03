@@ -1,4 +1,4 @@
-module test
+module blueprint.with_parameters
 
 blueprint Greeting(name: String) {
     text { "Hello, ${name}!" }

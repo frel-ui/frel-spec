@@ -1,4 +1,4 @@
-module test
+module expressions.literals_strings
 
 blueprint StringLiterals {
     empty : String = ""

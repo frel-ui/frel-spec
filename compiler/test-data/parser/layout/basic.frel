@@ -1,4 +1,4 @@
-module test.layout.basic
+module layout.basic
 
 blueprint BasicLayout {
     """layout

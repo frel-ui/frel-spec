@@ -1,4 +1,4 @@
-module test
+module backend.errors.missing_backend_name
 
 backend {
     count : i32 = 0

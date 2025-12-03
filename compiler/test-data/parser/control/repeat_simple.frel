@@ -1,4 +1,4 @@
-module test
+module control.repeat_simple
 
 backend ListBackend {
     items : List<String> = ["Apple", "Banana", "Cherry"]

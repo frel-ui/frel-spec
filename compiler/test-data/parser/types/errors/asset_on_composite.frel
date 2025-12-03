@@ -1,4 +1,4 @@
-module test
+module types.errors.asset_on_composite
 
 scheme User {
     name: String

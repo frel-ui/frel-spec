@@ -1,4 +1,4 @@
-module test
+module expressions.comparison_operators
 
 blueprint Comparison {
     a : i32 = 10

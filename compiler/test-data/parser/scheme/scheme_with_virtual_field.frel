@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_virtual_field
 
 scheme User {
     id : Uuid .. identity

@@ -1,4 +1,4 @@
-module test.layout.errors.mismatched_columns
+module layout.errors.mismatched_columns
 
 // ERROR: Rows have different column counts
 blueprint MismatchedColumns {

@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.param_missing_type
 
 blueprint Greeting(name) {
     text { name }

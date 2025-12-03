@@ -1,4 +1,4 @@
-module test
+module expressions.null_coalescing
 
 blueprint NullCoalescing {
     maybeValue : String? = null

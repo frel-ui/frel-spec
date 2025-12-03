@@ -1,4 +1,4 @@
-module test
+module control.control_combined
 
 enum Status { Loading Ready Error }
 

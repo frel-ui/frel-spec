@@ -1,4 +1,4 @@
-module test
+module theme.theme_mixed_fields
 
 theme AppTheme {
     primaryColor : asset Color

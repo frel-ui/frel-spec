@@ -1,4 +1,4 @@
-module test
+module control.errors.when_missing_condition
 
 blueprint Bad {
     when {

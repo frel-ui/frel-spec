@@ -1,4 +1,4 @@
-module test.layout.sizes
+module layout.sizes
 
 blueprint FixedColumnSizes {
     """layout

@@ -1,4 +1,4 @@
-module test
+module theme.errors.unclosed_brace
 
 theme AppTheme {
     padding : u32 = 16

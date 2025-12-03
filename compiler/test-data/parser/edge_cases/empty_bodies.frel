@@ -1,4 +1,4 @@
-module test
+module edge_cases.empty_bodies
 
 blueprint EmptyBlueprint { }
 

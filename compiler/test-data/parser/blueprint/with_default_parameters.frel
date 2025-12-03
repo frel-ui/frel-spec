@@ -1,4 +1,4 @@
-module test
+module blueprint.with_default_parameters
 
 blueprint Button(
     label: String = "Click me",

@@ -1,4 +1,4 @@
-module test
+module instructions.errors.unclosed_instruction_brace
 
 blueprint Bad {
     box { } .. width { 100

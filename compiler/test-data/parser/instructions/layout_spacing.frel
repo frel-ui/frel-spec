@@ -1,4 +1,4 @@
-module test
+module instructions.layout_spacing
 
 blueprint LayoutSpacing {
     row {

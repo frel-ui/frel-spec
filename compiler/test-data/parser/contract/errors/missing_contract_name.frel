@@ -1,4 +1,4 @@
-module test
+module contract.errors.missing_contract_name
 
 contract {
     get_data() : String

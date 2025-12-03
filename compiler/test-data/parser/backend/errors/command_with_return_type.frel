@@ -1,4 +1,4 @@
-module test
+module backend.errors.command_with_return_type
 
 backend Counter {
     count : i32 = 0

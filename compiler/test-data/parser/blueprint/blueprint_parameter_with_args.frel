@@ -1,4 +1,4 @@
-module test
+module blueprint.blueprint_parameter_with_args
 
 blueprint TextWrapper(content: Blueprint<String>) {
     hw : String = "Hello World!"

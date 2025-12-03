@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.multiple_with
 
 backend A {
     x : i32 = 0

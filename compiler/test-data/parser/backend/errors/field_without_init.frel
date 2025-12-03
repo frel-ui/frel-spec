@@ -1,4 +1,4 @@
-module test
+module backend.errors.field_without_init
 
 backend Counter {
     count : i32

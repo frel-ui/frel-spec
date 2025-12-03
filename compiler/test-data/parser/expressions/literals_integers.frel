@@ -1,4 +1,4 @@
-module test
+module expressions.literals_integers
 
 blueprint IntLiterals {
     zero : i32 = 0

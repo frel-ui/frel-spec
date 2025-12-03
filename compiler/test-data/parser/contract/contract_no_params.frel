@@ -1,4 +1,4 @@
-module test
+module contract.contract_no_params
 
 contract SystemAPI {
     get_status() : String

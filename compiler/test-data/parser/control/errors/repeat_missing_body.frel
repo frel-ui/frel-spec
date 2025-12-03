@@ -1,4 +1,4 @@
-module test
+module control.errors.repeat_missing_body
 
 backend ListBackend {
     items : List<String> = []

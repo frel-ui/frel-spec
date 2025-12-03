@@ -1,4 +1,4 @@
-module test
+module expressions.literals_collections
 
 backend Collections {
     emptyList : List<i32> = []

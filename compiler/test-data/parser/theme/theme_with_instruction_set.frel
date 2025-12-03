@@ -1,4 +1,4 @@
-module test
+module theme.theme_with_instruction_set
 
 theme AppTheme {
     padding : u32 = 16

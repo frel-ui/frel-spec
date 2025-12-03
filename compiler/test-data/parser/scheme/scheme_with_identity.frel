@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_identity
 
 scheme User {
     id : Uuid .. identity

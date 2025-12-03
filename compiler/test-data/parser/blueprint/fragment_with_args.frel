@@ -1,4 +1,4 @@
-module test
+module blueprint.fragment_with_args
 
 blueprint Child(value: i32, label: String) {
     text { "${label}: ${value}" }

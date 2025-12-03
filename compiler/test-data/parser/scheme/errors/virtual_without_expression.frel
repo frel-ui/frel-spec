@@ -1,4 +1,4 @@
-module test
+module scheme.errors.virtual_without_expression
 
 scheme User {
     firstName : String

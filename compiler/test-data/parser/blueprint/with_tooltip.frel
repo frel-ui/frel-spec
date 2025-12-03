@@ -1,4 +1,4 @@
-module test
+module blueprint.with_tooltip
 
 // Valid: all slots use `at` syntax
 blueprint ButtonWithTooltip {

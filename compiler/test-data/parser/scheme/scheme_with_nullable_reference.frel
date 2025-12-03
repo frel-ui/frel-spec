@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_nullable_reference
 
 scheme Department {
     id : Uuid .. identity

@@ -1,4 +1,4 @@
-module test
+module expressions.optional_chaining
 
 scheme Avatar {
     url : String

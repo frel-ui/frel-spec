@@ -1,4 +1,4 @@
-module test
+module scheme.errors.missing_scheme_name
 
 scheme {
     name : String

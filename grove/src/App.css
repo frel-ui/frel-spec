@@ -68,6 +68,30 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+.module-filter {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.module-filter input {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+.module-filter input:focus {
+  border-color: var(--accent);
+}
+
+.module-filter input::placeholder {
+  color: var(--text-muted);
+}
+
 .module-list {
   flex: 1;
   overflow-y: auto;

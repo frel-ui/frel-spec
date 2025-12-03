@@ -1,4 +1,4 @@
-module test
+module blueprint.standard_blueprints
 
 blueprint StandardBlueprints {
     column {

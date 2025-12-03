@@ -1,4 +1,4 @@
-module test
+module expressions.errors.invalid_ternary
 
 blueprint Bad {
     x : String = true ? "yes"

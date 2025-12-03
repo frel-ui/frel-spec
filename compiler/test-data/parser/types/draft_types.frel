@@ -1,4 +1,4 @@
-module test
+module types.draft_types
 
 blueprint renderer(title : String) {
     text { title }

@@ -1,4 +1,4 @@
-module test
+module contract.errors.method_missing_parens
 
 contract UserAPI {
     get_user : User

@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_multiple_virtual_fields
 
 scheme Rectangle {
     width : f64

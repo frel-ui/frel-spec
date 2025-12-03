@@ -1,4 +1,4 @@
-module test
+module types.intrinsic_types
 
 scheme IntrinsicExamples {
     signed8  : i8

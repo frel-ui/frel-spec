@@ -1,4 +1,4 @@
-module test
+module backend.with_theme_ref
 
 theme AppTheme {
     primaryColor : asset Color

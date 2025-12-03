@@ -1,4 +1,4 @@
-module test
+module instructions.stereotype_instructions
 
 blueprint StereotypeInstructions {
     column {

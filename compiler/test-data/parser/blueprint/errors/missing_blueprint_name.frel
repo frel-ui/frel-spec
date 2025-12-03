@@ -1,4 +1,4 @@
-module test
+module blueprint.errors.missing_blueprint_name
 
 blueprint {
     text { "Hello" }

@@ -1,4 +1,4 @@
-module test
+module instructions.focus_instructions
 
 blueprint FocusInstructions {
     column {

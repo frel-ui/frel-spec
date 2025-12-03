@@ -1,4 +1,4 @@
-module test.layout.errors.invalid_modifier
+module layout.errors.invalid_modifier
 
 // ERROR: Invalid alignment modifier
 blueprint InvalidModifier {

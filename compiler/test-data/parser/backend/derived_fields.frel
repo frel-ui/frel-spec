@@ -1,4 +1,4 @@
-module test
+module backend.derived_fields
 
 backend Calculator {
     a : i32 = 10

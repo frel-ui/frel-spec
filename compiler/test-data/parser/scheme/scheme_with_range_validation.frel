@@ -1,4 +1,4 @@
-module test
+module scheme.scheme_with_range_validation
 
 scheme Product {
     name : String

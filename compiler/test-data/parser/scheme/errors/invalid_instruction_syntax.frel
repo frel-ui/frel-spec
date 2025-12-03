@@ -1,4 +1,4 @@
-module test
+module scheme.errors.invalid_instruction_syntax
 
 scheme User {
     name : String .. min_len 3

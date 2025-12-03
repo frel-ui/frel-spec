@@ -1,4 +1,4 @@
-module test
+module blueprint.blueprint_multiple_params
 
 blueprint Layout(
     header: Blueprint<String>,

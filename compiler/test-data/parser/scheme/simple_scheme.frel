@@ -1,4 +1,4 @@
-module test
+module scheme.simple_scheme
 
 scheme User {
     name : String

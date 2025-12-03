@@ -1,4 +1,4 @@
-module test
+module instructions.layout_dimensions
 
 blueprint LayoutDimensions {
     column {

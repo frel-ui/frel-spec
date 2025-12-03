@@ -1,4 +1,4 @@
-module test
+module contract.contract_with_void_methods
 
 contract UserAPI {
     update_user(id: Uuid, data: User)
