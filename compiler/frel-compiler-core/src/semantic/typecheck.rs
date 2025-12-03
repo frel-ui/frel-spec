@@ -404,6 +404,30 @@ impl<'a> TypeChecker<'a> {
         // This is needed so that field references in initializers can be resolved
         for member in &be.members {
             match member {
+                ast::BackendMember::Include(included_name) => {
+                    // Import types from the included backend
+                    if let Some(included_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, included_name, self.scopes) {
+                        if let Some(included_symbol) = self.symbols.get(included_id) {
+                            if let Some(included_body_scope) = included_symbol.body_scope {
+                                // For each symbol in the included backend, copy its type
+                                let included_members: Vec<_> = self.symbols
+                                    .symbols_in_scope(included_body_scope)
+                                    .map(|s| (s.name.clone(), s.id))
+                                    .collect();
+
+                                for (member_name, included_member_id) in included_members {
+                                    // Get the type from the included backend's symbol
+                                    if let Some(member_type) = self.symbol_types.get(&included_member_id).cloned() {
+                                        // Find the imported symbol in current backend scope and set its type
+                                        if let Some(local_member_id) = self.symbols.lookup_local(self.current_scope, &member_name) {
+                                            self.symbol_types.insert(local_member_id, member_type);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 ast::BackendMember::Field(field) => {
                     let field_type = self.resolve_type_expr(&field.type_expr, field.span);
                     // Look up the field's symbol and store its type
@@ -440,7 +464,6 @@ impl<'a> TypeChecker<'a> {
                         self.symbol_types.insert(cmd_symbol_id, cmd_type);
                     }
                 }
-                _ => {}
             }
         }
 

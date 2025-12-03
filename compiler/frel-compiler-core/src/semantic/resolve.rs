@@ -551,8 +551,30 @@ impl Resolver {
         for member in &be.members {
             match member {
                 ast::BackendMember::Include(name) => {
-                    // Resolve included backend
-                    self.resolve_name(name, Span::default());
+                    // Resolve included backend and import its members
+                    if let Some(included_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, name, &self.scopes) {
+                        if let Some(included_symbol) = self.symbols.get(included_id) {
+                            if let Some(included_body_scope) = included_symbol.body_scope {
+                                // Collect members to import (avoid borrowing issues)
+                                let members_to_import: Vec<_> = self.symbols
+                                    .symbols_in_scope(included_body_scope)
+                                    .map(|s| (s.name.clone(), s.kind, s.def_span))
+                                    .collect();
+
+                                // Import each member into the current backend scope
+                                for (member_name, member_kind, member_span) in members_to_import {
+                                    self.define_simple(&member_name, member_kind, body_scope, member_span);
+                                }
+                            }
+                        }
+                    } else {
+                        // Backend not found - report error
+                        self.diagnostics.add(Diagnostic::from_code(
+                            &codes::E0301,
+                            Span::default(),
+                            format!("cannot find backend `{}` in this scope", name),
+                        ));
+                    }
                 }
                 ast::BackendMember::Field(field) => {
                     self.define_simple(&field.name, SymbolKind::Field, body_scope, field.span);
