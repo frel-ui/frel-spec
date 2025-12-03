@@ -384,9 +384,34 @@ impl<'a> TypeChecker<'a> {
                 ast::TopLevelDecl::Backend(be) => self.check_backend(be),
                 ast::TopLevelDecl::Blueprint(bp) => self.check_blueprint(bp),
                 ast::TopLevelDecl::Scheme(sc) => self.check_scheme(sc),
+                ast::TopLevelDecl::Theme(th) => self.check_theme(th),
                 _ => {} // Other declarations don't need expression checking
             }
         }
+    }
+
+    fn check_theme(&mut self, th: &ast::Theme) {
+        // Enter the theme's body scope for field lookups
+        let saved_scope = self.current_scope;
+        if let Some(symbol_id) = self.symbols.lookup_local(ScopeId::ROOT, &th.name) {
+            if let Some(symbol) = self.symbols.get(symbol_id) {
+                if let Some(body_scope) = symbol.body_scope {
+                    self.current_scope = body_scope;
+                }
+            }
+        }
+
+        // Resolve all field types and store in symbol_types
+        for member in &th.members {
+            if let ast::ThemeMember::Field(field) = member {
+                let field_type = self.resolve_type_expr(&field.type_expr, field.span);
+                if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
+                    self.symbol_types.insert(field_symbol_id, field_type);
+                }
+            }
+        }
+
+        self.current_scope = saved_scope;
     }
 
     fn check_backend(&mut self, be: &ast::Backend) {
@@ -955,7 +980,9 @@ impl<'a> TypeChecker<'a> {
     /// Resolve a field access on a type
     fn resolve_field_access(&mut self, base_type: &Type, field: &str, span: Span) -> Type {
         match base_type {
-            Type::Scheme(symbol_id) | Type::Backend(symbol_id) => {
+            // Ref types unwrap to their inner type for field access
+            Type::Ref(inner) => self.resolve_field_access(inner, field, span),
+            Type::Scheme(symbol_id) | Type::Backend(symbol_id) | Type::Theme(symbol_id) => {
                 // Look up field in the type's scope
                 if let Some(symbol) = self.symbols.get(*symbol_id) {
                     if let Some(body_scope) = symbol.body_scope {
