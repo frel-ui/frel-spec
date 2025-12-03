@@ -411,11 +411,11 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        // Check for float
-        let is_float = self.peek_char().map(|(_, c)| c) == Some('.')
+        // Check for float (decimal point followed by digit)
+        let has_decimal = self.peek_char().map(|(_, c)| c) == Some('.')
             && self.peek_char_nth(1).map_or(false, |c| c.is_ascii_digit());
 
-        if is_float {
+        if has_decimal {
             self.advance(); // consume '.'
 
             // Fractional part
@@ -426,24 +426,31 @@ impl<'a> Lexer<'a> {
                     break;
                 }
             }
+        }
 
-            // Exponent
-            if let Some((_, 'e')) | Some((_, 'E')) = self.peek_char() {
+        // Check for exponent (works with or without decimal point: 1e10, 1.0e10)
+        let has_exponent = matches!(self.peek_char(), Some((_, 'e')) | Some((_, 'E')))
+            && self.peek_char_nth(1).map_or(false, |c| {
+                c.is_ascii_digit() || c == '+' || c == '-'
+            });
+
+        if has_exponent {
+            self.advance(); // consume 'e' or 'E'
+            // Optional sign
+            if let Some((_, '+')) | Some((_, '-')) = self.peek_char() {
                 self.advance();
-                // Optional sign
-                if let Some((_, '+')) | Some((_, '-')) = self.peek_char() {
+            }
+            // Exponent digits
+            while let Some((_, ch)) = self.peek_char() {
+                if ch.is_ascii_digit() {
                     self.advance();
-                }
-                // Exponent digits
-                while let Some((_, ch)) = self.peek_char() {
-                    if ch.is_ascii_digit() {
-                        self.advance();
-                    } else {
-                        break;
-                    }
+                } else {
+                    break;
                 }
             }
+        }
 
+        if has_decimal || has_exponent {
             Token::new(
                 TokenKind::FloatLiteral,
                 Span::new(start as u32, self.current_pos as u32),
