@@ -219,6 +219,7 @@ export function useCompiler(): CompilerState {
             api.getScope(currentModule).catch(() => ({ module: currentModule, scopes: [] })),
             api.getGenerated(currentModule).catch(() => ({ module: currentModule, javascript: '' })),
             api.getStatus(),
+            api.getModules(),
           ];
 
           // In compiler dev mode, also refresh comparison
@@ -227,12 +228,13 @@ export function useCompiler(): CompilerState {
           }
 
           const results = await Promise.all(fetchPromises);
-          const [diagRes, astRes, scopeRes, genRes, statusRes] = results as [
+          const [diagRes, astRes, scopeRes, genRes, statusRes, modulesRes] = results as [
             { diagnostics: DiagnosticInfo[] },
             { ast: unknown },
             { scopes: ScopeInfo[] },
             { javascript: string },
             { error_count: number },
+            { modules: ModuleInfo[] },
           ];
 
           setDiagnostics(diagRes.diagnostics);
@@ -240,10 +242,11 @@ export function useCompiler(): CompilerState {
           setScopes(scopeRes.scopes);
           setGeneratedJs(genRes.javascript);
           setTotalErrors(statusRes.error_count);
+          setModules(modulesRes.modules);
 
           // Update comparison if in dev mode
-          if (devModeRef.current === 'compiler-dev' && results[5]) {
-            setComparison(results[5] as CompareResponse);
+          if (devModeRef.current === 'compiler-dev' && results[6]) {
+            setComparison(results[6] as CompareResponse);
           }
         }
       } catch (err) {
