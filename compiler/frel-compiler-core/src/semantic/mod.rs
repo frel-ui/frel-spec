@@ -10,6 +10,7 @@
 // enabling incremental compilation and IDE support.
 
 pub mod dump;
+pub mod instructions;
 pub mod resolve;
 pub mod scope;
 pub mod signature;

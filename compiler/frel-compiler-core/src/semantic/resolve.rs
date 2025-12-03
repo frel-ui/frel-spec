@@ -498,10 +498,35 @@ impl Resolver {
     }
 
     fn resolve_instruction_expr(&mut self, instr: &ast::InstructionExpr) {
+        use super::instructions::instruction_registry;
+        let registry = instruction_registry();
+
         match instr {
             ast::InstructionExpr::Simple(inst) => {
-                for (_, expr) in &inst.params {
-                    self.resolve_expr(expr);
+                for (param_name, expr) in &inst.params {
+                    // Check if this is a simple identifier
+                    if let ast::Expr::Identifier(value) = expr {
+                        // Check if this is a valid keyword for this instruction parameter
+                        let is_valid_keyword = registry.is_valid_keyword(&inst.name, param_name, value);
+
+                        // Check if the instruction accepts expressions for this parameter
+                        let accepts_expr = registry.accepts_expression(&inst.name, param_name);
+
+                        if is_valid_keyword {
+                            // Valid keyword - skip resolution (it's a contextual keyword)
+                            continue;
+                        } else if accepts_expr {
+                            // Instruction accepts expressions - resolve the identifier
+                            self.resolve_expr(expr);
+                        } else {
+                            // Instruction only accepts keywords but this isn't a valid one.
+                            // Skip resolution (error will be reported in type checker)
+                            continue;
+                        }
+                    } else {
+                        // Not a simple identifier - always resolve
+                        self.resolve_expr(expr);
+                    }
                 }
             }
             ast::InstructionExpr::When {
@@ -525,7 +550,11 @@ impl Resolver {
                 self.resolve_instruction_expr(else_instr);
             }
             ast::InstructionExpr::Reference(expr) => {
-                self.resolve_expr(expr);
+                // Single identifiers (like `.. focusable`) are instruction names, not variable references.
+                // Only resolve field access expressions (like `.. theme.primary_button`).
+                if !matches!(expr, ast::Expr::Identifier(_)) {
+                    self.resolve_expr(expr);
+                }
             }
         }
     }

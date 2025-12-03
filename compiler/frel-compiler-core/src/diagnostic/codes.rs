@@ -411,6 +411,14 @@ pub const E0704: ErrorCode = ErrorCode::new(
     "The captured variable is not available in the closure scope.",
 );
 
+pub const E0705: ErrorCode = ErrorCode::new(
+    "E0705",
+    "invalid_instruction_keyword",
+    Category::Blueprint,
+    Severity::Error,
+    "The value is not a valid keyword for this instruction parameter.",
+);
+
 // ============================================================================
 // Error code lookup
 // ============================================================================
@@ -461,6 +469,7 @@ pub fn lookup(code: &str) -> Option<&'static ErrorCode> {
         "E0702" => Some(&E0702),
         "E0703" => Some(&E0703),
         "E0704" => Some(&E0704),
+        "E0705" => Some(&E0705),
         _ => None,
     }
 }
@@ -481,7 +490,7 @@ pub fn by_category(category: Category) -> Vec<&'static ErrorCode> {
         // Backend
         &E0601, &E0602, &E0603, &E0604,
         // Blueprint
-        &E0701, &E0702, &E0703, &E0704,
+        &E0701, &E0702, &E0703, &E0704, &E0705,
     ];
     all.into_iter().filter(|c| c.category == category).collect()
 }

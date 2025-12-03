@@ -618,6 +618,13 @@ impl<'a> TypeChecker<'a> {
                 if let Some(body) = &frag.body {
                     self.check_fragment_body(body);
                 }
+                // Check postfix items (instructions, event handlers)
+                for postfix in &frag.postfix {
+                    match postfix {
+                        ast::PostfixItem::Instruction(instr) => self.check_instruction_expr(instr),
+                        ast::PostfixItem::EventHandler(handler) => self.check_event_handler(handler),
+                    }
+                }
             }
             ast::BlueprintStmt::Control(ctrl) => self.check_control_stmt(ctrl),
             ast::BlueprintStmt::Instruction(instr) => self.check_instruction_expr(instr),
@@ -702,10 +709,42 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn check_instruction_expr(&mut self, instr: &ast::InstructionExpr) {
+        use super::instructions::instruction_registry;
+        let registry = instruction_registry();
+
         match instr {
             ast::InstructionExpr::Simple(inst) => {
-                for (_, expr) in &inst.params {
-                    self.infer_expr_type(expr);
+                for (param_name, expr) in &inst.params {
+                    // Check if this is a simple identifier that should be validated as a keyword
+                    if let ast::Expr::Identifier(value) = expr {
+                        // Check if this instruction parameter only accepts keywords (not expressions)
+                        let accepts_expr = registry.accepts_expression(&inst.name, param_name);
+
+                        if !accepts_expr {
+                            // This parameter only accepts keywords - validate the value
+                            let is_valid = registry.is_valid_keyword(&inst.name, param_name, value);
+                            if !is_valid {
+                                // Report invalid keyword error
+                                if let Some(valid_keywords) = registry.valid_keywords(&inst.name, param_name) {
+                                    let expected = valid_keywords.join(", ");
+                                    self.diagnostics.add(Diagnostic::from_code(
+                                        &codes::E0705,
+                                        self.context_span,
+                                        format!(
+                                            "invalid value '{}' for '{}' instruction, expected one of: {}",
+                                            value, inst.name, expected
+                                        ),
+                                    ));
+                                }
+                            }
+                        } else {
+                            // This parameter accepts expressions - infer the type
+                            self.infer_expr_type(expr);
+                        }
+                    } else {
+                        // Non-identifier expression - infer the type
+                        self.infer_expr_type(expr);
+                    }
                 }
             }
             ast::InstructionExpr::When {
