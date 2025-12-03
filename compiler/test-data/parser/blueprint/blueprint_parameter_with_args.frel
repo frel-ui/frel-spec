@@ -1,5 +1,7 @@
 module blueprint.blueprint_parameter_with_args
 
+import builtin.text
+
 blueprint TextWrapper(content: Blueprint<String>) {
     hw : String = "Hello World!"
     content(hw)

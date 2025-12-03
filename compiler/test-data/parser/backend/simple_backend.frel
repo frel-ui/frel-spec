@@ -1,7 +1,7 @@
 module backend.simple_backend
 
 backend SimpleBackend {
-    value : string = "hello"
+    value : String = "hello"
     count : i32 = 0
     enabled : bool = true
 }

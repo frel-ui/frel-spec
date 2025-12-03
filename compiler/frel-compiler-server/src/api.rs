@@ -427,10 +427,21 @@ pub async fn post_notify(
 ) -> impl Responder {
     let path = PathBuf::from(&body.path);
 
+    println!("File changed: {}", path.display());
+
     let result = {
         let mut state = state.write().await;
         compiler::handle_file_change(&mut state, &path)
     };
+
+    if !result.modules_rebuilt.is_empty() {
+        println!(
+            "  Rebuilt {} module(s) in {:?}, {} error(s)",
+            result.modules_rebuilt.len(),
+            result.duration,
+            result.error_count
+        );
+    }
 
     HttpResponse::Ok().json(NotifyResponse {
         success: true,
@@ -455,11 +466,22 @@ pub async fn post_write(
         }));
     }
 
+    println!("File written: {}", path.display());
+
     // Trigger recompilation
     let result = {
         let mut state = state.write().await;
         compiler::handle_file_change(&mut state, &path)
     };
+
+    if !result.modules_rebuilt.is_empty() {
+        println!(
+            "  Rebuilt {} module(s) in {:?}, {} error(s)",
+            result.modules_rebuilt.len(),
+            result.duration,
+            result.error_count
+        );
+    }
 
     HttpResponse::Ok().json(WriteResponse {
         success: true,

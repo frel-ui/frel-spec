@@ -27,10 +27,14 @@ pub struct File {
 }
 
 /// Import statement
+///
+/// Can be either:
+/// - Single declaration: `import foo.bar.Baz` (imports Baz from foo.bar)
+/// - Whole module: `import foo.bar` (imports all from foo.bar if foo.bar is a module)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    pub module: String,
-    pub name: String,
+    /// Full import path as written (e.g., "foo.bar.Baz" or "foo.bar")
+    pub path: String,
     pub span: Span,
 }
 

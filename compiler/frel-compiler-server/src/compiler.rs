@@ -58,10 +58,21 @@ pub fn full_build(state: &mut ProjectState) -> BuildResult {
                 );
 
                 // Extract imports for dependency graph
+                // For each import, get the module path (either the full path for whole-module
+                // imports, or the prefix for single-declaration imports)
                 let imports: Vec<String> = file
                     .imports
                     .iter()
-                    .map(|imp| imp.module.clone())
+                    .filter_map(|imp| {
+                        // If it could be a module path, use as-is
+                        // Otherwise split to get the module part
+                        if let Some((module, _)) = imp.path.rsplit_once('.') {
+                            Some(module.to_string())
+                        } else {
+                            // Single component - could be a whole-module import
+                            Some(imp.path.clone())
+                        }
+                    })
                     .collect();
                 state.dependencies.update_module_deps(&file.module, &imports);
             }
@@ -213,7 +224,13 @@ pub fn handle_file_change(state: &mut ProjectState, path: &Path) -> IncrementalR
         let imports: Vec<String> = file
             .imports
             .iter()
-            .map(|imp| imp.module.clone())
+            .filter_map(|imp| {
+                if let Some((module, _)) = imp.path.rsplit_once('.') {
+                    Some(module.to_string())
+                } else {
+                    Some(imp.path.clone())
+                }
+            })
             .collect();
         state.dependencies.update_module_deps(&new_module, &imports);
 

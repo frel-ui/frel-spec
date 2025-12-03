@@ -38,11 +38,24 @@ pub fn generate_file(file: &File) -> String {
 }
 
 fn generate_import(import: &Import) -> String {
-    format!(
-        "import {{ {} }} from '@frel/{}';\n",
-        import.name,
-        import.module.replace(".", "/")
-    )
+    // Split path into module and name
+    // For whole-module imports, we'd need registry info to know what to import
+    // For now, treat as single-declaration import
+    if let Some((module, name)) = import.path.rsplit_once('.') {
+        format!(
+            "import {{ {} }} from '@frel/{}';\n",
+            name,
+            module.replace('.', "/")
+        )
+    } else {
+        // Whole-module import: import all (requires build-time knowledge of exports)
+        // For now, generate a namespace import
+        format!(
+            "import * as {} from '@frel/{}';\n",
+            import.path,
+            import.path.replace('.', "/")
+        )
+    }
 }
 
 fn generate_declaration(decl: &TopLevelDecl) -> String {

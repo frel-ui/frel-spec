@@ -1,5 +1,7 @@
 module blueprint.blueprint_multiple_params
 
+import builtin
+
 blueprint Layout(
     header: Blueprint<String>,
     content: Blueprint,

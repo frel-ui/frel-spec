@@ -30,7 +30,8 @@ the place where the code is stored. The module system defines the actual namespa
 <module-decl> ::= "module" <module-path>
 <module-path> ::= <identifier> { "." <identifier> }
 
-<import-statement> ::= "import" <module-path> "." <identifier>
+<import-statement> ::= "import" <import-path>
+<import-path> ::= <module-path> [ "." <identifier> ]
 
 <qualified-path> ::= <module-path> "." <identifier>
 ```
@@ -68,18 +69,36 @@ enum ButtonSize { small medium large } // frel.ui.buttons.ButtonSize
 ## Import Statements
 
 The `import` keyword imports declarations from other modules, making them available without
-qualification:
+qualification. There are two forms:
+
+### Single-Declaration Import
+
+Import a specific declaration by name:
 
 ```frel
 module frel.app
 
 import frel.ui.buttons.PrimaryButton
 import frel.ui.themes.DarkTheme
-import frel.data.Color
 
 blueprint MainScreen {
-    // Can use PrimaryButton, DarkTheme, Color directly
     PrimaryButton("Click me")
+}
+```
+
+### Whole-Module Import
+
+Import all declarations from a module at once:
+
+```frel
+module frel.app
+
+import frel.ui.buttons
+
+blueprint MainScreen {
+    // All declarations from frel.ui.buttons are available
+    PrimaryButton("Click me")
+    SecondaryButton("Cancel")
 }
 ```
 
@@ -87,8 +106,9 @@ blueprint MainScreen {
 
 - `import` statements must appear after the `module` declaration
 - `import` statements must appear before any other declarations
-- Each `import` imports a single declaration
 - Imports are file-scoped (do not affect other files)
+- If a path refers to a module, all declarations from that module are imported
+- If a path refers to a declaration (last component matches an export), only that declaration is imported
 
 ### Example File Structure
 
@@ -258,7 +278,6 @@ The following features are **not** currently supported but may be added in futur
 
 - **Import aliases**: `import frel.ui.Button as UIButton`
 - **Grouped imports**: `import frel.ui.{ Button, TextInput, Panel }`
-- **Wildcard imports**: `import frel.ui.*`
 - **Re-exports**: Making imported declarations available to importers
 - **Private declarations**: Hiding implementation details within a module
 - **Conditional compilation**: Platform-specific module resolution

@@ -1,9 +1,15 @@
 module backend.complex_backend
 
-import test.data.User
-import test.contracts.UserAPI
-
 enum EditorState { Idle Editing Saving Error }
+
+scheme User {
+    name : String
+    email : String
+}
+
+contract UserAPI {
+    get_user(userId : Uuid) : User
+}
 
 backend UserEditorBackend {
     userId : Uuid

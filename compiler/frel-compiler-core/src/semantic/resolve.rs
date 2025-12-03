@@ -91,11 +91,16 @@ impl Resolver {
     }
 
     /// Collect import statements
+    ///
+    /// In Phase 1 (without registry), we can only handle single-declaration imports
+    /// by splitting the path. Whole-module imports require registry validation.
     fn collect_imports(&mut self, file: &ast::File) {
         for import in &file.imports {
-            // Store the imported name mapping to its module
-            self.imports
-                .insert(import.name.clone(), import.module.clone());
+            // Try to split as module.name for single-declaration imports
+            if let Some((module, name)) = import.path.rsplit_once('.') {
+                self.imports.insert(name.to_string(), module.to_string());
+            }
+            // Single-component paths (potential whole-module imports) are handled in Phase 2
         }
     }
 
@@ -909,36 +914,51 @@ impl<'a> ResolverWithRegistry<'a> {
 
     fn collect_and_validate_imports(&mut self, file: &ast::File) {
         for import in &file.imports {
-            // Validate that the import exists in the registry
-            if let Some(export) = self.registry.resolve_import(&import.module, &import.name) {
-                // Import the external symbol into the local symbol table
-                // This allows type checking to use normal symbol lookup
-                self.inner.symbols.define_external(
-                    &export.name,
-                    export.kind,
-                    ScopeId::ROOT,
-                    import.span,
-                    import.module.clone(),
-                );
-
-                // Store the imported name mapping to its module (for diagnostics)
-                self.inner.imports.insert(import.name.clone(), import.module.clone());
-            } else {
-                // Check if the module exists at all
-                if self.registry.get(&import.module).is_none() {
+            // First, check if the full path is a module (whole-module import)
+            if let Some(module_sig) = self.registry.get(&import.path) {
+                // Whole-module import: import all exports
+                for export in module_sig.all_exports() {
+                    self.inner.symbols.define_external(
+                        &export.name,
+                        export.kind,
+                        ScopeId::ROOT,
+                        import.span,
+                        import.path.clone(),
+                    );
+                    self.inner
+                        .imports
+                        .insert(export.name.clone(), import.path.clone());
+                }
+            } else if let Some((module, name)) = import.path.rsplit_once('.') {
+                // Single-declaration import
+                if let Some(export) = self.registry.resolve_import(module, name) {
+                    self.inner.symbols.define_external(
+                        &export.name,
+                        export.kind,
+                        ScopeId::ROOT,
+                        import.span,
+                        module.to_string(),
+                    );
+                    self.inner
+                        .imports
+                        .insert(name.to_string(), module.to_string());
+                } else if self.registry.get(module).is_none() {
                     self.inner.diagnostics.error(
-                        format!("module '{}' not found", import.module),
+                        format!("module '{}' not found", module),
                         import.span,
                     );
                 } else {
                     self.inner.diagnostics.error(
-                        format!(
-                            "'{}' is not exported from module '{}'",
-                            import.name, import.module
-                        ),
+                        format!("'{}' is not exported from module '{}'", name, module),
                         import.span,
                     );
                 }
+            } else {
+                // Single-component path that's not a known module
+                self.inner.diagnostics.error(
+                    format!("module '{}' not found", import.path),
+                    import.span,
+                );
             }
         }
     }

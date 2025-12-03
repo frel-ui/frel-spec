@@ -367,12 +367,14 @@ impl<'a> Parser<'a> {
         Some(path)
     }
 
-    /// Parse import statement: import foo.bar.Baz
+    /// Parse import statement: import foo.bar.Baz or import foo.bar
+    ///
+    /// The full path is stored; disambiguation between whole-module and
+    /// single-declaration imports happens during semantic analysis.
     fn parse_import(&mut self) -> Option<ast::Import> {
         let start = self.current().span.start;
         self.expect_contextual(contextual::IMPORT)?;
 
-        // Parse module path up to the last component
         let mut parts = vec![self.expect_identifier()?];
         let mut end = self.previous_span().end;
 
@@ -381,11 +383,10 @@ impl<'a> Parser<'a> {
             end = self.previous_span().end;
         }
 
-        // Last part is the name, rest is module path
-        let name = parts.pop()?;
-        let module = parts.join(".");
-
-        Some(ast::Import { module, name, span: Span::new(start, end) })
+        Some(ast::Import {
+            path: parts.join("."),
+            span: Span::new(start, end),
+        })
     }
 
     /// Parse a top-level declaration
@@ -446,8 +447,7 @@ mod tests {
         assert!(!result.diagnostics.has_errors());
         let file = result.file.unwrap();
         assert_eq!(file.imports.len(), 1);
-        assert_eq!(file.imports[0].module, "foo.bar");
-        assert_eq!(file.imports[0].name, "Baz");
+        assert_eq!(file.imports[0].path, "foo.bar.Baz");
     }
 
     #[test]

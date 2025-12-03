@@ -1,0 +1,19 @@
+module builtin
+
+blueprint text() {
+}
+
+blueprint column() {
+}
+
+blueprint row() {
+}
+
+blueprint image() {
+}
+
+blueprint text_editor() {
+}
+
+blueprint button() {
+}

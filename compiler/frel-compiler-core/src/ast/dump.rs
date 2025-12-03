@@ -254,7 +254,7 @@ impl Visitor for DumpVisitor {
     }
 
     fn visit_import(&mut self, import: &Import) {
-        self.write(&format!("IMPORT {} FROM {}", import.name, import.module));
+        self.write(&format!("IMPORT {}", import.path));
     }
 
     // =========================================================================

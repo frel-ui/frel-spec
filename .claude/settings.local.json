@@ -11,7 +11,10 @@
       "Bash(curl:*)",
       "Bash(npm install)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(pkill:*)",
+      "Bash(jq:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

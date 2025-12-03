@@ -1,5 +1,7 @@
 module blueprint.with_backend
 
+import builtin
+
 backend CounterBackend {
     count : i32 = 0
 

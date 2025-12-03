@@ -1,12 +1,14 @@
 module blueprint.anonymous_blueprint_it
 
+import builtin.text
+
 blueprint TextWrapper(content: Blueprint<String>) {
     hw : String = "Hello!"
     content(hw)
 }
 
 blueprint App {
-    TextWrapper {
-        text { "Message: ${it}" }
+    TextWrapper { content ->
+        text { "Message: ${content}" }
     }
 }

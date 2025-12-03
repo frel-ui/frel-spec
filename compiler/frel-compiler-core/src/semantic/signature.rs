@@ -62,6 +62,11 @@ impl ModuleSignature {
         self.exports.iter().find(|e| e.name == name)
     }
 
+    /// Get all exported declarations
+    pub fn all_exports(&self) -> &[ExportedDecl] {
+        &self.exports
+    }
+
     /// Look up a symbol by ID
     pub fn get_symbol(&self, id: SymbolId) -> Option<&SerializableSymbol> {
         self.symbols.get(id)
