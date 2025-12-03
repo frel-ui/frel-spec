@@ -96,28 +96,32 @@ async fn main() -> Result<()> {
     let server_handle = server.handle();
 
     // Spawn task to handle shutdown signals (Ctrl-C and SIGTERM)
+    // Use tokio::spawn (not actix_rt::spawn) for better signal handling
     let signal_handle = server_handle.clone();
-    actix_rt::spawn(async move {
-        // Wait for shutdown signal
-        let shutdown_reason = tokio::select! {
-            _ = tokio::signal::ctrl_c() => "Ctrl-C",
-            _ = async {
-                #[cfg(unix)]
-                {
-                    use tokio::signal::unix::{signal, SignalKind};
-                    let mut sigterm = signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
-                    sigterm.recv().await;
-                }
-                #[cfg(not(unix))]
-                {
-                    // On non-Unix systems, just wait forever (Ctrl-C will work)
-                    std::future::pending::<()>().await;
-                }
-            } => "SIGTERM",
-        };
+    tokio::spawn(async move {
+        // Set up signal handlers
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::{signal, SignalKind};
+            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to register SIGINT handler");
+            let mut sigterm = signal(SignalKind::terminate()).expect("Failed to register SIGTERM handler");
 
-        println!();
-        println!("Received {}, shutting down...", shutdown_reason);
+            let shutdown_reason = tokio::select! {
+                _ = sigint.recv() => "Ctrl-C",
+                _ = sigterm.recv() => "SIGTERM",
+            };
+
+            println!();
+            println!("Received {}, shutting down...", shutdown_reason);
+        }
+
+        #[cfg(not(unix))]
+        {
+            // On non-Unix systems, use ctrl_c
+            let _ = tokio::signal::ctrl_c().await;
+            println!();
+            println!("Received Ctrl-C, shutting down...");
+        }
 
         // Signal the file watcher to stop
         let _ = shutdown_tx.send(true);

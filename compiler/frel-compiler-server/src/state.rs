@@ -156,10 +156,14 @@ impl ModuleIndex {
 
         self.file_to_module
             .insert(path.clone(), module_path.to_owned());
-        self.module_to_files
+
+        // Only add to module's file list if not already present
+        let files = self.module_to_files
             .entry(module_path.to_owned())
-            .or_default()
-            .push(path.clone());
+            .or_default();
+        if !files.contains(path) {
+            files.push(path.clone());
+        }
     }
 
     /// Remove a file from the index
