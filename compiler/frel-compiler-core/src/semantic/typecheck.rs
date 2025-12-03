@@ -400,15 +400,47 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        // First pass: resolve all field types and store in symbol_types
+        // First pass: resolve all field and method types and store in symbol_types
         // This is needed so that field references in initializers can be resolved
         for member in &be.members {
-            if let ast::BackendMember::Field(field) = member {
-                let field_type = self.resolve_type_expr(&field.type_expr, field.span);
-                // Look up the field's symbol and store its type
-                if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
-                    self.symbol_types.insert(field_symbol_id, field_type);
+            match member {
+                ast::BackendMember::Field(field) => {
+                    let field_type = self.resolve_type_expr(&field.type_expr, field.span);
+                    // Look up the field's symbol and store its type
+                    if let Some(field_symbol_id) = self.symbols.lookup_local(self.current_scope, &field.name) {
+                        self.symbol_types.insert(field_symbol_id, field_type);
+                    }
                 }
+                ast::BackendMember::Method(method) => {
+                    // Resolve parameter types and return type
+                    let param_types: Vec<Type> = method.params
+                        .iter()
+                        .map(|p| self.resolve_type_expr(&p.type_expr, method.span))
+                        .collect();
+                    let ret_type = self.resolve_type_expr(&method.return_type, method.span);
+                    let method_type = Type::Function {
+                        params: param_types,
+                        ret: Box::new(ret_type),
+                    };
+                    if let Some(method_symbol_id) = self.symbols.lookup_local(self.current_scope, &method.name) {
+                        self.symbol_types.insert(method_symbol_id, method_type);
+                    }
+                }
+                ast::BackendMember::Command(cmd) => {
+                    // Commands return Unit (no return type)
+                    let param_types: Vec<Type> = cmd.params
+                        .iter()
+                        .map(|p| self.resolve_type_expr(&p.type_expr, cmd.span))
+                        .collect();
+                    let cmd_type = Type::Function {
+                        params: param_types,
+                        ret: Box::new(Type::Unit),
+                    };
+                    if let Some(cmd_symbol_id) = self.symbols.lookup_local(self.current_scope, &cmd.name) {
+                        self.symbol_types.insert(cmd_symbol_id, cmd_type);
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -443,15 +475,41 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        // First pass: resolve all LocalDecl types and store in symbol_types
-        // This is needed so that field references in later initializers can be resolved
+        // First pass: resolve types for `with` imported symbols and LocalDecl
         for stmt in &bp.body {
-            if let ast::BlueprintStmt::LocalDecl(decl) = stmt {
-                let decl_type = self.resolve_type_expr(&decl.type_expr, decl.span);
-                // Look up the local's symbol and store its type
-                if let Some(local_symbol_id) = self.symbols.lookup_local(self.current_scope, &decl.name) {
-                    self.symbol_types.insert(local_symbol_id, decl_type);
+            match stmt {
+                ast::BlueprintStmt::With(backend_name) => {
+                    // Import types from the backend
+                    if let Some(backend_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, backend_name, self.scopes) {
+                        if let Some(backend_symbol) = self.symbols.get(backend_id) {
+                            if let Some(backend_body_scope) = backend_symbol.body_scope {
+                                // For each symbol in the backend, copy its type to the blueprint's imported symbol
+                                let backend_members: Vec<_> = self.symbols
+                                    .symbols_in_scope(backend_body_scope)
+                                    .map(|s| (s.name.clone(), s.id))
+                                    .collect();
+
+                                for (member_name, backend_member_id) in backend_members {
+                                    // Get the type from the backend's symbol
+                                    if let Some(member_type) = self.symbol_types.get(&backend_member_id).cloned() {
+                                        // Find the imported symbol in blueprint scope and set its type
+                                        if let Some(blueprint_member_id) = self.symbols.lookup_local(self.current_scope, &member_name) {
+                                            self.symbol_types.insert(blueprint_member_id, member_type);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+                ast::BlueprintStmt::LocalDecl(decl) => {
+                    let decl_type = self.resolve_type_expr(&decl.type_expr, decl.span);
+                    // Look up the local's symbol and store its type
+                    if let Some(local_symbol_id) = self.symbols.lookup_local(self.current_scope, &decl.name) {
+                        self.symbol_types.insert(local_symbol_id, decl_type);
+                    }
+                }
+                _ => {}
             }
         }
 

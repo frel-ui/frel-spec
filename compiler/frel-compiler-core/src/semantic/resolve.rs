@@ -264,8 +264,30 @@ impl Resolver {
     fn resolve_blueprint_stmt(&mut self, stmt: &ast::BlueprintStmt) {
         match stmt {
             ast::BlueprintStmt::With(name) => {
-                // Resolve backend reference
-                self.resolve_name(name, Span::default());
+                // Resolve backend reference and import its members into the blueprint scope
+                if let Some(backend_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, name, &self.scopes) {
+                    if let Some(backend_symbol) = self.symbols.get(backend_id) {
+                        if let Some(backend_body_scope) = backend_symbol.body_scope {
+                            // Collect members to import (avoid borrowing issues)
+                            let members_to_import: Vec<_> = self.symbols
+                                .symbols_in_scope(backend_body_scope)
+                                .map(|s| (s.name.clone(), s.kind, s.def_span))
+                                .collect();
+
+                            // Import each member into the current blueprint scope
+                            for (member_name, member_kind, member_span) in members_to_import {
+                                self.define_simple(&member_name, member_kind, self.current_scope, member_span);
+                            }
+                        }
+                    }
+                } else {
+                    // Backend not found - report error
+                    self.diagnostics.add(Diagnostic::from_code(
+                        &codes::E0301,
+                        Span::default(),
+                        format!("cannot find backend `{}` in this scope", name),
+                    ));
+                }
             }
             ast::BlueprintStmt::LocalDecl(decl) => {
                 // Resolve the initializer first (before adding to scope)
