@@ -554,7 +554,8 @@ impl<'a> TypeChecker<'a> {
             match stmt {
                 ast::BlueprintStmt::With(backend_name) => {
                     // Import types from the backend
-                    if let Some(backend_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, backend_name, self.scopes) {
+                    // Look up from current scope to find both module-level backends and parameters
+                    if let Some(backend_id) = self.symbols.lookup_in_scope_chain(self.current_scope, backend_name, self.scopes) {
                         if let Some(backend_symbol) = self.symbols.get(backend_id) {
                             if let Some(backend_body_scope) = backend_symbol.body_scope {
                                 // For each symbol in the backend, copy its type to the blueprint's imported symbol

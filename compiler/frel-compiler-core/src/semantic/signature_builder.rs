@@ -201,4 +201,51 @@ scheme User {
         let wrong_module = registry.resolve_import("test.other", "User");
         assert!(wrong_module.is_none());
     }
+
+    #[test]
+    fn test_backend_members_in_signature() {
+        let source = r#"
+module test.backend
+
+backend EditorBackend {
+    content: String
+    command save()
+}
+"#;
+        let parse_result = parser::parse(source);
+        assert!(!parse_result.diagnostics.has_errors());
+
+        let file = parse_result.file.unwrap();
+        let module = Module::from_file(file);
+
+        let result = build_signature(&module);
+        assert!(!result.has_errors(), "Errors: {:?}", result.diagnostics);
+
+        let sig = &result.signature;
+
+        // Check EditorBackend export
+        let editor_export = sig.get_export("EditorBackend");
+        assert!(editor_export.is_some(), "EditorBackend should be exported");
+        let editor_export = editor_export.unwrap();
+        assert_eq!(editor_export.kind, SymbolKind::Backend);
+        assert!(editor_export.body_scope.is_some(), "EditorBackend should have body_scope");
+
+        let body_scope = editor_export.body_scope.unwrap();
+
+        // Collect members in body scope
+        let members: Vec<_> = sig.symbols.symbols_in_scope(body_scope).collect();
+
+        // Should have both content (field) and save (command)
+        assert!(members.len() >= 2, "Expected at least 2 members, got {}: {:?}",
+            members.len(),
+            members.iter().map(|m| &m.name).collect::<Vec<_>>());
+
+        let content = members.iter().find(|m| m.name == "content");
+        assert!(content.is_some(), "Should have content field");
+        assert_eq!(content.unwrap().kind, SymbolKind::Field);
+
+        let save = members.iter().find(|m| m.name == "save");
+        assert!(save.is_some(), "Should have save command");
+        assert_eq!(save.unwrap().kind, SymbolKind::Command);
+    }
 }

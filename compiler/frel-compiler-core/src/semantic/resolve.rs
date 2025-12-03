@@ -261,18 +261,30 @@ impl Resolver {
         // Resolve body statements
         self.current_scope = body_scope;
         for stmt in &bp.body {
-            self.resolve_blueprint_stmt(stmt);
+            self.resolve_blueprint_stmt(stmt, &bp.params);
         }
         self.current_scope = module_scope;
     }
 
-    fn resolve_blueprint_stmt(&mut self, stmt: &ast::BlueprintStmt) {
+    fn resolve_blueprint_stmt(&mut self, stmt: &ast::BlueprintStmt, params: &[ast::Parameter]) {
         match stmt {
             ast::BlueprintStmt::With(name) => {
                 // Resolve backend reference and import its members into the blueprint scope
-                if let Some(backend_id) = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, name, &self.scopes) {
-                    if let Some(backend_symbol) = self.symbols.get(backend_id) {
-                        if let Some(backend_body_scope) = backend_symbol.body_scope {
+                // Look up from current scope to find both module-level backends and parameters
+                if let Some(symbol_id) = self.symbols.lookup_in_scope_chain(self.current_scope, name, &self.scopes) {
+                    if let Some(symbol) = self.symbols.get(symbol_id) {
+                        // Get the body scope - either directly from the symbol (for backends)
+                        // or by looking up the parameter's type (for parameters)
+                        let body_scope = if let Some(scope) = symbol.body_scope {
+                            Some(scope)
+                        } else if symbol.kind == SymbolKind::Parameter {
+                            // For parameters, look up the type from the AST and find its body scope
+                            self.get_parameter_type_body_scope(name, params)
+                        } else {
+                            None
+                        };
+
+                        if let Some(backend_body_scope) = body_scope {
                             // Collect members to import (avoid borrowing issues)
                             let members_to_import: Vec<_> = self.symbols
                                 .symbols_in_scope(backend_body_scope)
@@ -314,7 +326,7 @@ impl Resolver {
                 }
                 // Resolve body if present
                 if let Some(body) = &frag.body {
-                    self.resolve_fragment_body(body);
+                    self.resolve_fragment_body(body, params);
                 }
                 // Resolve postfix items
                 for postfix in &frag.postfix {
@@ -324,28 +336,47 @@ impl Resolver {
                     }
                 }
             }
-            ast::BlueprintStmt::Control(ctrl) => self.resolve_control_stmt(ctrl),
+            ast::BlueprintStmt::Control(ctrl) => self.resolve_control_stmt(ctrl, params),
             ast::BlueprintStmt::Instruction(instr) => self.resolve_instruction_expr(instr),
             ast::BlueprintStmt::EventHandler(handler) => self.resolve_event_handler(handler),
             ast::BlueprintStmt::Layout(layout) => self.resolve_layout_stmt(layout),
-            ast::BlueprintStmt::SlotBinding(binding) => self.resolve_slot_binding(binding),
+            ast::BlueprintStmt::SlotBinding(binding) => self.resolve_slot_binding(binding, params),
             ast::BlueprintStmt::ContentExpr(expr) => self.resolve_expr(expr),
         }
     }
 
-    fn resolve_fragment_body(&mut self, body: &ast::FragmentBody) {
+    /// Helper to get the body scope of a parameter's type
+    fn get_parameter_type_body_scope(&self, param_name: &str, params: &[ast::Parameter]) -> Option<ScopeId> {
+        // Find the parameter in the AST
+        let param = params.iter().find(|p| p.name == param_name)?;
+
+        // Get the type name from the type expression
+        let type_name = match &param.type_expr {
+            ast::TypeExpr::Named(name) => name,
+            _ => return None, // Can't use 'with' on non-named types
+        };
+
+        // Look up the type in the module scope
+        let type_symbol_id = self.symbols.lookup_in_scope_chain(ScopeId::ROOT, type_name, &self.scopes)?;
+        let type_symbol = self.symbols.get(type_symbol_id)?;
+
+        // Return its body scope
+        type_symbol.body_scope
+    }
+
+    fn resolve_fragment_body(&mut self, body: &ast::FragmentBody, params: &[ast::Parameter]) {
         match body {
             ast::FragmentBody::Default(stmts) => {
                 for stmt in stmts {
-                    self.resolve_blueprint_stmt(stmt);
+                    self.resolve_blueprint_stmt(stmt, params);
                 }
             }
             ast::FragmentBody::Slots(slots) => {
                 for slot in slots {
-                    self.resolve_slot_binding(slot);
+                    self.resolve_slot_binding(slot, params);
                 }
             }
-            ast::FragmentBody::InlineBlueprint { params, body } => {
+            ast::FragmentBody::InlineBlueprint { params: inline_params, body } => {
                 // Create a new scope for the inline blueprint
                 let inline_scope = self.scopes.create_scope(
                     ScopeKind::Blueprint,
@@ -356,13 +387,13 @@ impl Resolver {
                 self.current_scope = inline_scope;
 
                 // Define parameters
-                for param in params {
+                for param in inline_params {
                     self.define_simple(param, SymbolKind::Parameter, inline_scope, Span::default());
                 }
 
-                // Resolve body
+                // Resolve body - inline blueprints don't inherit outer params for 'with'
                 for stmt in body {
-                    self.resolve_blueprint_stmt(stmt);
+                    self.resolve_blueprint_stmt(stmt, &[]);
                 }
 
                 self.current_scope = old_scope;
@@ -370,9 +401,9 @@ impl Resolver {
         }
     }
 
-    fn resolve_slot_binding(&mut self, binding: &ast::SlotBinding) {
+    fn resolve_slot_binding(&mut self, binding: &ast::SlotBinding, _params: &[ast::Parameter]) {
         match &binding.blueprint {
-            ast::BlueprintValue::Inline { params, body } => {
+            ast::BlueprintValue::Inline { params: inline_params, body } => {
                 let inline_scope = self.scopes.create_scope(
                     ScopeKind::Blueprint,
                     self.current_scope,
@@ -381,12 +412,13 @@ impl Resolver {
                 let old_scope = self.current_scope;
                 self.current_scope = inline_scope;
 
-                for param in params {
+                for param in inline_params {
                     self.define_simple(param, SymbolKind::Parameter, inline_scope, Span::default());
                 }
 
+                // Inline blueprints don't inherit outer params for 'with'
                 for stmt in body {
-                    self.resolve_blueprint_stmt(stmt);
+                    self.resolve_blueprint_stmt(stmt, &[]);
                 }
 
                 self.current_scope = old_scope;
@@ -403,7 +435,7 @@ impl Resolver {
         }
     }
 
-    fn resolve_control_stmt(&mut self, ctrl: &ast::ControlStmt) {
+    fn resolve_control_stmt(&mut self, ctrl: &ast::ControlStmt, params: &[ast::Parameter]) {
         match ctrl {
             ast::ControlStmt::When {
                 condition,
@@ -411,9 +443,9 @@ impl Resolver {
                 else_stmt,
             } => {
                 self.resolve_expr(condition);
-                self.resolve_blueprint_stmt(then_stmt);
+                self.resolve_blueprint_stmt(then_stmt, params);
                 if let Some(else_stmt) = else_stmt {
-                    self.resolve_blueprint_stmt(else_stmt);
+                    self.resolve_blueprint_stmt(else_stmt, params);
                 }
             }
             ast::ControlStmt::Repeat {
@@ -439,7 +471,7 @@ impl Resolver {
                 self.define_simple(item_name, SymbolKind::LocalVar, loop_scope, Span::default());
 
                 for stmt in body {
-                    self.resolve_blueprint_stmt(stmt);
+                    self.resolve_blueprint_stmt(stmt, params);
                 }
 
                 self.current_scope = old_scope;
@@ -454,10 +486,10 @@ impl Resolver {
                 }
                 for branch in branches {
                     self.resolve_expr(&branch.condition);
-                    self.resolve_blueprint_stmt(&branch.body);
+                    self.resolve_blueprint_stmt(&branch.body, params);
                 }
                 if let Some(else_stmt) = else_branch {
-                    self.resolve_blueprint_stmt(else_stmt);
+                    self.resolve_blueprint_stmt(else_stmt, params);
                 }
             }
         }
@@ -1138,5 +1170,73 @@ enum Status {
             .filter(|s| s.kind == SymbolKind::EnumVariant)
             .collect();
         assert_eq!(variants.len(), 3);
+    }
+
+    #[test]
+    fn test_import_backend_with_commands() {
+        use super::super::signature::SignatureRegistry;
+        use super::super::signature_builder::build_signature;
+        use crate::Module;
+
+        // Build signature for backend module
+        let backend_source = r#"
+module test.backend
+
+backend EditorBackend {
+    content: String
+    command save()
+}
+"#;
+        let parse_result = parser::parse(backend_source);
+        assert!(!parse_result.diagnostics.has_errors());
+        let backend_file = parse_result.file.unwrap();
+        let backend_module = Module::from_file(backend_file);
+        let sig_result = build_signature(&backend_module);
+        assert!(!sig_result.has_errors(), "Signature errors: {:?}", sig_result.diagnostics);
+
+        // Verify signature has both members
+        let export = sig_result.signature.get_export("EditorBackend").unwrap();
+        let body_scope = export.body_scope.unwrap();
+        let members: Vec<_> = sig_result.signature.symbols.symbols_in_scope(body_scope).collect();
+        assert_eq!(members.len(), 2, "Signature should have 2 members: {:?}",
+            members.iter().map(|m| &m.name).collect::<Vec<_>>());
+
+        // Register signature
+        let mut registry = SignatureRegistry::new();
+        registry.register(sig_result.signature);
+
+        // Now resolve the importing module
+        let editor_source = r#"
+module test.editor
+
+import test.backend.EditorBackend
+
+blueprint Editor {
+    with EditorBackend
+}
+"#;
+        let parse_result = parser::parse(editor_source);
+        assert!(!parse_result.diagnostics.has_errors());
+        let editor_file = parse_result.file.unwrap();
+        let result = resolve_with_registry(&editor_file, &registry);
+
+        // Check that EditorBackend was imported with its body scope
+        let editor_backend_id = result.symbols.lookup_local(ScopeId::ROOT, "EditorBackend");
+        assert!(editor_backend_id.is_some(), "EditorBackend should be imported");
+
+        let editor_backend = result.symbols.get(editor_backend_id.unwrap()).unwrap();
+        assert!(editor_backend.body_scope.is_some(), "Imported EditorBackend should have body_scope");
+
+        let imported_body_scope = editor_backend.body_scope.unwrap();
+        let imported_members: Vec<_> = result.symbols.symbols_in_scope(imported_body_scope).collect();
+
+        // Both content and save should be imported
+        assert_eq!(imported_members.len(), 2, "Imported backend should have 2 members: {:?}",
+            imported_members.iter().map(|m| &m.name).collect::<Vec<_>>());
+
+        let has_content = imported_members.iter().any(|m| m.name == "content");
+        let has_save = imported_members.iter().any(|m| m.name == "save");
+        assert!(has_content, "Should have content field");
+        assert!(has_save, "Should have save command");
     }
 }
