@@ -254,15 +254,41 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn resolve_contract_types(&mut self, ct: &ast::Contract) {
-        for method in &ct.methods {
-            // Use method span for parameters since Parameter has no span
-            for param in &method.params {
-                self.resolve_type_expr(&param.type_expr, method.span);
-            }
-            if let Some(ret) = &method.return_type {
-                self.resolve_type_expr(ret, method.span);
+        // Enter the contract's body scope for method lookups
+        let saved_scope = self.current_scope;
+        if let Some(symbol_id) = self.symbols.lookup_local(ScopeId::ROOT, &ct.name) {
+            if let Some(symbol) = self.symbols.get(symbol_id) {
+                if let Some(body_scope) = symbol.body_scope {
+                    self.current_scope = body_scope;
+                }
             }
         }
+
+        for method in &ct.methods {
+            // Resolve parameter types and return type
+            let param_types: Vec<Type> = method
+                .params
+                .iter()
+                .map(|p| self.resolve_type_expr(&p.type_expr, method.span))
+                .collect();
+            let ret_type = method
+                .return_type
+                .as_ref()
+                .map(|rt| self.resolve_type_expr(rt, method.span))
+                .unwrap_or(Type::Unit);
+            let method_type = Type::Function {
+                params: param_types,
+                ret: Box::new(ret_type),
+            };
+            // Store the method's function type
+            if let Some(method_symbol_id) =
+                self.symbols.lookup_local(self.current_scope, &method.name)
+            {
+                self.symbol_types.insert(method_symbol_id, method_type);
+            }
+        }
+
+        self.current_scope = saved_scope;
     }
 
     fn resolve_theme_types(&mut self, th: &ast::Theme) {
@@ -968,6 +994,7 @@ impl<'a> TypeChecker<'a> {
                     SymbolKind::Blueprint => Type::Blueprint(symbol_id),
                     SymbolKind::Scheme => Type::Scheme(symbol_id),
                     SymbolKind::Enum => Type::Enum(symbol_id),
+                    SymbolKind::Contract => Type::Contract(symbol_id),
                     _ => Type::Unknown,
                 };
             }
@@ -1002,6 +1029,29 @@ impl<'a> TypeChecker<'a> {
                     &codes::E0301,
                     span,
                     format!("no field `{}` on type `{}`", field, base_type),
+                ));
+                Type::Error
+            }
+            Type::Contract(symbol_id) => {
+                // Look up method in the contract's scope
+                if let Some(symbol) = self.symbols.get(*symbol_id) {
+                    if let Some(body_scope) = symbol.body_scope {
+                        if let Some(method_id) = self.symbols.lookup_local(body_scope, field) {
+                            if self.symbols.get(method_id).is_some() {
+                                // Return the method's type
+                                return self
+                                    .symbol_types
+                                    .get(&method_id)
+                                    .cloned()
+                                    .unwrap_or(Type::Unknown);
+                            }
+                        }
+                    }
+                }
+                self.diagnostics.add(Diagnostic::from_code(
+                    &codes::E0301,
+                    span,
+                    format!("no method `{}` on contract `{}`", field, base_type),
                 ));
                 Type::Error
             }
@@ -1434,15 +1484,43 @@ impl<'a> TypeCheckerWithRegistry<'a> {
     }
 
     fn resolve_contract_types(&mut self, ct: &ast::Contract) {
-        for method in &ct.methods {
-            // Use method span for parameters since Parameter has no span
-            for param in &method.params {
-                self.resolve_type_expr(&param.type_expr, method.span);
-            }
-            if let Some(ret) = &method.return_type {
-                self.resolve_type_expr(ret, method.span);
+        // Enter the contract's body scope for method lookups
+        let saved_scope = self.inner.current_scope;
+        if let Some(symbol_id) = self.inner.symbols.lookup_local(ScopeId::ROOT, &ct.name) {
+            if let Some(symbol) = self.inner.symbols.get(symbol_id) {
+                if let Some(body_scope) = symbol.body_scope {
+                    self.inner.current_scope = body_scope;
+                }
             }
         }
+
+        for method in &ct.methods {
+            // Resolve parameter types and return type
+            let param_types: Vec<Type> = method
+                .params
+                .iter()
+                .map(|p| self.resolve_type_expr(&p.type_expr, method.span))
+                .collect();
+            let ret_type = method
+                .return_type
+                .as_ref()
+                .map(|rt| self.resolve_type_expr(rt, method.span))
+                .unwrap_or(Type::Unit);
+            let method_type = Type::Function {
+                params: param_types,
+                ret: Box::new(ret_type),
+            };
+            // Store the method's function type
+            if let Some(method_symbol_id) = self
+                .inner
+                .symbols
+                .lookup_local(self.inner.current_scope, &method.name)
+            {
+                self.inner.symbol_types.insert(method_symbol_id, method_type);
+            }
+        }
+
+        self.inner.current_scope = saved_scope;
     }
 
     fn resolve_theme_types(&mut self, th: &ast::Theme) {
