@@ -10,6 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/compiler/frel-compiler-test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/compiler/frel-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/compiler/frel-plugin-javascript/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/compiler/frel-compiler-server/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/compiler/target" />
     </content>
     <orderEntry type="inheritedJdk" />

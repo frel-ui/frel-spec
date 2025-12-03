@@ -480,61 +480,44 @@ Organized by category:
 - `E04xx`: Type errors
 - `W0xxx`: Warnings
 
-## Compile Server (Planned)
+## Compiler Server
 
 **Location:** `frel-compiler-server/`
 
-HTTP-based compilation service for IDE integration and multi-module projects.
+An always-compiled daemon that watches a project directory, compiles Frel source files on change, and provides compilation results via HTTP API. Optimized for AI-assisted workflows.
 
-### Architecture
+For full documentation, see [Compiler Server](10_compiler_server.md).
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    frel-compiler-server                      │
-├─────────────────────────────────────────────────────────────┤
-│  HTTP Layer (actix-web)                                      │
-│  - Session/file management endpoints                         │
-│  - Compilation endpoints                                     │
-│  - Test management endpoints                                 │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│  Session Manager                                             │
-│  - Maps session ID → file collection                         │
-│  - Groups files by module                                    │
-│  - Manages signature cache                                   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│  frel-compiler-core                                          │
-│  - Phase 1: Scope building → ModuleSignature                 │
-│  - Phase 2: Type resolution (given signature registry)       │
-└─────────────────────────────────────────────────────────────┘
+### Quick Start
+
+```bash
+# Start server
+frel-server /path/to/project --port 3001
+
+# One-shot compilation (for CI)
+frel-server /path/to/project --once
 ```
 
-### HTTP API
+### Key Features
 
-#### Sessions
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/sessions` | Create new session |
-| `GET` | `/api/sessions` | List all sessions |
-| `DELETE` | `/api/sessions/{id}` | Delete session |
+- **One server = one project**: No session management
+- **Always compiled**: Full build on startup, incremental on change
+- **File watching**: Automatic recompilation with 50ms debounce
+- **HTTP API**: Status, modules, diagnostics, AST, generated code
+- **Fast feedback**: <100ms target for single-file changes
 
-#### Files
-| Method | Path | Description |
-|--------|------|-------------|
-| `PUT` | `/api/sessions/{id}/files/{path}` | Add/update file |
-| `GET` | `/api/sessions/{id}/files/{path}` | Get file content |
-| `DELETE` | `/api/sessions/{id}/files/{path}` | Remove file |
-| `GET` | `/api/sessions/{id}/files` | List all files |
+### HTTP API Summary
 
-#### Compilation
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/sessions/{id}/compile` | Compile all modules |
-| `POST` | `/api/sessions/{id}/compile/{module}` | Compile single module |
-| `GET` | `/api/sessions/{id}/diagnostics` | Get all diagnostics |
+| Endpoint | Description |
+|----------|-------------|
+| `GET /status` | Server status (initialized, error_count, module_count) |
+| `GET /modules` | List all modules with status |
+| `GET /diagnostics` | All diagnostics |
+| `GET /diagnostics/{module}` | Module diagnostics |
+| `GET /ast/{module}` | JSON-serialized AST |
+| `GET /generated/{module}` | Generated JavaScript |
+| `POST /notify` | Push file change notification |
+| `GET /events` | SSE stream for compilation events |
 
 ## CLI Tool (frelc)
 

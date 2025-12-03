@@ -160,12 +160,12 @@ impl From<&super::scope::Scope> for SerializableScope {
 ///
 /// The name_lookup map is rebuilt on access since JSON doesn't support
 /// tuple keys directly.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SerializableSymbolTable {
     symbols: Vec<SerializableSymbol>,
     /// Cached lookup map (not serialized, rebuilt on demand)
     #[serde(skip)]
-    name_lookup: std::cell::OnceCell<HashMap<(ScopeId, String), SymbolId>>,
+    name_lookup: std::sync::OnceLock<HashMap<(ScopeId, String), SymbolId>>,
 }
 
 impl SerializableSymbolTable {
@@ -200,13 +200,22 @@ impl SerializableSymbolTable {
     }
 }
 
+impl Clone for SerializableSymbolTable {
+    fn clone(&self) -> Self {
+        Self {
+            symbols: self.symbols.clone(),
+            name_lookup: std::sync::OnceLock::new(),
+        }
+    }
+}
+
 impl From<&SymbolTable> for SerializableSymbolTable {
     fn from(table: &SymbolTable) -> Self {
         let symbols: Vec<SerializableSymbol> = table.iter().map(SerializableSymbol::from).collect();
 
         Self {
             symbols,
-            name_lookup: std::cell::OnceCell::new(),
+            name_lookup: std::sync::OnceLock::new(),
         }
     }
 }
@@ -299,7 +308,7 @@ mod tests {
             scopes: SerializableScopeGraph { scopes: vec![] },
             symbols: SerializableSymbolTable {
                 symbols: vec![],
-                name_lookup: std::cell::OnceCell::new(),
+                name_lookup: std::sync::OnceLock::new(),
             },
         };
 
@@ -320,7 +329,7 @@ mod tests {
             scopes: SerializableScopeGraph { scopes: vec![] },
             symbols: SerializableSymbolTable {
                 symbols: vec![],
-                name_lookup: std::cell::OnceCell::new(),
+                name_lookup: std::sync::OnceLock::new(),
             },
         };
 
@@ -347,7 +356,7 @@ mod tests {
             scopes: SerializableScopeGraph { scopes: vec![] },
             symbols: SerializableSymbolTable {
                 symbols: vec![],
-                name_lookup: std::cell::OnceCell::new(),
+                name_lookup: std::sync::OnceLock::new(),
             },
         };
 

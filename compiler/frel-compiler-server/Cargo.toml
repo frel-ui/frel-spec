@@ -1,0 +1,38 @@
+[package]
+name = "frel-compiler-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Frel compiler server - always-compiled daemon for AI-assisted workflows"
+
+[[bin]]
+name = "frel-server"
+path = "src/main.rs"
+
+[dependencies]
+frel-compiler-core = { path = "../frel-compiler-core" }
+frel-compiler-plugin-javascript = { path = "../frel-compiler-plugin-javascript" }
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# CLI
+clap.workspace = true
+
+# Async/HTTP
+actix-web.workspace = true
+actix-rt.workspace = true
+tokio.workspace = true
+
+# File watching
+notify.workspace = true
+
+# Globbing
+glob.workspace = true

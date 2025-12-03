@@ -320,7 +320,7 @@ impl Diagnostic {
 }
 
 /// Collection of diagnostics accumulated during compilation
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Diagnostics {
     diagnostics: Vec<Diagnostic>,
 }
