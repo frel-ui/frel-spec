@@ -66,6 +66,7 @@ impl<'a> Parser<'a> {
 
     /// Parse a simple instruction (used in themes)
     pub(super) fn parse_instruction(&mut self) -> Option<Instruction> {
+        let start = self.current_span().start;
         let name = self.expect_identifier()?;
 
         let params = if self.consume(TokenKind::LBrace).is_some() {
@@ -76,7 +77,9 @@ impl<'a> Parser<'a> {
             vec![]
         };
 
-        Some(Instruction { name, params })
+        let end = self.previous_span().end;
+        let span = crate::source::Span::new(start, end);
+        Some(Instruction { name, params, span })
     }
 
     /// Parse an instruction expression (used in blueprints)
@@ -91,6 +94,9 @@ impl<'a> Parser<'a> {
         if self.consume(TokenKind::When).is_some() {
             return self.parse_when_instruction_expr();
         }
+
+        // Capture start position for span tracking
+        let start = self.current_span().start;
 
         // Parse an expression, but stop before `?` so we can handle instruction ternary
         // (which uses `? ... else` instead of expression ternary's `? ... :`)
@@ -122,7 +128,9 @@ impl<'a> Parser<'a> {
             self.advance(); // consume '{'
             let params = self.parse_instruction_params()?;
             self.expect(TokenKind::RBrace)?;
-            return Some(InstructionExpr::Simple(Instruction { name, params }));
+            let end = self.previous_span().end;
+            let span = crate::source::Span::new(start, end);
+            return Some(InstructionExpr::Simple(Instruction { name, params, span }));
         }
 
         // Reference: field access or identifier

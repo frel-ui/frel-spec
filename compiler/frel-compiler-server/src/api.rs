@@ -3,10 +3,21 @@
 use std::path::PathBuf;
 
 use actix_web::{web, HttpResponse, Responder};
+use frel_compiler_core::source::{LineIndex, Span};
 use serde::{Deserialize, Serialize};
 
 use crate::compiler;
 use crate::state::SharedState;
+
+/// Helper to compute line/column from a span using source content
+fn span_to_line_col(span: &Span, source: &str) -> (Option<usize>, Option<usize>) {
+    if span.start == 0 && span.end == 0 {
+        return (None, None);
+    }
+    let line_index = LineIndex::new(source);
+    let loc = line_index.line_col(span.start);
+    (Some(loc.line as usize), Some(loc.col as usize))
+}
 
 // === Response types ===
 
@@ -217,6 +228,9 @@ pub async fn get_all_diagnostics(state: web::Data<SharedState>) -> impl Responde
 
     // Collect from parse cache
     for (path, entry) in &state.parse_cache {
+        // Get source for line/column computation
+        let source = state.sources.get(path).map(|s| s.content.as_str());
+
         for diag in entry.diagnostics.iter() {
             let severity = format!("{:?}", diag.severity).to_lowercase();
             if diag.severity == frel_compiler_core::Severity::Error {
@@ -224,19 +238,32 @@ pub async fn get_all_diagnostics(state: web::Data<SharedState>) -> impl Responde
             } else if diag.severity == frel_compiler_core::Severity::Warning {
                 total_warnings += 1;
             }
+
+            let (line, column) = source
+                .map(|s| span_to_line_col(&diag.span, s))
+                .unwrap_or((None, None));
+
             all_diagnostics.push(DiagnosticInfo {
                 severity,
                 code: diag.code.clone(),
                 message: diag.message.clone(),
                 file: Some(path.display().to_string()),
-                line: None, // Would need LineIndex to compute
-                column: None,
+                line,
+                column,
             });
         }
     }
 
     // Collect from analysis cache
     for (module, entry) in &state.analysis_cache {
+        // Get source from first file in module for line/column computation
+        let source = state
+            .module_index
+            .files_for_module(module)
+            .first()
+            .and_then(|p| state.sources.get(p))
+            .map(|s| s.content.as_str());
+
         for diag in entry.result.diagnostics.iter() {
             let severity = format!("{:?}", diag.severity).to_lowercase();
             if diag.severity == frel_compiler_core::Severity::Error {
@@ -244,13 +271,18 @@ pub async fn get_all_diagnostics(state: web::Data<SharedState>) -> impl Responde
             } else if diag.severity == frel_compiler_core::Severity::Warning {
                 total_warnings += 1;
             }
+
+            let (line, column) = source
+                .map(|s| span_to_line_col(&diag.span, s))
+                .unwrap_or((None, None));
+
             all_diagnostics.push(DiagnosticInfo {
                 severity,
                 code: diag.code.clone(),
                 message: diag.message.clone(),
                 file: Some(module.clone()),
-                line: None,
-                column: None,
+                line,
+                column,
             });
         }
     }
@@ -275,6 +307,18 @@ pub async fn get_module_diagnostics(
     let mut error_count = 0;
     let mut warning_count = 0;
 
+    // Get first file in module for file path and line/column computation
+    let first_file = state
+        .module_index
+        .files_for_module(&module_path)
+        .first()
+        .cloned();
+    let module_source = first_file
+        .as_ref()
+        .and_then(|p| state.sources.get(p))
+        .map(|s| s.content.as_str());
+    let file_display = first_file.as_ref().map(|p| p.display().to_string());
+
     // Get from analysis cache
     if let Some(entry) = state.analysis_cache.get(&module_path) {
         for diag in entry.result.diagnostics.iter() {
@@ -284,19 +328,26 @@ pub async fn get_module_diagnostics(
             } else if diag.severity == frel_compiler_core::Severity::Warning {
                 warning_count += 1;
             }
+
+            let (line, column) = module_source
+                .map(|s| span_to_line_col(&diag.span, s))
+                .unwrap_or((None, None));
+
             diagnostics.push(DiagnosticInfo {
                 severity,
                 code: diag.code.clone(),
                 message: diag.message.clone(),
-                file: None,
-                line: None,
-                column: None,
+                file: file_display.clone(),
+                line,
+                column,
             });
         }
     }
 
     // Also get parse diagnostics for files in this module
     for file_path in state.module_index.files_for_module(&module_path) {
+        let source = state.sources.get(file_path).map(|s| s.content.as_str());
+
         if let Some(entry) = state.parse_cache.get(file_path) {
             for diag in entry.diagnostics.iter() {
                 let severity = format!("{:?}", diag.severity).to_lowercase();
@@ -305,13 +356,18 @@ pub async fn get_module_diagnostics(
                 } else if diag.severity == frel_compiler_core::Severity::Warning {
                     warning_count += 1;
                 }
+
+                let (line, column) = source
+                    .map(|s| span_to_line_col(&diag.span, s))
+                    .unwrap_or((None, None));
+
                 diagnostics.push(DiagnosticInfo {
                     severity,
                     code: diag.code.clone(),
                     message: diag.message.clone(),
                     file: Some(file_path.display().to_string()),
-                    line: None,
-                    column: None,
+                    line,
+                    column,
                 });
             }
         }
@@ -562,30 +618,52 @@ fn get_current_module_state(
         .and_then(|file_path| state.parse_cache.get(file_path))
         .map(|entry| serde_json::to_value(&entry.file).unwrap_or(serde_json::Value::Null));
 
+    // Get first file for file path and line/column computation
+    let first_file = state
+        .module_index
+        .files_for_module(module_path)
+        .first()
+        .cloned();
+    let module_source = first_file
+        .as_ref()
+        .and_then(|p| state.sources.get(p))
+        .map(|s| s.content.as_str());
+    let file_display = first_file.as_ref().map(|p| p.display().to_string());
+
     // Get diagnostics
     let mut diagnostics = Vec::new();
     if let Some(entry) = state.analysis_cache.get(module_path) {
         for diag in entry.result.diagnostics.iter() {
+            let (line, column) = module_source
+                .map(|s| span_to_line_col(&diag.span, s))
+                .unwrap_or((None, None));
+
             diagnostics.push(DiagnosticInfo {
                 severity: format!("{:?}", diag.severity).to_lowercase(),
                 code: diag.code.clone(),
                 message: diag.message.clone(),
-                file: None,
-                line: None,
-                column: None,
+                file: file_display.clone(),
+                line,
+                column,
             });
         }
     }
     for file_path in state.module_index.files_for_module(module_path) {
+        let source = state.sources.get(file_path).map(|s| s.content.as_str());
+
         if let Some(entry) = state.parse_cache.get(file_path) {
             for diag in entry.diagnostics.iter() {
+                let (line, column) = source
+                    .map(|s| span_to_line_col(&diag.span, s))
+                    .unwrap_or((None, None));
+
                 diagnostics.push(DiagnosticInfo {
                     severity: format!("{:?}", diag.severity).to_lowercase(),
                     code: diag.code.clone(),
                     message: diag.message.clone(),
                     file: Some(file_path.display().to_string()),
-                    line: None,
-                    column: None,
+                    line,
+                    column,
                 });
             }
         }

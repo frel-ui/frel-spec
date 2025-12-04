@@ -658,11 +658,39 @@ impl<'a> TypeChecker<'a> {
                 branches,
                 else_branch,
             } => {
-                if let Some(disc) = discriminant {
-                    self.infer_expr_type(disc);
-                }
+                // Infer discriminant type if present
+                let disc_type = discriminant.as_ref().map(|d| self.infer_expr_type(d));
+
                 for branch in branches {
-                    self.infer_expr_type(&branch.condition);
+                    // Special handling for enum variant matching
+                    if let (Some(Type::Enum(enum_id)), ast::Expr::Identifier(variant_name)) =
+                        (&disc_type, &branch.condition)
+                    {
+                        // Check if the identifier is a valid enum variant
+                        if let Some(enum_symbol) = self.symbols.get(*enum_id) {
+                            if let Some(body_scope) = enum_symbol.body_scope {
+                                if self
+                                    .symbols
+                                    .lookup_local(body_scope, variant_name)
+                                    .is_none()
+                                {
+                                    // Not a valid variant
+                                    self.diagnostics.add(Diagnostic::from_code(
+                                        &codes::E0301,
+                                        self.context_span,
+                                        format!(
+                                            "no variant `{}` in enum `{}`",
+                                            variant_name, enum_symbol.name
+                                        ),
+                                    ));
+                                }
+                                // If found, it's a valid enum variant - no error
+                            }
+                        }
+                    } else {
+                        // Regular expression condition
+                        self.infer_expr_type(&branch.condition);
+                    }
                     self.check_blueprint_stmt(&branch.body);
                 }
                 if let Some(else_stmt) = else_branch {
@@ -677,6 +705,9 @@ impl<'a> TypeChecker<'a> {
 
         match instr {
             ast::InstructionExpr::Simple(inst) => {
+                // Set context span for error reporting
+                self.context_span = inst.span;
+
                 for (param_name, expr) in &inst.params {
                     // Check if this is a simple identifier that should be validated as a keyword
                     if let ast::Expr::Identifier(value) = expr {
@@ -1055,6 +1086,93 @@ backend Calculator {
             !result.has_errors(),
             "Field references should resolve correctly, got errors: {:?}",
             result.diagnostics
+        );
+    }
+
+    fn resolve_and_typecheck_source(source: &str) -> (resolve::ResolveResult, TypeCheckResult) {
+        let parse_result = parser::parse(source);
+        assert!(
+            !parse_result.diagnostics.has_errors(),
+            "Parse errors: {:?}",
+            parse_result.diagnostics
+        );
+        let file = parse_result.file.unwrap();
+        let resolve_result = resolve::resolve(&file);
+        let typecheck_result = typecheck(
+            &file,
+            &resolve_result.scopes,
+            &resolve_result.symbols,
+            &resolve_result.imports,
+        );
+        (resolve_result, typecheck_result)
+    }
+
+    #[test]
+    fn test_select_on_enum_valid_variants() {
+        // Test that valid enum variants in select statements are recognized
+        let source = r#"
+module test
+
+enum Status { Pending Active Completed }
+
+blueprint StatusView {
+    status : Status = Status.Pending
+
+    select on status {
+        Pending => { x1 : i32 = 1 }
+        Active => { x2 : i32 = 2 }
+        Completed => { x3 : i32 = 3 }
+    }
+}
+"#;
+        let (resolve_result, typecheck_result) = resolve_and_typecheck_source(source);
+        // Should have no resolve errors for enum variants
+        assert!(
+            !resolve_result.diagnostics.has_errors(),
+            "Resolve errors for valid enum variants: {:?}",
+            resolve_result.diagnostics
+        );
+        // Should have no typecheck errors
+        assert!(
+            !typecheck_result.has_errors(),
+            "Typecheck errors for valid enum variants: {:?}",
+            typecheck_result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_select_on_enum_invalid_variant() {
+        // Test that invalid enum variants in select statements are caught
+        let source = r#"
+module test
+
+enum Status { Pending Active Completed }
+
+blueprint StatusView {
+    status : Status = Status.Pending
+
+    select on status {
+        Pending => { x1 : i32 = 1 }
+        Invalid => { x2 : i32 = 2 }
+    }
+}
+"#;
+        let (resolve_result, typecheck_result) = resolve_and_typecheck_source(source);
+        // Should have no resolve errors (resolution is deferred for select branches)
+        assert!(
+            !resolve_result.diagnostics.has_errors(),
+            "Should not have resolve errors: {:?}",
+            resolve_result.diagnostics
+        );
+        // Should have typecheck error for invalid variant
+        assert!(
+            typecheck_result.has_errors(),
+            "Should have typecheck error for invalid variant 'Invalid'"
+        );
+        assert!(
+            typecheck_result.diagnostics.iter().any(|d| d.message.contains("no variant `Invalid`")),
+            "Should have error about invalid variant: {:?}",
+            typecheck_result.diagnostics
         );
     }
 }

@@ -1,6 +1,6 @@
 module expressions.contract_calls
 
-import test.common.*
+import test.common.text
 
 scheme User {
     id : Uuid .. identity

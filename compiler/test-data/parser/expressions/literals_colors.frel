@@ -8,8 +8,7 @@ blueprint ColorLiterals {
         box { } .. background { color: #FF0000FF }
         box { } .. background { color: rgb(255, 0, 0) }
         box { } .. background { color: rgba(255, 0, 0, 128) }
-        box { } .. background { color: Red }
-        box { } .. background { color: Blue }
-        box { } .. background { color: Transparent }
+        box { } .. background { color: AppTheme.White }
+        box { } .. background { color: AppTheme.Black }
     }
 }

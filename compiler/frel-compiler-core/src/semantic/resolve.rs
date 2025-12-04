@@ -510,7 +510,14 @@ impl Resolver {
                     self.resolve_expr(disc);
                 }
                 for branch in branches {
-                    self.resolve_expr(&branch.condition);
+                    // When there's a discriminant, skip resolution for simple identifiers.
+                    // They may be enum variant names that can only be resolved once we know
+                    // the discriminant type in the typecheck phase.
+                    let should_skip = discriminant.is_some()
+                        && matches!(&branch.condition, ast::Expr::Identifier(_));
+                    if !should_skip {
+                        self.resolve_expr(&branch.condition);
+                    }
                     self.resolve_blueprint_stmt(&branch.body, params);
                 }
                 if let Some(else_stmt) = else_branch {

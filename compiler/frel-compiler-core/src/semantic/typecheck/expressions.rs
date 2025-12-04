@@ -259,7 +259,7 @@ impl<'a> ExprChecker<'a> {
                 self.diagnostics.add(Diagnostic::from_code(
                     &codes::E0301,
                     self.context_span,
-                    format!("no field `{}` on type `{}`", field, base_type),
+                    format!("no field `{}` on type `{}`", field, self.type_name(base_type)),
                 ));
                 Type::Error
             }
@@ -282,7 +282,7 @@ impl<'a> ExprChecker<'a> {
                 self.diagnostics.add(Diagnostic::from_code(
                     &codes::E0301,
                     self.context_span,
-                    format!("no method `{}` on contract `{}`", field, base_type),
+                    format!("no method `{}` on contract `{}`", field, self.type_name(base_type)),
                 ));
                 Type::Error
             }
@@ -299,7 +299,7 @@ impl<'a> ExprChecker<'a> {
                 self.diagnostics.add(Diagnostic::from_code(
                     &codes::E0301,
                     self.context_span,
-                    format!("no variant `{}` in enum `{}`", field, base_type),
+                    format!("no variant `{}` in enum `{}`", field, self.type_name(base_type)),
                 ));
                 Type::Error
             }
@@ -317,7 +317,7 @@ impl<'a> ExprChecker<'a> {
                 self.diagnostics.add(Diagnostic::from_code(
                     &codes::E0401,
                     self.context_span,
-                    format!("type `{}` does not have fields", base_type),
+                    format!("type `{}` does not have fields", self.type_name(base_type)),
                 ));
                 Type::Error
             }
@@ -333,6 +333,27 @@ impl<'a> ExprChecker<'a> {
                 Type::Unit
             }
             _ => Type::Unknown,
+        }
+    }
+
+    /// Format a type for display in error messages, resolving symbol names
+    fn type_name(&self, ty: &Type) -> String {
+        match ty {
+            Type::Scheme(id) | Type::Backend(id) | Type::Blueprint(id) | Type::Contract(id) | Type::Theme(id) | Type::Enum(id) => {
+                if let Some(symbol) = self.symbols.get(*id) {
+                    symbol.name.clone()
+                } else {
+                    ty.to_string()
+                }
+            }
+            Type::Ref(inner) => format!("ref {}", self.type_name(inner)),
+            Type::Draft(inner) => format!("draft {}", self.type_name(inner)),
+            Type::Nullable(inner) => format!("{}?", self.type_name(inner)),
+            Type::List(inner) => format!("List<{}>", self.type_name(inner)),
+            Type::Set(inner) => format!("Set<{}>", self.type_name(inner)),
+            Type::Map(k, v) => format!("Map<{}, {}>", self.type_name(k), self.type_name(v)),
+            Type::Tree(inner) => format!("Tree<{}>", self.type_name(inner)),
+            _ => ty.to_string(),
         }
     }
 }

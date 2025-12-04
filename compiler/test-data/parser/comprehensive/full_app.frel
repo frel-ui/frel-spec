@@ -111,7 +111,7 @@ blueprint TaskCard(task: Task, theme: ref TaskTheme) {
                 text { task.title } .. font { size: 16 weight: 600 }
 
                 select on task.priority {
-                    Urgent => text { "!" } .. font { color: Red weight: 700 }
+                    Urgent => text { "!" } .. font { color: #FF0000 weight: 700 }
                     High => text { "!" } .. font { color: #FFA500 }
                     else => { }
                 }

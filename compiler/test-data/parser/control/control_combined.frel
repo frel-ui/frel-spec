@@ -1,6 +1,8 @@
 module control.control_combined
 
-import test.common.*
+import test.common.text
+import test.common.column
+import test.common.row
 
 enum Status { Loading Ready Error }
 

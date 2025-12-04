@@ -252,6 +252,7 @@ pub struct SelectBranch {
 pub struct Instruction {
     pub name: String,
     pub params: Vec<(String, Expr)>,
+    pub span: Span,
 }
 
 /// Instruction expression - can be simple, conditional, or a reference
