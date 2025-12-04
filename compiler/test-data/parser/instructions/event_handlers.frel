@@ -1,6 +1,6 @@
 module instructions.event_handlers
 
-import test.blueprint
+import test.common.*
 
 backend EventBackend {
     count : i32 = 0

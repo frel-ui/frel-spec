@@ -1,6 +1,6 @@
 module instructions.stereotype_instructions
 
-import test.blueprint
+import test.common.*
 
 blueprint StereotypeInstructions {
     column {

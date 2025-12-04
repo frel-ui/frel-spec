@@ -1,6 +1,6 @@
 module instructions.instruction_expr_combined
 
-import test.blueprint
+import test.common.*
 
 blueprint InstructionExprCombined {
     // conditional with reference in then branch

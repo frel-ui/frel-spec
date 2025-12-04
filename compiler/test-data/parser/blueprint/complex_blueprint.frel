@@ -1,9 +1,6 @@
 module blueprint.complex_blueprint
 
-import test.blueprint
-import test.backend
-import test.data
-import test.theme
+import test.common.*
 
 blueprint UserProfile(userId: Uuid) {
     with UserBackend(userId)

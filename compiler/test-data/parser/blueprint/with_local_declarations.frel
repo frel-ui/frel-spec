@@ -1,6 +1,6 @@
 module blueprint.with_local_declarations
 
-import test.blueprint
+import test.common.*
 
 blueprint Counter {
     count : i32 = 0

@@ -1,6 +1,6 @@
 module control.repeat_nested
 
-import test.blueprint
+import test.common.*
 
 scheme Category {
     name : String

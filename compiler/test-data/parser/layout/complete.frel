@@ -1,6 +1,6 @@
 module layout.complete
 
-import test.blueprint
+import test.common.*
 
 blueprint CardLayout {
     """layout
@@ -17,7 +17,7 @@ blueprint CardLayout {
     }
 
     at title: {
-        text { item.name } .. font { size: 16 weight: bold }
+        text { item.name } .. font { size: 16 weight: 400 }
     }
 
     at badge: {

@@ -1,6 +1,6 @@
 module control.errors.repeat_missing_on
 
-import test.blueprint
+import test.common.*
 
 backend ListBackend {
     items : List<String> = []

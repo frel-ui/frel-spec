@@ -1,6 +1,6 @@
 module instructions.layout_scroll
 
-import test.blueprint
+import test.common.*
 
 blueprint LayoutScroll {
     column {

@@ -1,6 +1,6 @@
 module instructions.event_handler_it
 
-import test.blueprint
+import test.common.*
 
 backend EventBackend {
     lastX : f32 = 0.0

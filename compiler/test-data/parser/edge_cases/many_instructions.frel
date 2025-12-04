@@ -1,6 +1,6 @@
 module edge_cases.many_instructions
 
-import test.blueprint
+import test.common.*
 
 blueprint ManyInstructions {
     box { }

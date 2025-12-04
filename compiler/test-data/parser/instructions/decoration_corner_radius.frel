@@ -1,6 +1,6 @@
 module instructions.decoration_corner_radius
 
-import test.blueprint
+import test.common.*
 
 blueprint DecorationCornerRadius {
     column {

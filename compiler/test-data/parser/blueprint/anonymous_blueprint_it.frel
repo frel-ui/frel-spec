@@ -1,6 +1,6 @@
 module blueprint.anonymous_blueprint_it
 
-import test.blueprint.text
+import test.common.*
 
 blueprint TextWrapper(content: Blueprint<String>) {
     hw : String = "Hello!"

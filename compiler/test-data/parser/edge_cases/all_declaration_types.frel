@@ -1,6 +1,6 @@
 module edge_cases.all_declaration_types
 
-import test.blueprint
+import test.common.*
 
 enum MyEnum { A B C }
 

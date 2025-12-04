@@ -1,6 +1,6 @@
 module instructions.errors.unclosed_instruction_brace
 
-import test.blueprint
+import test.common.*
 
 blueprint Bad {
     box { } .. width { 100

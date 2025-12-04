@@ -1,6 +1,6 @@
 module instructions.instruction_expr_ternary
 
-import test.blueprint
+import test.common.*
 
 blueprint InstructionExprTernary {
     // simple ternary

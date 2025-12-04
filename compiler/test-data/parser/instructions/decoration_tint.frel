@@ -1,6 +1,6 @@
 module instructions.decoration_tint
 
-import test.blueprint
+import test.common.*
 
 blueprint DecorationTint {
     column {

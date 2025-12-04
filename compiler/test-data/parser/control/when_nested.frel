@@ -1,6 +1,6 @@
 module control.when_nested
 
-import test.blueprint
+import test.common.*
 
 blueprint WhenNested {
     a : bool = true

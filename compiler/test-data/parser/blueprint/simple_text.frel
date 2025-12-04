@@ -1,6 +1,6 @@
 module blueprint.simple_text
 
-import test.blueprint
+import test.common.*
 
 blueprint Hello {
     text { "Hello, World!" }

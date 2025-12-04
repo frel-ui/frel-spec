@@ -1,6 +1,6 @@
 module blueprint.blueprint_multiple_params
 
-import test.blueprint
+import test.common.*
 
 blueprint Layout(
     header: Blueprint<String>,

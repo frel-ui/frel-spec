@@ -1,6 +1,6 @@
 module contract.contract_complex_types
 
-import test.data
+import test.common.*
 
 contract DataAPI {
     get_items() : List<Item>

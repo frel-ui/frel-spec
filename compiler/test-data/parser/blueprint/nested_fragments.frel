@@ -1,6 +1,6 @@
 module blueprint.nested_fragments
 
-import test.blueprint
+import test.common.*
 
 blueprint Layout {
     column {

@@ -1,6 +1,9 @@
 module contract.multiple_contracts
 
-import test.data
+import test.common.User
+import test.common.Product
+import test.common.Item
+import test.common.Order
 
 contract UserAPI {
     get_user(id: Uuid) : User

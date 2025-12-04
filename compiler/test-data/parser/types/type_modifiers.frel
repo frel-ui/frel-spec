@@ -1,6 +1,6 @@
 module types.type_modifiers
 
-import test.blueprint
+import test.common.*
 
 scheme Article {
     id    : Uuid .. identity

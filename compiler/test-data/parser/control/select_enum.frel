@@ -1,6 +1,6 @@
 module control.select_enum
 
-import test.blueprint
+import test.common.*
 
 enum Status { Pending Active Completed Cancelled }
 

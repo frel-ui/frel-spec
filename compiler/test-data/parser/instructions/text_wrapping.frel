@@ -1,6 +1,6 @@
 module instructions.text_wrapping
 
-import test.blueprint
+import test.common.*
 
 blueprint TextWrapping {
     column {

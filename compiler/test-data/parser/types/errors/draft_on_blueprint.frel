@@ -1,6 +1,6 @@
 module types.errors.draft_on_blueprint
 
-import test.blueprint
+import test.common.*
 
 blueprint renderer(title : String) {
     text { title }

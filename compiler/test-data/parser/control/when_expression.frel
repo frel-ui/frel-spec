@@ -1,6 +1,6 @@
 module control.when_expression
 
-import test.blueprint
+import test.common.*
 
 blueprint WhenExpression {
     count : i32 = 5

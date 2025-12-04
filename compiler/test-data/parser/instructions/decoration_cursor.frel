@@ -1,6 +1,6 @@
 module instructions.decoration_cursor
 
-import test.blueprint
+import test.common.*
 
 blueprint DecorationCursor {
     column {

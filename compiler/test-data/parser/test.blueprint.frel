@@ -1,25 +1,2 @@
-module test.blueprint
+module test.common
 
-blueprint text() {
-}
-
-blueprint column() {
-}
-
-blueprint row() {
-}
-
-blueprint image() {
-}
-
-blueprint text_editor() {
-}
-
-blueprint button() {
-}
-
-blueprint icon() {
-}
-
-blueprint box() {
-}

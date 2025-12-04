@@ -1,6 +1,6 @@
 module control.errors.when_missing_condition
 
-import test.blueprint
+import test.common.*
 
 blueprint Bad {
     when {

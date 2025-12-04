@@ -1,6 +1,6 @@
 module instructions.text_styling
 
-import test.blueprint
+import test.common.*
 
 blueprint TextStyling {
     column {

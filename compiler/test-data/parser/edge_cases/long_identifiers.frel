@@ -1,6 +1,6 @@
 module edge_cases.long_identifiers
 
-import test.blueprint
+import test.common.*
 
 scheme VeryLongSchemeNameThatDescribesExactlyWhatThisSchemeIsFor {
     veryLongFieldNameThatDescribesExactlyWhatThisFieldContains : String

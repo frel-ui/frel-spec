@@ -1,6 +1,6 @@
 module syntax.errors.missing_brace
 
-import test.blueprint
+import test.common.*
 
 blueprint Hello
     text { "Hello" }

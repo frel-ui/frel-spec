@@ -1,6 +1,6 @@
 module instructions.focus_instructions
 
-import test.blueprint
+import test.common.*
 
 blueprint FocusInstructions {
     column {

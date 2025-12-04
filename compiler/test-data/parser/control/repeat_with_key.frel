@@ -1,6 +1,6 @@
 module control.repeat_with_key
 
-import test.blueprint
+import test.common.*
 
 scheme Todo {
     id : Uuid .. identity

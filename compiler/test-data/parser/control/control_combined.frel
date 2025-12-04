@@ -1,6 +1,6 @@
 module control.control_combined
 
-import test.blueprint
+import test.common.*
 
 enum Status { Loading Ready Error }
 

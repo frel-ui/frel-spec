@@ -1,5 +1,2 @@
 module test.theme
 
-theme AppTheme {
-    White : Color = #ffffff
-}

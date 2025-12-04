@@ -1,6 +1,6 @@
 module instructions.layout_spacing
 
-import test.blueprint
+import test.common.*
 
 blueprint LayoutSpacing {
     row {

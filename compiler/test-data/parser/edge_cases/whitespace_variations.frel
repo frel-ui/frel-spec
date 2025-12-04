@@ -1,6 +1,6 @@
 module edge_cases.whitespace_variations
 
-import test.blueprint
+import test.common.*
 
 blueprint WhitespaceVariations {
     column{text{"No spaces"}}

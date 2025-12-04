@@ -1,0 +1,55 @@
+module test.common
+
+scheme User {
+}
+
+scheme Item {
+}
+
+scheme Result {
+}
+
+scheme Product {
+}
+
+scheme Order {
+}
+
+contract UserAPI {
+    get_user(userId : Uuid) : User
+}
+
+backend UserBackend {
+    userId : Uuid
+    user : User = UserAPI.get_user(userId)
+
+    command save_changes()
+}
+
+theme AppTheme {
+    White : Color = #ffffff
+}
+
+blueprint text() {
+}
+
+blueprint column() {
+}
+
+blueprint row() {
+}
+
+blueprint image() {
+}
+
+blueprint text_editor() {
+}
+
+blueprint button() {
+}
+
+blueprint icon() {
+}
+
+blueprint box() {
+}

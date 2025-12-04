@@ -1,6 +1,6 @@
 module expressions.literals_colors
 
-import test.blueprint
+import test.common.*
 
 blueprint ColorLiterals {
     column {

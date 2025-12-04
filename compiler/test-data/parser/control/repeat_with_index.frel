@@ -1,6 +1,6 @@
 module control.repeat_with_index
 
-import test.blueprint
+import test.common.*
 
 backend ListBackend {
     items : List<String> = ["First", "Second", "Third"]

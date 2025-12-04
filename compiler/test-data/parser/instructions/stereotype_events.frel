@@ -1,6 +1,6 @@
 module instructions.stereotype_events
 
-import test.blueprint
+import test.common.*
 
 backend ModalBackend {
     confirmed : bool = false

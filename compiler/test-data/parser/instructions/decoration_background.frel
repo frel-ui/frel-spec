@@ -1,6 +1,6 @@
 module instructions.decoration_background
 
-import test.blueprint
+import test.common.*
 
 blueprint DecorationBackground {
     column {

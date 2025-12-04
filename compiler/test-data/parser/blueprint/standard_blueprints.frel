@@ -1,6 +1,6 @@
 module blueprint.standard_blueprints
 
-import test.blueprint
+import test.common.*
 
 blueprint StandardBlueprints {
     column {

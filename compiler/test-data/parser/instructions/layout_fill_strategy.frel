@@ -1,6 +1,6 @@
 module instructions.layout_fill_strategy
 
-import test.blueprint
+import test.common.*
 
 blueprint LayoutFillStrategy {
     row {

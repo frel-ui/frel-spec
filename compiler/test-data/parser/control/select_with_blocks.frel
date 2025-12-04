@@ -1,6 +1,6 @@
 module control.select_with_blocks
 
-import test.blueprint
+import test.common.*
 
 enum ViewMode { List Grid Detail }
 

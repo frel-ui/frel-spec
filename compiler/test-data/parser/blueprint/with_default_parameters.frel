@@ -1,6 +1,6 @@
 module blueprint.with_default_parameters
 
-import test.blueprint
+import test.common.*
 
 blueprint Button(
     label: String = "Click me",

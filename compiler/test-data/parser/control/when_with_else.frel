@@ -1,6 +1,6 @@
 module control.when_with_else
 
-import test.blueprint
+import test.common.*
 
 blueprint WhenElse {
     isLoggedIn : bool = false

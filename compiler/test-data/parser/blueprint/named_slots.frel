@@ -1,6 +1,6 @@
 module blueprint.named_slots
 
-import test.blueprint
+import test.common.*
 
 blueprint Article(header: Blueprint, content: Blueprint, footer: Blueprint) {
     column {

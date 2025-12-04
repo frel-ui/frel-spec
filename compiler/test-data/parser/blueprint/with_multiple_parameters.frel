@@ -1,6 +1,6 @@
 module blueprint.with_multiple_parameters
 
-import test.blueprint
+import test.common.*
 
 blueprint UserCard(
     name: String,

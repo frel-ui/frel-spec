@@ -1,6 +1,6 @@
 module instructions.text_font
 
-import test.blueprint
+import test.common.*
 
 blueprint TextFont {
     column {

@@ -1,6 +1,6 @@
 module instructions.postfix_vs_inner
 
-import test.blueprint
+import test.common.*
 
 blueprint PostfixVsInner {
     text { "Postfix style" } .. font { size: 24 } .. padding { 8 }

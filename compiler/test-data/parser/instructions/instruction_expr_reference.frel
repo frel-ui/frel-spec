@@ -1,6 +1,6 @@
 module instructions.instruction_expr_reference
 
-import test.blueprint
+import test.common.*
 
 blueprint InstructionExprReference {
     // simple field access reference

@@ -1,6 +1,6 @@
 module blueprint.with_backend_param
 
-import test.blueprint
+import test.common.*
 
 backend EditorBackend {
     content : String = ""
