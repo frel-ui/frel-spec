@@ -4,6 +4,11 @@ scheme User {
 }
 
 scheme Item {
+    thumbnail : Url
+    name : String
+    status : String
+    description : String
+    date : LocalDate
 }
 
 scheme Result {
@@ -28,6 +33,7 @@ backend UserBackend {
 
 theme AppTheme {
     White : Color = #ffffff
+    Black : Color = #000000
 }
 
 blueprint text() {

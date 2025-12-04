@@ -37,6 +37,7 @@ export interface DiagnosticsResponse {
 export interface AstResponse {
   module: string;
   ast: unknown;
+  dump: string;
 }
 
 export interface GeneratedResponse {

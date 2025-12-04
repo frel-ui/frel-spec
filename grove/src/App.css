@@ -290,10 +290,46 @@ body {
 
 /* AST panel */
 .ast-tree {
-  font-family: monospace;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  line-height: 1.5;
+}
+
+.ast-line {
+  white-space: pre;
+}
+
+.ast-keyword {
+  color: #c586c0;
+  font-weight: 600;
+}
+
+.ast-secondary-keyword {
+  color: #569cd6;
+}
+
+.ast-name {
+  color: #9cdcfe;
+}
+
+.ast-type {
+  color: #4ec9b0;
+}
+
+.ast-string {
+  color: #ce9178;
+}
+
+.ast-number {
+  color: #b5cea8;
+}
+
+.ast-color {
+  color: #d7ba7d;
+}
+
+.ast-literal {
+  color: #569cd6;
 }
 
 /* Scope panel */

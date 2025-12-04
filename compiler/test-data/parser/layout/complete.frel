@@ -12,6 +12,8 @@ blueprint CardLayout {
     24 |         | <.footer  | <--      |
     """ .. corner { radius: 12 } .. background { color: #ffffff }
 
+    item : Item = Item { }
+
     at icon: {
         image { item.thumbnail }
     }
@@ -50,4 +52,10 @@ blueprint HeaderFooterLayout {
     ~1 | body   |
     32 | footer |
     """
+}
+
+blueprint LabelBlueprint() {
+}
+
+blueprint InputBlueprint() {
 }

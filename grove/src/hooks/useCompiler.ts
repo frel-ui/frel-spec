@@ -37,6 +37,7 @@ export interface CompilerState {
   activeTab: OutputTab;
   diagnostics: DiagnosticInfo[];
   ast: unknown | null;
+  astDump: string;
   scopes: ScopeInfo[];
   generatedJs: string;
 
@@ -95,6 +96,7 @@ export function useCompiler(): CompilerState {
   const [activeTab, setActiveTab] = useState<OutputTab>('diagnostics');
   const [diagnostics, setDiagnostics] = useState<DiagnosticInfo[]>([]);
   const [ast, setAst] = useState<unknown | null>(null);
+  const [astDump, setAstDump] = useState('');
   const [scopes, setScopes] = useState<ScopeInfo[]>([]);
   const [generatedJs, setGeneratedJs] = useState('');
 
@@ -136,13 +138,14 @@ export function useCompiler(): CompilerState {
     try {
       const [diagRes, astRes, scopeRes, genRes] = await Promise.all([
         api.getDiagnostics(modulePath),
-        api.getAst(modulePath).catch(() => ({ module: modulePath, ast: null })),
+        api.getAst(modulePath).catch(() => ({ module: modulePath, ast: null, dump: '' })),
         api.getScope(modulePath).catch(() => ({ module: modulePath, scopes: [] })),
         api.getGenerated(modulePath).catch(() => ({ module: modulePath, javascript: '' })),
       ]);
 
       setDiagnostics(diagRes.diagnostics);
       setAst(astRes.ast);
+      setAstDump(astRes.dump);
       setScopes(scopeRes.scopes);
       setGeneratedJs(genRes.javascript);
 
@@ -215,7 +218,7 @@ export function useCompiler(): CompilerState {
         if (currentModule) {
           const fetchPromises: Promise<unknown>[] = [
             api.getDiagnostics(currentModule),
-            api.getAst(currentModule).catch(() => ({ module: currentModule, ast: null })),
+            api.getAst(currentModule).catch(() => ({ module: currentModule, ast: null, dump: '' })),
             api.getScope(currentModule).catch(() => ({ module: currentModule, scopes: [] })),
             api.getGenerated(currentModule).catch(() => ({ module: currentModule, javascript: '' })),
             api.getStatus(),
@@ -230,7 +233,7 @@ export function useCompiler(): CompilerState {
           const results = await Promise.all(fetchPromises);
           const [diagRes, astRes, scopeRes, genRes, statusRes, modulesRes] = results as [
             { diagnostics: DiagnosticInfo[] },
-            { ast: unknown },
+            { ast: unknown; dump: string },
             { scopes: ScopeInfo[] },
             { javascript: string },
             { error_count: number },
@@ -239,6 +242,7 @@ export function useCompiler(): CompilerState {
 
           setDiagnostics(diagRes.diagnostics);
           setAst(astRes.ast);
+          setAstDump(astRes.dump);
           setScopes(scopeRes.scopes);
           setGeneratedJs(genRes.javascript);
           setTotalErrors(statusRes.error_count);
@@ -334,6 +338,7 @@ export function useCompiler(): CompilerState {
     activeTab,
     diagnostics,
     ast,
+    astDump,
     scopes,
     generatedJs,
     devMode,

@@ -26,6 +26,7 @@ function App() {
         onTabChange={compiler.setActiveTab}
         diagnostics={compiler.diagnostics}
         ast={compiler.ast}
+        astDump={compiler.astDump}
         scopes={compiler.scopes}
         generatedJs={compiler.generatedJs}
       />
@@ -175,11 +176,12 @@ interface OutputAreaProps {
   onTabChange: (tab: OutputTab) => void;
   diagnostics: DiagnosticInfo[];
   ast: unknown | null;
+  astDump: string;
   scopes: ScopeInfo[];
   generatedJs: string;
 }
 
-function OutputArea({ activeTab, onTabChange, diagnostics, ast, scopes, generatedJs }: OutputAreaProps) {
+function OutputArea({ activeTab, onTabChange, diagnostics, ast, astDump, scopes, generatedJs }: OutputAreaProps) {
   return (
     <div className="output-area">
       <div className="output-tabs">
@@ -213,7 +215,7 @@ function OutputArea({ activeTab, onTabChange, diagnostics, ast, scopes, generate
           <DiagnosticsPanel diagnostics={diagnostics} />
         )}
         {activeTab === 'ast' && (
-          <AstPanel ast={ast} />
+          <AstPanel ast={ast} astDump={astDump} />
         )}
         {activeTab === 'scope' && (
           <ScopePanel scopes={scopes} />
@@ -261,8 +263,8 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: DiagnosticInfo[] }) {
   );
 }
 
-// AST panel
-function AstPanel({ ast }: { ast: unknown | null }) {
+// AST panel with syntax highlighting
+function AstPanel({ ast, astDump }: { ast: unknown | null; astDump: string }) {
   if (!ast) {
     return (
       <div className="empty-state">
@@ -271,9 +273,80 @@ function AstPanel({ ast }: { ast: unknown | null }) {
     );
   }
 
+  // Highlight the dump format with colors
+  const highlightDump = (dump: string) => {
+    return dump.split('\n').map((line, i) => {
+      // Match keywords at start of line (after indentation)
+      const parts: React.ReactNode[] = [];
+      let remaining = line;
+      let key = 0;
+
+      // Keywords that start a line
+      const keywordMatch = remaining.match(/^(\s*)(FILE|IMPORT|BLUEPRINT|BACKEND|CONTRACT|SCHEME|ENUM|THEME|ARENA|WITH|LOCAL|FRAGMENT|BLOCK|WHEN|ELSE|REPEAT|SELECT|CASE|ON|INSTR|LAYOUT|COLUMN_SIZES|ROW|SLOT|REF|INLINE|FIELD|METHOD|COMMAND|INCLUDE|VIRTUAL|SET|VARIANT|CONTENT|TERNARY|THEN|INSTR_REF|ASSET)\b(.*)/);
+
+      if (keywordMatch) {
+        const [, indent, keyword, rest] = keywordMatch;
+        parts.push(<span key={key++}>{indent}</span>);
+        parts.push(<span key={key++} className="ast-keyword">{keyword}</span>);
+        remaining = rest;
+      }
+
+      // Process the rest of the line for other patterns
+      if (remaining) {
+        // Match identifiers after keywords (names)
+        const nameMatch = remaining.match(/^(\s+)([A-Z][a-zA-Z0-9_]*|[a-z][a-zA-Z0-9_]*)/);
+        if (nameMatch && !remaining.match(/^\s*[=:]/)) {
+          const [, space, name] = nameMatch;
+          parts.push(<span key={key++}>{space}</span>);
+          // Check if it's a type (starts with uppercase)
+          if (name[0] === name[0].toUpperCase()) {
+            parts.push(<span key={key++} className="ast-type">{name}</span>);
+          } else {
+            parts.push(<span key={key++} className="ast-name">{name}</span>);
+          }
+          remaining = remaining.slice(space.length + name.length);
+        }
+
+        // Highlight remaining patterns inline
+        const highlighted = remaining
+          .replace(/\b(TYPE|INIT|RETURN|ARGS|BY)\b/g, '<kw>$1</kw>')
+          .replace(/"([^"]*)"/g, '<str>"$1"</str>')
+          .replace(/\b(\d+(?:\.\d+)?)\b/g, '<num>$1</num>')
+          .replace(/#[0-9A-Fa-f]+/g, '<color>$&</color>')
+          .replace(/\b(null|true|false)\b/g, '<lit>$1</lit>');
+
+        // Parse the highlighted string into React elements
+        const regex = /<(kw|str|num|color|lit)>(.*?)<\/\1>/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = regex.exec(highlighted)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(<span key={key++}>{highlighted.slice(lastIndex, match.index)}</span>);
+          }
+          const [, type, content] = match;
+          const className = {
+            kw: 'ast-secondary-keyword',
+            str: 'ast-string',
+            num: 'ast-number',
+            color: 'ast-color',
+            lit: 'ast-literal',
+          }[type];
+          parts.push(<span key={key++} className={className}>{content}</span>);
+          lastIndex = regex.lastIndex;
+        }
+        if (lastIndex < highlighted.length) {
+          parts.push(<span key={key++}>{highlighted.slice(lastIndex)}</span>);
+        }
+      }
+
+      return <div key={i} className="ast-line">{parts.length > 0 ? parts : line}</div>;
+    });
+  };
+
   return (
     <div className="ast-tree">
-      {JSON.stringify(ast, null, 2)}
+      {highlightDump(astDump)}
     </div>
   );
 }

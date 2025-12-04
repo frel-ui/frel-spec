@@ -53,6 +53,7 @@ pub struct DiagnosticsResponse {
 pub struct AstResponse {
     pub module: String,
     pub ast: serde_json::Value,
+    pub dump: String,
 }
 
 #[derive(Serialize)]
@@ -337,9 +338,12 @@ pub async fn get_module_ast(
         if let Some(entry) = state.parse_cache.get(file_path) {
             // Serialize AST to JSON
             let ast_json = serde_json::to_value(&entry.file).unwrap_or(serde_json::Value::Null);
+            // Generate human-readable dump format
+            let dump = frel_compiler_core::ast::DumpVisitor::dump(&entry.file);
             return HttpResponse::Ok().json(AstResponse {
                 module: module_path,
                 ast: ast_json,
+                dump,
             });
         }
     }
