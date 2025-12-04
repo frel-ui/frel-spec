@@ -59,13 +59,12 @@ impl ProjectState {
     }
 
     /// Get total error count across all modules
+    /// Only counts parse_cache + analysis_cache to avoid duplicate counting
+    /// (signature_cache resolve errors are re-reported in analysis_cache)
     pub fn error_count(&self) -> usize {
         let mut count = 0;
         for entry in self.parse_cache.values() {
             count += entry.diagnostics.error_count();
-        }
-        for entry in self.signature_cache.values() {
-            count += entry.result.diagnostics.error_count();
         }
         for entry in self.analysis_cache.values() {
             count += entry.result.diagnostics.error_count();

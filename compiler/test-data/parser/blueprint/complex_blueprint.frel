@@ -3,7 +3,7 @@ module blueprint.complex_blueprint
 import test.common.*
 
 blueprint UserProfile(userId: Uuid) {
-    with UserBackend(userId)
+    with UserBackend
 
     isEditing : bool = false
     editedName : String = user.name
