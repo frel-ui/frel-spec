@@ -51,20 +51,12 @@ repeat on <iterable> [as <item>] [by <key-expr>] <statement>
   * If the type to iterate over is a scheme with identity, that identity field is used.
   * Othewise index-based diffing is used (reorders become remove+insert).
 
-### Iteration Locals
-
-Each iteration provides read-only locals for convenience:
-
-* `_index` – current index (0-based)
-* `_first` – true if first iteration
-* `_last` – true if last iteration
-
 ### Example
 
 ```frel
 repeat on users by user.id as user {
   row {
-    text { "#${_index + 1} ${user.name}" }
+    text { user.display_label }
   }
 }
 ```

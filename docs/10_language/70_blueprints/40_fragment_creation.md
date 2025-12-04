@@ -498,7 +498,7 @@ Layout {
 // Complex closure example
 blueprint ListManager() {
     items : List<String> = ["A", "B", "C"]
-    selected = 0
+    selected : String? = null
 
     column {
         // Nested anonymous blueprints all capture parent values
@@ -506,11 +506,11 @@ blueprint ListManager() {
             button {
                 // This anonymous blueprint captures both 'item' and 'selected'
                 text { item }
-                when selected == _index {
+                when selected == item {
                     text { " ✓" }
                 }
             } .. on_click {
-                selected = _index
+                selected = item
             }
         }
     }

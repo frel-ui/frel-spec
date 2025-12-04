@@ -34,6 +34,17 @@ backend UserBackend {
 theme AppTheme {
     White : Color = #ffffff
     Black : Color = #000000
+    set primary_button {  }
+    set secondary_button {  }
+    set dark_card {  }
+    set light_card {  }
+    set base_style {  }
+    set critical_error {  }
+    set warning {  }
+    set success {  }
+    set highlighted {  }
+    set card_style {  }
+    set status_badge {  }
 }
 
 blueprint text() {

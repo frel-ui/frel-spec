@@ -491,11 +491,6 @@ impl Resolver {
                 // Define the explicit loop variable (e.g., `item` in `repeat on items { item -> ... }`)
                 self.define_simple(item_name, SymbolKind::LocalVar, loop_scope, Span::default());
 
-                // Define implicit repeat variables
-                self.define_simple("_index", SymbolKind::LocalVar, loop_scope, Span::default());
-                self.define_simple("_first", SymbolKind::LocalVar, loop_scope, Span::default());
-                self.define_simple("_last", SymbolKind::LocalVar, loop_scope, Span::default());
-
                 // Now resolve key_expr with loop variable in scope
                 if let Some(key) = key_expr {
                     self.resolve_expr(key);

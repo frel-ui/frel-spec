@@ -2,7 +2,14 @@ module instructions.instruction_expr_reference
 
 import test.common.*
 
+scheme App {
+   theme : AppTheme .. default { AppTheme }
+}
+
 blueprint InstructionExprReference {
+    theme : AppTheme = AppTheme
+    app: App = App {  }
+
     // simple field access reference
     box { }
         .. theme.primary_button

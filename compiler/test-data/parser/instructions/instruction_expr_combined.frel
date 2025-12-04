@@ -2,7 +2,19 @@ module instructions.instruction_expr_combined
 
 import test.common.*
 
-blueprint InstructionExprCombined {
+blueprint InstructionExprCombined(
+    is_primary : bool,
+    is_dark_mode : bool,
+    is_focused : bool,
+    is_disabled : bool,
+    has_custom_style : bool,
+    is_critical : bool,
+    is_error : bool,
+    custom_styles : AppTheme
+) {
+    
+    theme : AppTheme = AppTheme
+
     // conditional with reference in then branch
     box { }
         .. when is_primary { theme.primary_button } else { theme.secondary_button }

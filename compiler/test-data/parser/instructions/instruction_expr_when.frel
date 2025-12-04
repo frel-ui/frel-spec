@@ -2,7 +2,14 @@ module instructions.instruction_expr_when
 
 import test.common.*
 
-blueprint InstructionExprWhen {
+blueprint InstructionExprWhen(
+    is_active : bool,
+    is_highlighted : bool,
+    count : bool,
+    is_visible : bool,
+    is_error : bool,
+    is_critical : bool
+) {
     // when without else
     box { }
         .. when is_active { background { color: #00FF00 } }

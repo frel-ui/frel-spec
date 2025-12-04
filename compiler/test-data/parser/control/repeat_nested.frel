@@ -17,9 +17,11 @@ blueprint RepeatNested {
     column {
         repeat on categories { category ->
             column {
-                text { category.name }
                 repeat on category.items { item ->
-                    text { "  - ${item}" }
+                    row { 
+                        text { category.name }
+                        text { item }
+                    }
                 }
             }
         }

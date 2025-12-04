@@ -668,19 +668,6 @@ impl<'a> TypeChecker<'a> {
 
                     // Enter the loop scope for checking the body
                     self.current_scope = loop_scope;
-
-                    // _index : u32
-                    if let Some(index_id) = self.symbols.lookup_local(loop_scope, "_index") {
-                        self.symbol_types.insert(index_id, Type::U32);
-                    }
-                    // _first : bool
-                    if let Some(first_id) = self.symbols.lookup_local(loop_scope, "_first") {
-                        self.symbol_types.insert(first_id, Type::Bool);
-                    }
-                    // _last : bool
-                    if let Some(last_id) = self.symbols.lookup_local(loop_scope, "_last") {
-                        self.symbol_types.insert(last_id, Type::Bool);
-                    }
                 }
 
                 if let Some(key) = key_expr {
