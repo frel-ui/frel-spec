@@ -149,6 +149,57 @@ blueprint UserEditor(editor: Editor) {
 }
 ```
 
+### Parameter and Backend Field Merging
+
+The `with` keyword merges the backend's namespace into the blueprint. When a blueprint parameter
+has the same name as a backend field, they refer to **the same value** - the parameter provides
+the initial value for that backend field.
+
+```frel
+backend CounterBackend {
+    count : i32 = 0
+    label : String
+}
+
+blueprint Counter(count : i32) {
+    with CounterBackend
+
+    // 'count' is both a parameter and a backend field - they are unified
+    // The parameter value initializes the backend field
+    // 'label' comes from the backend
+    text { "${label}: ${count}" }
+}
+```
+
+This pattern is useful when you want to expose certain backend fields as blueprint parameters,
+allowing parent blueprints to provide initial values while keeping the field reactive within
+the backend.
+
+**Rules for merging:**
+
+- **Types must match exactly** - The parameter and backend field must have identical types
+- **Parameter default takes precedence** - If both have defaults, the parameter's default is used
+
+```frel
+// Parameter without default uses backend field's default
+backend DataBackend {
+    value : i32 = 10
+}
+blueprint View(value : i32) { with DataBackend }
+
+// Parameter default takes precedence over backend field's default
+backend DataBackend2 {
+    value : i32 = 100
+}
+blueprint View2(value : i32 = 5) { with DataBackend2 }  // default is 5
+
+// Error: type mismatch (String vs i32)
+backend MismatchBackend {
+    data : String
+}
+blueprint BadView(data : i32) { with MismatchBackend }  // E0407
+```
+
 ### Creating Backend Instances
 
 When a backend needs to be created locally, `with` instantiates and imports it:

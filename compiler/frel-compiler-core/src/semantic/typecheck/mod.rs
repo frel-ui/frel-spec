@@ -633,17 +633,8 @@ impl<'a> TypeChecker<'a> {
                 ));
             }
 
-            // Check for conflicting defaults
-            if param.default.is_some() && field.init.is_some() {
-                self.diagnostics.add(Diagnostic::from_code(
-                    &codes::E0408,
-                    context_span,
-                    format!(
-                        "both parameter '{}' and its corresponding backend field have default values",
-                        param.name
-                    ),
-                ));
-            }
+            // Note: If both have defaults, the parameter default takes precedence.
+            // This is intentional - the blueprint author chooses the default for their API.
         }
     }
 
@@ -1352,8 +1343,8 @@ blueprint DataView(data : i32) {
     }
 
     #[test]
-    fn test_parameter_backend_merge_conflicting_defaults() {
-        // Conflicting defaults: both parameter and backend field have default values
+    fn test_parameter_backend_merge_both_defaults() {
+        // Both have defaults: parameter default takes precedence, no error
         let source = r#"
 module test
 
@@ -1373,12 +1364,8 @@ blueprint AmountView(amount : i32 = 10) {
             resolve_result.diagnostics
         );
         assert!(
-            typecheck_result.has_errors(),
-            "Should have typecheck error for conflicting defaults"
-        );
-        assert!(
-            typecheck_result.diagnostics.iter().any(|d| d.code.as_deref() == Some("E0408")),
-            "Should have E0408 error for conflicting defaults: {:?}",
+            !typecheck_result.has_errors(),
+            "Should not have errors - parameter default takes precedence: {:?}",
             typecheck_result.diagnostics
         );
     }

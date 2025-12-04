@@ -311,14 +311,6 @@ pub const E0407: ErrorCode = ErrorCode::new(
     "Parameter and backend field have the same name but different types. Types must match when merging.",
 );
 
-pub const E0408: ErrorCode = ErrorCode::new(
-    "E0408",
-    "conflicting_defaults",
-    Category::Type,
-    Severity::Error,
-    "Both parameter and backend field have default values. Only one can have a default.",
-);
-
 // ============================================================================
 // Reactive Errors (E05xx)
 // ============================================================================
@@ -471,7 +463,6 @@ pub fn lookup(code: &str) -> Option<&'static ErrorCode> {
         "E0405" => Some(&E0405),
         "E0406" => Some(&E0406),
         "E0407" => Some(&E0407),
-        "E0408" => Some(&E0408),
         // Reactive
         "E0501" => Some(&E0501),
         "E0502" => Some(&E0502),
@@ -502,7 +493,7 @@ pub fn by_category(category: Category) -> Vec<&'static ErrorCode> {
         // Resolution
         &E0301, &E0302, &E0303, &E0304, &E0305, &E0306,
         // Type
-        &E0401, &E0402, &E0403, &E0404, &E0405, &E0406, &E0407, &E0408,
+        &E0401, &E0402, &E0403, &E0404, &E0405, &E0406, &E0407,
         // Reactive
         &E0501, &E0502, &E0503, &E0504,
         // Backend
