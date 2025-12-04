@@ -1,142 +1,564 @@
 // Frel Runtime
 //
-// Main runtime class that manages the entire reactive system
+// The runtime manages reactive data, subscriptions, and the notification system.
 
-import { Datum } from './datum';
-import { Subscription } from './subscription';
-import { DatumIdentity, Callback, Selector } from './types';
+import type {
+    DatumIdentity,
+    ClosureIdentity,
+    Identity,
+    SubscriptionIdentity,
+    FunctionIdentity,
+    DatumData,
+    ClosureData,
+    SubscriptionData,
+    Selector,
+    Callback,
+    Availability,
+    BlueprintMetadata,
+} from './types.js';
+
+const GEN_LIMIT = 1000;
 
 export class Runtime {
-  private nextDatumId: number = 1;
-  private nextSubscriptionId: number = 1;
-  private nextCallbackId: number = 1;
-  private currentGeneration: number = 0;
+    // Maps
+    private datum: Map<DatumIdentity, DatumData> = new Map();
+    private closures: Map<ClosureIdentity, ClosureData> = new Map();
+    private subscriptions: Map<SubscriptionIdentity, SubscriptionData> = new Map();
+    private functions: Map<FunctionIdentity, Callback> = new Map();
 
-  private data: Map<DatumIdentity, Datum> = new Map();
-  private subscriptions: Map<number, Subscription> = new Map();
-  private callbacks: Map<number, Callback> = new Map();
+    // Static lookup (keyed by qualified name)
+    private metadata: Map<string, BlueprintMetadata> = new Map();
 
-  private eventQueue: any[] = [];
-  private notificationQueue: Set<number> = new Set();
+    // Identity counters
+    // datum: even (low bit = 0), closures: odd (low bit = 1)
+    private next_datum_id: DatumIdentity = 0;
+    private next_closure_id: ClosureIdentity = 1;
+    private next_subscription_id: SubscriptionIdentity = 0;
+    private next_function_id: FunctionIdentity = 0;
 
-  constructor() {
-    console.log('[Frel Runtime] Initialized');
-  }
+    // Event/notification queues
+    private event_queue: unknown[] = [];
+    private notification_queue: Set<SubscriptionIdentity> = new Set();
+    private current_generation: number = 0;
 
-  // Datum management
-  createDatum(type: string, owner: DatumIdentity | null = null): Datum {
-    const identityId = this.nextDatumId++;
-    const datum = new Datum(identityId, type, owner);
-    this.data.set(identityId, datum);
-    return datum;
-  }
+    // ========================================================================
+    // Identity Allocation
+    // ========================================================================
 
-  getDatum(id: DatumIdentity): Datum | undefined {
-    return this.data.get(id);
-  }
-
-  // Subscription management
-  subscribe(
-    sourceId: DatumIdentity,
-    targetId: DatumIdentity,
-    selector: Selector,
-    callback: Callback
-  ): number {
-    const subscriptionId = this.nextSubscriptionId++;
-    const callbackId = this.nextCallbackId++;
-
-    this.callbacks.set(callbackId, callback);
-
-    const subscription = new Subscription(
-      subscriptionId,
-      sourceId,
-      targetId,
-      selector,
-      callbackId
-    );
-
-    this.subscriptions.set(subscriptionId, subscription);
-
-    // Add subscription to source datum
-    const source = this.getDatum(sourceId);
-    if (source) {
-      source.addSubscription(subscriptionId);
-
-      // If source was set in current generation, queue notification
-      if (source.getSetGeneration() === this.currentGeneration) {
-        this.notificationQueue.add(subscriptionId);
-      }
+    alloc_datum_id(): DatumIdentity {
+        const id = this.next_datum_id;
+        this.next_datum_id += 2; // Stay even
+        return id;
     }
 
-    return subscriptionId;
-  }
-
-  unsubscribe(subscriptionId: number): void {
-    const subscription = this.subscriptions.get(subscriptionId);
-    if (subscription) {
-      const source = this.getDatum(subscription.sourceId);
-      if (source) {
-        source.removeSubscription(subscriptionId);
-      }
-      this.subscriptions.delete(subscriptionId);
-      this.callbacks.delete(subscription.callbackId);
-    }
-  }
-
-  // Event and notification processing
-  putEvent(event: any): void {
-    this.eventQueue.push(event);
-  }
-
-  drainEvents(): void {
-    while (this.eventQueue.length > 0) {
-      const event = this.eventQueue.shift();
-      this.processEvent(event);
+    alloc_closure_id(): ClosureIdentity {
+        const id = this.next_closure_id;
+        this.next_closure_id += 2; // Stay odd
+        return id;
     }
 
-    this.drainNotifications();
-  }
+    alloc_subscription_id(): SubscriptionIdentity {
+        return this.next_subscription_id++;
+    }
 
-  private processEvent(event: any): void {
-    // TODO: Process event and update data
-    console.log('[Runtime] Processing event:', event);
-  }
+    alloc_function_id(): FunctionIdentity {
+        return this.next_function_id++;
+    }
 
-  private drainNotifications(): void {
-    const GEN_LIMIT = 1000;
-    let generation = 0;
+    // ========================================================================
+    // Identity Helpers
+    // ========================================================================
 
-    while (this.notificationQueue.size > 0 && generation < GEN_LIMIT) {
-      generation++;
+    is_datum(id: Identity): id is DatumIdentity {
+        return (id & 1) === 0;
+    }
 
-      // Take current notifications
-      const currentNotifications = Array.from(this.notificationQueue);
-      this.notificationQueue.clear();
-      this.currentGeneration++;
+    is_closure(id: Identity): id is ClosureIdentity {
+        return (id & 1) === 1;
+    }
 
-      // Process each notification
-      for (const subscriptionId of currentNotifications) {
-        const subscription = this.subscriptions.get(subscriptionId);
-        if (subscription) {
-          const callback = this.callbacks.get(subscription.callbackId);
-          if (callback) {
-            callback(subscriptionId);
-          }
+    // ========================================================================
+    // Datum Operations
+    // ========================================================================
+
+    create_datum(type: string, fields: Record<string, unknown> = {}, owner: ClosureIdentity | null = null): DatumIdentity {
+        const id = this.alloc_datum_id();
+        const datum: DatumData = {
+            identity_id: id,
+            type,
+            structural_rev: 1,
+            carried_rev: 1,
+            set_generation: this.current_generation,
+            availability: 'Ready',
+            error: null,
+            owner,
+            fields,
+            items: null,
+            subscriptions: new Set(),
+        };
+        this.datum.set(id, datum);
+        return id;
+    }
+
+    create_collection(type: string, items: unknown[] = [], owner: ClosureIdentity | null = null): DatumIdentity {
+        const id = this.alloc_datum_id();
+        const datum: DatumData = {
+            identity_id: id,
+            type,
+            structural_rev: 1,
+            carried_rev: 1,
+            set_generation: this.current_generation,
+            availability: 'Ready',
+            error: null,
+            owner,
+            fields: null,
+            items,
+            subscriptions: new Set(),
+        };
+        this.datum.set(id, datum);
+        return id;
+    }
+
+    get_datum(id: DatumIdentity): DatumData | undefined {
+        return this.datum.get(id);
+    }
+
+    destroy_datum(id: DatumIdentity): void {
+        const datum = this.datum.get(id);
+        if (!datum) return;
+
+        // Unsubscribe all subscriptions to this datum
+        for (const sub_id of datum.subscriptions) {
+            this.subscriptions.delete(sub_id);
         }
-      }
+
+        this.datum.delete(id);
     }
 
-    if (generation >= GEN_LIMIT) {
-      console.error('[Runtime] Notification drain exceeded generation limit!');
+    // ========================================================================
+    // Closure Operations
+    // ========================================================================
+
+    create_closure(blueprint_name: string, parent_closure_id: ClosureIdentity | null): ClosureIdentity {
+        const id = this.alloc_closure_id();
+        const closure: ClosureData = {
+            closure_id: id,
+            blueprint: blueprint_name,
+            parent_closure_id,
+            child_closure_ids: [],
+            subscriptions_to_this: new Set(),
+            subscriptions_by_this: new Set(),
+            owned_datum: new Set(),
+            fields: {},
+            set_generation: this.current_generation,
+        };
+        this.closures.set(id, closure);
+
+        // Add to parent's children
+        if (parent_closure_id !== null) {
+            const parent = this.closures.get(parent_closure_id);
+            if (parent) {
+                parent.child_closure_ids.push(id);
+            }
+        }
+
+        return id;
     }
-  }
 
-  // Notification queue management
-  queueNotification(subscriptionId: number): void {
-    this.notificationQueue.add(subscriptionId);
-  }
+    get_closure(id: ClosureIdentity): ClosureData | undefined {
+        return this.closures.get(id);
+    }
 
-  getCurrentGeneration(): number {
-    return this.currentGeneration;
-  }
+    destroy_closure(id: ClosureIdentity): void {
+        const closure = this.closures.get(id);
+        if (!closure) return;
+
+        // 1. Unsubscribe all subscriptions_to_this
+        for (const sub_id of closure.subscriptions_to_this) {
+            this.subscriptions.delete(sub_id);
+        }
+
+        // 2. Unsubscribe all subscriptions_by_this
+        for (const sub_id of closure.subscriptions_by_this) {
+            const sub = this.subscriptions.get(sub_id);
+            if (sub) {
+                // Remove from source's subscription list
+                if (this.is_datum(sub.source_id)) {
+                    const source = this.datum.get(sub.source_id);
+                    source?.subscriptions.delete(sub_id);
+                } else {
+                    const source = this.closures.get(sub.source_id);
+                    source?.subscriptions_to_this.delete(sub_id);
+                }
+            }
+            this.subscriptions.delete(sub_id);
+        }
+
+        // 3. Destroy all owned_datum
+        for (const datum_id of closure.owned_datum) {
+            this.destroy_datum(datum_id);
+        }
+
+        // 4. Recursively destroy all children
+        for (const child_id of [...closure.child_closure_ids]) {
+            this.destroy_closure(child_id);
+        }
+
+        // 5. Remove from parent's child list
+        if (closure.parent_closure_id !== null) {
+            const parent = this.closures.get(closure.parent_closure_id);
+            if (parent) {
+                const idx = parent.child_closure_ids.indexOf(id);
+                if (idx !== -1) {
+                    parent.child_closure_ids.splice(idx, 1);
+                }
+            }
+        }
+
+        // 6. Remove the closure
+        this.closures.delete(id);
+    }
+
+    // ========================================================================
+    // Field Access (works for both datum and closure)
+    // ========================================================================
+
+    get(id: Identity, field: string): unknown {
+        if (this.is_datum(id)) {
+            const datum = this.datum.get(id);
+            return datum?.fields?.[field];
+        } else {
+            const closure = this.closures.get(id);
+            return closure?.fields[field];
+        }
+    }
+
+    set(id: Identity, field: string, value: unknown): void {
+        if (this.is_datum(id)) {
+            this.set_datum_field(id, field, value);
+        } else {
+            this.set_closure_field(id, field, value);
+        }
+    }
+
+    private set_datum_field(id: DatumIdentity, field: string, value: unknown): void {
+        const datum = this.datum.get(id);
+        if (!datum || !datum.fields) return;
+
+        const old_value = datum.fields[field];
+        if (old_value === value) return; // No change
+
+        datum.fields[field] = value;
+        datum.structural_rev++;
+        datum.carried_rev++;
+        datum.set_generation = this.current_generation;
+
+        // Notify subscribers
+        this.notify_subscribers(id, datum.subscriptions, 'structural', field);
+
+        // Propagate carried change up ownership chain
+        if (datum.owner !== null) {
+            this.propagate_carried(datum.owner);
+        }
+    }
+
+    private set_closure_field(id: ClosureIdentity, field: string, value: unknown): void {
+        const closure = this.closures.get(id);
+        if (!closure) return;
+
+        const old_value = closure.fields[field];
+        if (old_value === value) return; // No change
+
+        closure.fields[field] = value;
+        closure.set_generation = this.current_generation;
+
+        // Notify subscribers
+        this.notify_subscribers(id, closure.subscriptions_to_this, 'structural', field);
+    }
+
+    private propagate_carried(owner_id: ClosureIdentity): void {
+        const closure = this.closures.get(owner_id);
+        if (!closure) return;
+
+        // Notify carried-only subscribers
+        for (const sub_id of closure.subscriptions_to_this) {
+            const sub = this.subscriptions.get(sub_id);
+            if (sub && (sub.selector.type === 'Everything' || sub.selector.type === 'Carried')) {
+                this.notification_queue.add(sub_id);
+            }
+        }
+    }
+
+    private notify_subscribers(
+        id: Identity,
+        subscriptions: Set<SubscriptionIdentity>,
+        change_type: 'structural' | 'carried',
+        field?: string
+    ): void {
+        for (const sub_id of subscriptions) {
+            const sub = this.subscriptions.get(sub_id);
+            if (!sub) continue;
+
+            const matches = this.selector_matches(sub.selector, change_type, field);
+            if (matches) {
+                this.notification_queue.add(sub_id);
+            }
+        }
+    }
+
+    private selector_matches(selector: Selector, change_type: 'structural' | 'carried', field?: string): boolean {
+        switch (selector.type) {
+            case 'Everything':
+                return true;
+            case 'Structural':
+                return change_type === 'structural';
+            case 'Carried':
+                return change_type === 'carried';
+            case 'Key':
+                return field === selector.key;
+            case 'OneOf':
+                return field !== undefined && selector.keys.includes(field);
+        }
+    }
+
+    // ========================================================================
+    // Collection Operations
+    // ========================================================================
+
+    get_items(id: DatumIdentity): unknown[] | null {
+        const datum = this.datum.get(id);
+        return datum?.items ?? null;
+    }
+
+    set_items(id: DatumIdentity, items: unknown[]): void {
+        const datum = this.datum.get(id);
+        if (!datum) return;
+
+        datum.items = items;
+        datum.structural_rev++;
+        datum.carried_rev++;
+        datum.set_generation = this.current_generation;
+
+        this.notify_subscribers(id, datum.subscriptions, 'structural');
+
+        if (datum.owner !== null) {
+            this.propagate_carried(datum.owner);
+        }
+    }
+
+    // ========================================================================
+    // Availability
+    // ========================================================================
+
+    get_availability(id: DatumIdentity): Availability {
+        const datum = this.datum.get(id);
+        return datum?.availability ?? 'Error';
+    }
+
+    set_availability(id: DatumIdentity, availability: Availability): void {
+        const datum = this.datum.get(id);
+        if (!datum) return;
+
+        if (datum.availability === availability) return;
+
+        datum.availability = availability;
+        datum.structural_rev++;
+        datum.set_generation = this.current_generation;
+
+        this.notify_subscribers(id, datum.subscriptions, 'structural');
+    }
+
+    // ========================================================================
+    // Subscriptions
+    // ========================================================================
+
+    subscribe(
+        source_id: Identity,
+        target_id: Identity,
+        selector: Selector,
+        callback: Callback
+    ): SubscriptionIdentity {
+        const sub_id = this.alloc_subscription_id();
+        const callback_id = this.register_function(callback);
+
+        const sub: SubscriptionData = {
+            subscription_id: sub_id,
+            source_id,
+            target_id,
+            selector,
+            callback_id,
+        };
+
+        this.subscriptions.set(sub_id, sub);
+
+        // Add to source's subscription list
+        if (this.is_datum(source_id)) {
+            const source = this.datum.get(source_id);
+            source?.subscriptions.add(sub_id);
+        } else {
+            const source = this.closures.get(source_id);
+            source?.subscriptions_to_this.add(sub_id);
+        }
+
+        // Add to target's subscriptions_by_this (if closure)
+        if (this.is_closure(target_id)) {
+            const target = this.closures.get(target_id);
+            target?.subscriptions_by_this.add(sub_id);
+        }
+
+        // Subscribe during drain: check if we need immediate notification
+        const set_gen = this.is_datum(source_id)
+            ? this.datum.get(source_id)?.set_generation
+            : this.closures.get(source_id)?.set_generation;
+
+        if (set_gen === this.current_generation) {
+            this.notification_queue.add(sub_id);
+        }
+
+        return sub_id;
+    }
+
+    unsubscribe(sub_id: SubscriptionIdentity): void {
+        const sub = this.subscriptions.get(sub_id);
+        if (!sub) return;
+
+        // Remove from source
+        if (this.is_datum(sub.source_id)) {
+            const source = this.datum.get(sub.source_id);
+            source?.subscriptions.delete(sub_id);
+        } else {
+            const source = this.closures.get(sub.source_id);
+            source?.subscriptions_to_this.delete(sub_id);
+        }
+
+        // Remove from target
+        if (this.is_closure(sub.target_id)) {
+            const target = this.closures.get(sub.target_id);
+            target?.subscriptions_by_this.delete(sub_id);
+        }
+
+        this.subscriptions.delete(sub_id);
+    }
+
+    // ========================================================================
+    // Functions
+    // ========================================================================
+
+    register_function(fn: Callback): FunctionIdentity {
+        const id = this.alloc_function_id();
+        this.functions.set(id, fn);
+        return id;
+    }
+
+    get_function(id: FunctionIdentity): Callback | undefined {
+        return this.functions.get(id);
+    }
+
+    // ========================================================================
+    // Metadata
+    // ========================================================================
+
+    register_metadata(qualified_name: string, meta: BlueprintMetadata): void {
+        this.metadata.set(qualified_name, meta);
+    }
+
+    get_metadata(qualified_name: string): BlueprintMetadata | undefined {
+        return this.metadata.get(qualified_name);
+    }
+
+    // ========================================================================
+    // Instantiation
+    // ========================================================================
+
+    instantiate(
+        blueprint_name: string,
+        parent_closure_id: ClosureIdentity | null,
+        params: Record<string, unknown>
+    ): ClosureIdentity {
+        const closure_id = this.create_closure(blueprint_name, parent_closure_id);
+        const closure = this.closures.get(closure_id)!;
+
+        // Set parameters
+        for (const [key, value] of Object.entries(params)) {
+            closure.fields[key] = value;
+        }
+
+        // Call internal binding
+        const meta = this.metadata.get(blueprint_name);
+        if (meta?.internal_binding) {
+            meta.internal_binding(this, closure_id);
+        }
+
+        return closure_id;
+    }
+
+    // ========================================================================
+    // Events
+    // ========================================================================
+
+    put_event(event: unknown): void {
+        this.event_queue.push(event);
+    }
+
+    drain_events(): void {
+        while (this.event_queue.length > 0) {
+            const event = this.event_queue.shift();
+            this.process_event(event);
+        }
+        this.drain_notifications();
+    }
+
+    private process_event(_event: unknown): void {
+        // Events are processed by platform-specific code
+        // This is a hook for the runtime to process internal events
+    }
+
+    // ========================================================================
+    // Notifications
+    // ========================================================================
+
+    private drain_notifications(): void {
+        let generation_count = 0;
+
+        while (this.notification_queue.size > 0) {
+            // Sanity check
+            generation_count++;
+            if (generation_count > GEN_LIMIT) {
+                console.error(`Notification drain exceeded ${GEN_LIMIT} generations, aborting`);
+                this.notification_queue.clear();
+                return;
+            }
+
+            // Take all pending notifications
+            const processed = [...this.notification_queue];
+            this.notification_queue.clear();
+            this.current_generation++;
+
+            // Execute callbacks
+            for (const sub_id of processed) {
+                const sub = this.subscriptions.get(sub_id);
+                if (!sub) continue; // May have been unsubscribed
+
+                const callback = this.functions.get(sub.callback_id);
+                if (callback) {
+                    callback(this, sub);
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // Helpers
+    // ========================================================================
+
+    get_current_generation(): number {
+        return this.current_generation;
+    }
 }
+
+// Selector helpers
+export const Everything: Selector = { type: 'Everything' };
+export const Structural: Selector = { type: 'Structural' };
+export const Carried: Selector = { type: 'Carried' };
+export const Key = (key: string): Selector => ({ type: 'Key', key });
+export const OneOf = (...keys: string[]): Selector => ({ type: 'OneOf', keys });

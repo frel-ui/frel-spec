@@ -1,20 +1,21 @@
 // Frel JavaScript Runtime
 //
-// Platform-independent reactive core that manages:
-// - Datum storage and identity
-// - Subscription management
-// - Change propagation
-// - Event and notification queues
+// Platform-independent reactive core for Frel applications.
 
-export { Runtime } from './runtime';
-export { Datum } from './datum';
-export { Fragment } from './fragment';
-export { Subscription } from './subscription';
-export { Arena } from './arena';
+export { Runtime, Everything, Structural, Carried, Key, OneOf } from './runtime.js';
 
 export type {
-  DatumIdentity,
-  Availability,
-  Selector,
-  Callback,
-} from './types';
+    DatumIdentity,
+    ClosureIdentity,
+    Identity,
+    SubscriptionIdentity,
+    FunctionIdentity,
+    Availability,
+    Selector,
+    Callback,
+    DatumData,
+    ClosureData,
+    SubscriptionData,
+    BlueprintMetadata,
+    CallSiteMetadata,
+} from './types.js';

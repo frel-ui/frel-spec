@@ -1,12 +1,99 @@
 // JavaScript code generation
 //
-// This module implements the actual code generation logic.
+// This module generates JavaScript code from Frel AST that works with the
+// @frel/runtime package. The generated code includes:
+//
+// - Subscription callbacks
+// - Internal binding functions
+// - Call site binding functions
+// - Theme initializers
+// - Metadata (function tables)
 
 use frel_compiler_core::ast::*;
+use std::collections::HashMap;
+
+/// Context for code generation, including import resolution
+struct CodeGenContext<'a> {
+    module: &'a str,
+    /// Maps simple names to their qualified module paths
+    /// e.g., "text" -> "test.common" (from `import test.common.text`)
+    import_map: HashMap<String, String>,
+    /// Wildcard import modules (from `import foo.bar.*`)
+    /// These are checked when a name isn't in the explicit import_map
+    wildcard_modules: Vec<String>,
+    /// Names defined in the current module (blueprints, schemes, etc.)
+    local_names: Vec<String>,
+}
+
+impl<'a> CodeGenContext<'a> {
+    fn new(module: &'a str, imports: &[Import], local_names: Vec<String>) -> Self {
+        let mut import_map = HashMap::new();
+        let mut wildcard_modules = Vec::new();
+
+        for import in imports {
+            if import.import_all {
+                // Wildcard import: `import foo.bar.*`
+                // Store the module path for later resolution
+                wildcard_modules.push(import.path.clone());
+            } else {
+                // Single import: `import foo.bar.Baz`
+                if let Some((module_path, name)) = import.path.rsplit_once('.') {
+                    import_map.insert(name.to_string(), module_path.to_string());
+                }
+            }
+        }
+
+        Self {
+            module,
+            import_map,
+            wildcard_modules,
+            local_names,
+        }
+    }
+
+    /// Resolve a simple name to its fully qualified name
+    fn resolve_name(&self, name: &str) -> String {
+        // 1. Check explicit imports first
+        if let Some(module_path) = self.import_map.get(name) {
+            return format!("{}.{}", module_path, name);
+        }
+
+        // 2. Check if it's a local name (defined in current module)
+        if self.local_names.contains(&name.to_string()) {
+            return format!("{}.{}", self.module, name);
+        }
+
+        // 3. Check wildcard imports - if there's exactly one, use it
+        //    If there are multiple, we can't resolve without semantic analysis
+        if self.wildcard_modules.len() == 1 {
+            return format!("{}.{}", self.wildcard_modules[0], name);
+        }
+
+        // 4. Fall back to current module (may be incorrect if name comes from wildcard)
+        format!("{}.{}", self.module, name)
+    }
+}
 
 /// Generate JavaScript code for a Frel file
 pub fn generate_file(file: &File) -> String {
     let mut output = String::new();
+
+    // Collect local names first (names defined in this module)
+    let local_names: Vec<String> = file
+        .declarations
+        .iter()
+        .filter_map(|decl| match decl {
+            TopLevelDecl::Blueprint(bp) => Some(bp.name.clone()),
+            TopLevelDecl::Backend(b) => Some(b.name.clone()),
+            TopLevelDecl::Contract(c) => Some(c.name.clone()),
+            TopLevelDecl::Scheme(s) => Some(s.name.clone()),
+            TopLevelDecl::Enum(e) => Some(e.name.clone()),
+            TopLevelDecl::Theme(t) => Some(t.name.clone()),
+            TopLevelDecl::Arena(a) => Some(a.name.clone()),
+        })
+        .collect();
+
+    let ctx = CodeGenContext::new(&file.module, &file.imports, local_names);
 
     // File header
     output.push_str(&format!(
@@ -16,8 +103,8 @@ pub fn generate_file(file: &File) -> String {
         file.module
     ));
 
-    // Runtime import
-    output.push_str("import { Runtime, Fragment } from '@frel/runtime';\n\n");
+    // Runtime imports
+    output.push_str("import { Runtime, Key, OneOf, Everything } from '@frel/runtime';\n\n");
 
     // Generate imports
     for import in &file.imports {
@@ -28,19 +115,51 @@ pub fn generate_file(file: &File) -> String {
         output.push('\n');
     }
 
+    // Collect all declarations for metadata generation
+    let mut blueprint_names = Vec::new();
+    let mut theme_names = Vec::new();
+
     // Generate declarations
     for decl in &file.declarations {
-        output.push_str(&generate_declaration(decl));
+        match decl {
+            TopLevelDecl::Blueprint(bp) => {
+                blueprint_names.push(bp.name.clone());
+                output.push_str(&generate_blueprint(bp, &ctx));
+            }
+            TopLevelDecl::Backend(backend) => {
+                output.push_str(&generate_backend(backend));
+            }
+            TopLevelDecl::Contract(contract) => {
+                output.push_str(&generate_contract(contract));
+            }
+            TopLevelDecl::Scheme(scheme) => {
+                output.push_str(&generate_scheme(scheme));
+            }
+            TopLevelDecl::Enum(enum_decl) => {
+                output.push_str(&generate_enum(enum_decl));
+            }
+            TopLevelDecl::Theme(theme) => {
+                theme_names.push(theme.name.clone());
+                output.push_str(&generate_theme(theme));
+            }
+            TopLevelDecl::Arena(arena) => {
+                output.push_str(&generate_arena(arena));
+            }
+        }
         output.push('\n');
     }
+
+    // Generate metadata registration
+    output.push_str(&generate_metadata_registration(
+        &file.module,
+        &blueprint_names,
+        &theme_names,
+    ));
 
     output
 }
 
 fn generate_import(import: &Import) -> String {
-    // Split path into module and name
-    // For whole-module imports, we'd need registry info to know what to import
-    // For now, treat as single-declaration import
     if let Some((module, name)) = import.path.rsplit_once('.') {
         format!(
             "import {{ {} }} from '@frel/{}';\n",
@@ -48,8 +167,6 @@ fn generate_import(import: &Import) -> String {
             module.replace('.', "/")
         )
     } else {
-        // Whole-module import: import all (requires build-time knowledge of exports)
-        // For now, generate a namespace import
         format!(
             "import * as {} from '@frel/{}';\n",
             import.path,
@@ -58,84 +175,393 @@ fn generate_import(import: &Import) -> String {
     }
 }
 
-fn generate_declaration(decl: &TopLevelDecl) -> String {
-    match decl {
-        TopLevelDecl::Blueprint(blueprint) => generate_blueprint(blueprint),
-        TopLevelDecl::Backend(backend) => generate_backend(backend),
-        TopLevelDecl::Contract(contract) => generate_contract(contract),
-        TopLevelDecl::Scheme(scheme) => generate_scheme(scheme),
-        TopLevelDecl::Enum(enum_decl) => generate_enum(enum_decl),
-        TopLevelDecl::Theme(theme) => generate_theme(theme),
-        TopLevelDecl::Arena(arena) => generate_arena(arena),
+fn generate_blueprint(blueprint: &Blueprint, ctx: &CodeGenContext) -> String {
+    let mut output = String::new();
+    let name = &blueprint.name;
+
+    // Collect fields from local declarations
+    let fields: Vec<_> = blueprint
+        .body
+        .iter()
+        .filter_map(|stmt| match stmt {
+            BlueprintStmt::LocalDecl(decl) => Some(decl),
+            _ => None,
+        })
+        .collect();
+
+    // Collect call sites (fragment creations)
+    let call_sites: Vec<_> = collect_fragment_creations(&blueprint.body);
+
+    // Generate subscription callbacks for derived fields
+    for field in &fields {
+        if let Some(callback) = generate_field_callback(name, field) {
+            output.push_str(&callback);
+            output.push('\n');
+        }
     }
+
+    // Generate call site callbacks and bindings
+    for (idx, call_site) in call_sites.iter().enumerate() {
+        output.push_str(&generate_call_site_callbacks(name, idx, call_site));
+    }
+
+    // Generate internal binding function
+    output.push_str(&generate_internal_binding(name, &blueprint.params, &fields));
+
+    // Generate call site binding functions
+    for (idx, call_site) in call_sites.iter().enumerate() {
+        output.push_str(&generate_call_site_binding(name, idx, call_site));
+    }
+
+    // Generate metadata object
+    output.push_str(&generate_blueprint_metadata(name, &call_sites, ctx));
+
+    output
 }
 
-fn generate_blueprint(blueprint: &Blueprint) -> String {
+fn collect_fragment_creations(stmts: &[BlueprintStmt]) -> Vec<&FragmentCreation> {
+    let mut result = Vec::new();
+    for stmt in stmts {
+        match stmt {
+            BlueprintStmt::FragmentCreation(fc) => {
+                result.push(fc);
+            }
+            BlueprintStmt::Control(ctrl) => match ctrl {
+                ControlStmt::When {
+                    then_stmt,
+                    else_stmt,
+                    ..
+                } => {
+                    if let BlueprintStmt::FragmentCreation(fc) = then_stmt.as_ref() {
+                        result.push(fc);
+                    }
+                    if let Some(else_s) = else_stmt {
+                        if let BlueprintStmt::FragmentCreation(fc) = else_s.as_ref() {
+                            result.push(fc);
+                        }
+                    }
+                }
+                ControlStmt::Repeat { body, .. } => {
+                    result.extend(collect_fragment_creations(body));
+                }
+                ControlStmt::Select {
+                    branches,
+                    else_branch,
+                    ..
+                } => {
+                    for branch in branches {
+                        if let BlueprintStmt::FragmentCreation(fc) = branch.body.as_ref() {
+                            result.push(fc);
+                        }
+                    }
+                    if let Some(else_b) = else_branch {
+                        if let BlueprintStmt::FragmentCreation(fc) = else_b.as_ref() {
+                            result.push(fc);
+                        }
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
+    result
+}
+
+fn generate_field_callback(blueprint_name: &str, field: &LocalDecl) -> Option<String> {
+    // Generate callback for fields with dependencies
+    let deps = collect_expr_dependencies(&field.init);
+    if deps.is_empty() {
+        return None;
+    }
+
+    let callback_name = format!("{}${}$callback", blueprint_name, field.name);
+    let expr_js = generate_expr(&field.init);
+
+    Some(format!(
+        "function {callback_name}(runtime, subscription) {{\n\
+         \x20\x20const closure_id = subscription.source_id;\n\
+         \x20\x20runtime.set(closure_id, '{field_name}', {expr_js});\n\
+         }}\n",
+        callback_name = callback_name,
+        field_name = field.name,
+        expr_js = expr_js
+    ))
+}
+
+fn generate_call_site_callbacks(
+    blueprint_name: &str,
+    idx: usize,
+    call_site: &FragmentCreation,
+) -> String {
     let mut output = String::new();
 
-    output.push_str(&format!("export class {} extends Fragment {{\n", blueprint.name));
+    for arg in &call_site.args {
+        let param_name = arg.name.as_ref().map(|s| s.as_str()).unwrap_or("_");
+        let callback_name = format!("{}${}${}$callback", blueprint_name, idx, param_name);
+        let expr_js = generate_expr(&arg.value);
 
-    // Constructor
-    output.push_str("  constructor(runtime, parent, params) {\n");
-    output.push_str("    super(runtime, parent);\n");
-    output.push_str("    // TODO: Initialize blueprint\n");
-    output.push_str("  }\n\n");
+        output.push_str(&format!(
+            "function {callback_name}(runtime, subscription) {{\n\
+             \x20\x20const closure_id = subscription.source_id;\n\
+             \x20\x20runtime.set(subscription.target_id, '{param_name}', {expr_js});\n\
+             }}\n\n",
+            callback_name = callback_name,
+            param_name = param_name,
+            expr_js = expr_js
+        ));
+    }
 
-    // Build method
-    output.push_str("  build() {\n");
-    output.push_str("    // TODO: Build fragment tree\n");
-    output.push_str("  }\n");
+    output
+}
+
+fn generate_internal_binding(
+    blueprint_name: &str,
+    params: &[Parameter],
+    fields: &[&LocalDecl],
+) -> String {
+    let mut output = String::new();
+    let fn_name = format!("{}$internal_binding", blueprint_name);
+
+    output.push_str(&format!("function {}(runtime, closure_id) {{\n", fn_name));
+
+    // Initialize parameters with defaults if provided
+    for param in params {
+        if let Some(default) = &param.default {
+            let default_js = generate_expr(default);
+            output.push_str(&format!(
+                "\x20\x20if (runtime.get(closure_id, '{name}') === undefined) {{\n\
+                 \x20\x20\x20\x20runtime.set(closure_id, '{name}', {default_js});\n\
+                 \x20\x20}}\n",
+                name = param.name,
+                default_js = default_js
+            ));
+        }
+    }
+
+    // Initialize and subscribe derived fields
+    for field in fields {
+        let deps = collect_expr_dependencies(&field.init);
+        let init_js = generate_expr(&field.init);
+
+        // Initialize field
+        output.push_str(&format!(
+            "\x20\x20runtime.set(closure_id, '{}', {});\n",
+            field.name, init_js
+        ));
+
+        // Subscribe if there are dependencies
+        if !deps.is_empty() {
+            let callback_name = format!("{}${}$callback", blueprint_name, field.name);
+            let selector = if deps.len() == 1 {
+                format!("Key('{}')", deps[0])
+            } else {
+                format!(
+                    "OneOf({})",
+                    deps.iter()
+                        .map(|d| format!("'{}'", d))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            };
+            output.push_str(&format!(
+                "\x20\x20runtime.subscribe(closure_id, closure_id, {}, {});\n",
+                selector, callback_name
+            ));
+        }
+    }
+
+    output.push_str("}\n\n");
+    output
+}
+
+fn generate_call_site_binding(
+    blueprint_name: &str,
+    idx: usize,
+    call_site: &FragmentCreation,
+) -> String {
+    let mut output = String::new();
+    let fn_name = format!("{}${}$call_site_binding", blueprint_name, idx);
+
+    output.push_str(&format!(
+        "function {}(runtime, parent_id, child_id) {{\n",
+        fn_name
+    ));
+
+    for arg in &call_site.args {
+        let param_name = arg.name.as_ref().map(|s| s.as_str()).unwrap_or("_");
+        let expr_js = generate_expr(&arg.value);
+        let deps = collect_expr_dependencies(&arg.value);
+
+        // Initialize child parameter
+        output.push_str(&format!(
+            "\x20\x20runtime.set(child_id, '{}', {});\n",
+            param_name, expr_js
+        ));
+
+        // Subscribe if there are dependencies
+        if !deps.is_empty() {
+            let callback_name = format!("{}${}${}$callback", blueprint_name, idx, param_name);
+            let selector = if deps.len() == 1 {
+                format!("Key('{}')", deps[0])
+            } else {
+                format!(
+                    "OneOf({})",
+                    deps.iter()
+                        .map(|d| format!("'{}'", d))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            };
+            output.push_str(&format!(
+                "\x20\x20runtime.subscribe(parent_id, child_id, {}, {});\n",
+                selector, callback_name
+            ));
+        }
+    }
+
+    output.push_str("}\n\n");
+    output
+}
+
+fn generate_blueprint_metadata(
+    blueprint_name: &str,
+    call_sites: &[&FragmentCreation],
+    ctx: &CodeGenContext,
+) -> String {
+    let mut output = String::new();
+
+    output.push_str(&format!(
+        "export const {}$metadata = {{\n\
+         \x20\x20internal_binding: {}$internal_binding,\n\
+         \x20\x20call_sites: {{\n",
+        blueprint_name, blueprint_name
+    ));
+
+    for (idx, call_site) in call_sites.iter().enumerate() {
+        let child_blueprint = ctx.resolve_name(&call_site.name);
+        output.push_str(&format!(
+            "\x20\x20\x20\x20'{}': {{ blueprint: '{}', binding: {}${}$call_site_binding }},\n",
+            idx, child_blueprint, blueprint_name, idx
+        ));
+    }
+
+    output.push_str("\x20\x20}\n};\n\n");
+
+    output
+}
+
+fn generate_metadata_registration(
+    module: &str,
+    blueprints: &[String],
+    themes: &[String],
+) -> String {
+    let mut output = String::new();
+
+    output.push_str("// Register metadata with runtime\n");
+    output.push_str("export function registerMetadata(runtime) {\n");
+
+    for bp in blueprints {
+        output.push_str(&format!(
+            "\x20\x20runtime.register_metadata('{}.{}', {}$metadata);\n",
+            module, bp, bp
+        ));
+    }
+
+    for theme in themes {
+        output.push_str(&format!("\x20\x20{}$init(runtime);\n", theme));
+    }
 
     output.push_str("}\n");
-
     output
 }
 
 fn generate_backend(backend: &Backend) -> String {
     let mut output = String::new();
 
+    output.push_str(&format!("// Backend: {}\n", backend.name));
     output.push_str(&format!("export class {} {{\n", backend.name));
 
-    // Constructor
-    output.push_str("  constructor() {\n");
-    output.push_str("    // TODO: Initialize backend fields\n");
+    // Constructor with fields
+    output.push_str("  constructor(runtime, closure_id) {\n");
+    output.push_str("    this.runtime = runtime;\n");
+    output.push_str("    this.closure_id = closure_id;\n");
+
+    for member in &backend.members {
+        if let BackendMember::Field(field) = member {
+            if let Some(init) = &field.init {
+                let init_js = generate_expr(init);
+                output.push_str(&format!(
+                    "    runtime.set(closure_id, '{}', {});\n",
+                    field.name, init_js
+                ));
+            }
+        }
+    }
+
     output.push_str("  }\n\n");
 
-    // Generate methods and commands
+    // Generate getters/setters for fields
     for member in &backend.members {
-        match member {
-            BackendMember::Method(method) => {
-                output.push_str(&format!("  {}() {{\n", method.name));
-                output.push_str("    // TODO: Implement method\n");
-                output.push_str("  }\n\n");
-            }
-            BackendMember::Command(command) => {
-                output.push_str(&format!("  async {}() {{\n", command.name));
-                output.push_str("    // TODO: Implement command\n");
-                output.push_str("  }\n\n");
-            }
-            _ => {}
+        if let BackendMember::Field(field) = member {
+            output.push_str(&format!(
+                "  get {}() {{ return this.runtime.get(this.closure_id, '{}'); }}\n",
+                field.name, field.name
+            ));
+            output.push_str(&format!(
+                "  set {}(value) {{ this.runtime.set(this.closure_id, '{}', value); }}\n\n",
+                field.name, field.name
+            ));
+        }
+    }
+
+    // Generate command stubs
+    for member in &backend.members {
+        if let BackendMember::Command(cmd) = member {
+            let params = cmd
+                .params
+                .iter()
+                .map(|p| p.name.clone())
+                .collect::<Vec<_>>()
+                .join(", ");
+            output.push_str(&format!(
+                "  async {}({}) {{\n\
+                 \x20\x20\x20\x20// TODO: Implement in host language\n\
+                 \x20\x20}}\n\n",
+                cmd.name, params
+            ));
         }
     }
 
     output.push_str("}\n");
-
     output
 }
 
 fn generate_contract(_contract: &Contract) -> String {
-    // Contracts are runtime-bound, so we just export a marker
-    String::from("// Contract placeholder\n")
+    String::from("// Contract: bound at runtime\n")
 }
 
 fn generate_scheme(scheme: &Scheme) -> String {
     let mut output = String::new();
 
-    output.push_str(&format!("export class {} {{\n", scheme.name));
-    output.push_str("  constructor(data) {\n");
-    output.push_str("    Object.assign(this, data);\n");
-    output.push_str("  }\n");
-    output.push_str("}\n");
+    output.push_str(&format!("// Scheme: {}\n", scheme.name));
+    output.push_str(&format!("export const {}$fields = [\n", scheme.name));
+
+    for member in &scheme.members {
+        if let SchemeMember::Field(field) = member {
+            output.push_str(&format!("  '{}',\n", field.name));
+        }
+    }
+
+    output.push_str("];\n\n");
+
+    // Factory function
+    output.push_str(&format!(
+        "export function create{}(runtime, owner, data) {{\n\
+         \x20\x20const id = runtime.create_datum('{}', data, owner);\n\
+         \x20\x20return id;\n\
+         }}\n",
+        scheme.name, scheme.name
+    ));
 
     output
 }
@@ -143,32 +569,713 @@ fn generate_scheme(scheme: &Scheme) -> String {
 fn generate_enum(enum_decl: &Enum) -> String {
     let mut output = String::new();
 
-    output.push_str(&format!("export const {} = {{\n", enum_decl.name));
+    output.push_str(&format!(
+        "export const {} = Object.freeze({{\n",
+        enum_decl.name
+    ));
 
     for (i, variant) in enum_decl.variants.iter().enumerate() {
         output.push_str(&format!("  {}: {},\n", variant, i));
     }
 
-    output.push_str("};\n");
-
+    output.push_str("});\n");
     output
 }
 
 fn generate_theme(theme: &Theme) -> String {
     let mut output = String::new();
 
-    output.push_str(&format!("export class {} {{\n", theme.name));
-    output.push_str("  constructor() {\n");
-    output.push_str("    // TODO: Initialize theme fields\n");
-    output.push_str("  }\n");
-    output.push_str("}\n");
+    output.push_str(&format!("// Theme: {}\n", theme.name));
 
+    // Collect fields and variants
+    let mut fields = Vec::new();
+    let mut variants = Vec::new();
+
+    for member in &theme.members {
+        match member {
+            ThemeMember::Field(field) => fields.push(field),
+            ThemeMember::Variant(variant) => variants.push(variant),
+            _ => {}
+        }
+    }
+
+    // Theme initializer
+    output.push_str(&format!("function {}$init(runtime) {{\n", theme.name));
+
+    // Base theme
+    output.push_str("  // Base theme\n");
+    output.push_str(&format!("  runtime.create_datum('{}', {{\n", theme.name));
+    for field in &fields {
+        if !field.is_asset {
+            if let Some(init) = &field.init {
+                let init_js = generate_expr(init);
+                output.push_str(&format!("    {}: {},\n", field.name, init_js));
+            }
+        }
+    }
+    output.push_str("  });\n\n");
+
+    // Variants
+    for variant in &variants {
+        output.push_str(&format!("  // Variant: {}\n", variant.name));
+        output.push_str(&format!(
+            "  runtime.create_datum('{}${}', {{\n",
+            theme.name, variant.name
+        ));
+
+        // Start with base values
+        for field in &fields {
+            if !field.is_asset {
+                if let Some(init) = &field.init {
+                    let init_js = generate_expr(init);
+                    output.push_str(&format!("    {}: {},\n", field.name, init_js));
+                }
+            }
+        }
+
+        // Apply overrides
+        for (name, expr) in &variant.overrides {
+            let expr_js = generate_expr(expr);
+            output.push_str(&format!("    {}: {}, // override\n", name, expr_js));
+        }
+
+        output.push_str("  });\n");
+    }
+
+    output.push_str("}\n");
     output
 }
 
 fn generate_arena(arena: &Arena) -> String {
     format!(
-        "export const {} = new Arena('{}');\n",
-        arena.name, arena.scheme_name
+        "// Arena for {} instances\n\
+         export const {}$arena_config = {{\n\
+         \x20\x20scheme: '{}',\n\
+         \x20\x20contract: {},\n\
+         }};\n",
+        arena.scheme_name,
+        arena.name,
+        arena.scheme_name,
+        arena
+            .contract
+            .as_ref()
+            .map(|c| format!("'{}'", c))
+            .unwrap_or_else(|| "null".to_string())
     )
+}
+
+// ============================================================================
+// Expression Generation
+// ============================================================================
+
+fn generate_expr(expr: &Expr) -> String {
+    match expr {
+        Expr::Null => "null".to_string(),
+        Expr::Bool(b) => b.to_string(),
+        Expr::Int(i) => i.to_string(),
+        Expr::Float(f) => f.to_string(),
+        Expr::Color(c) => format!("0x{:08X}", c),
+        Expr::String(s) => format!("'{}'", escape_string(s)),
+        Expr::StringTemplate(elements) => generate_template(elements),
+        Expr::List(items) => {
+            let items_js: Vec<_> = items.iter().map(generate_expr).collect();
+            format!("[{}]", items_js.join(", "))
+        }
+        Expr::Object(fields) => {
+            let fields_js: Vec<_> = fields
+                .iter()
+                .map(|(k, v)| format!("{}: {}", k, generate_expr(v)))
+                .collect();
+            format!("{{ {} }}", fields_js.join(", "))
+        }
+        Expr::Identifier(name) => {
+            format!("runtime.get(closure_id, '{}')", name)
+        }
+        Expr::QualifiedName(parts) => parts.join("."),
+        Expr::Binary { op, left, right } => {
+            let left_js = generate_expr(left);
+            let right_js = generate_expr(right);
+            let op_js = match op {
+                BinaryOp::Add => "+",
+                BinaryOp::Sub => "-",
+                BinaryOp::Mul => "*",
+                BinaryOp::Div => "/",
+                BinaryOp::Mod => "%",
+                BinaryOp::Pow => "**",
+                BinaryOp::Eq => "===",
+                BinaryOp::Ne => "!==",
+                BinaryOp::Lt => "<",
+                BinaryOp::Le => "<=",
+                BinaryOp::Gt => ">",
+                BinaryOp::Ge => ">=",
+                BinaryOp::And => "&&",
+                BinaryOp::Or => "||",
+                BinaryOp::Elvis => "??",
+            };
+            format!("({} {} {})", left_js, op_js, right_js)
+        }
+        Expr::Unary { op, expr } => {
+            let expr_js = generate_expr(expr);
+            let op_js = match op {
+                UnaryOp::Not => "!",
+                UnaryOp::Neg => "-",
+                UnaryOp::Pos => "+",
+            };
+            format!("({}{})", op_js, expr_js)
+        }
+        Expr::Ternary {
+            condition,
+            then_expr,
+            else_expr,
+        } => {
+            let cond_js = generate_expr(condition);
+            let then_js = generate_expr(then_expr);
+            let else_js = generate_expr(else_expr);
+            format!("({} ? {} : {})", cond_js, then_js, else_js)
+        }
+        Expr::FieldAccess { base, field } => {
+            let base_js = generate_expr(base);
+            // If base is an identifier, we need to get the datum first
+            if matches!(base.as_ref(), Expr::Identifier(_)) {
+                format!("runtime.get({}, '{}')", base_js, field)
+            } else {
+                format!("{}.{}", base_js, field)
+            }
+        }
+        Expr::OptionalChain { base, field } => {
+            let base_js = generate_expr(base);
+            format!("{}?.{}", base_js, field)
+        }
+        Expr::Call { callee, args } => {
+            let callee_js = generate_expr(callee);
+            let args_js: Vec<_> = args.iter().map(generate_expr).collect();
+            format!("{}({})", callee_js, args_js.join(", "))
+        }
+    }
+}
+
+fn generate_template(elements: &[TemplateElement]) -> String {
+    let parts: Vec<String> = elements
+        .iter()
+        .map(|el| match el {
+            TemplateElement::Text(s) => format!("'{}'", escape_string(s)),
+            TemplateElement::Interpolation(expr) => {
+                format!("String({})", generate_expr(expr))
+            }
+        })
+        .collect();
+
+    if parts.len() == 1 {
+        parts[0].clone()
+    } else {
+        format!("({})", parts.join(" + "))
+    }
+}
+
+fn escape_string(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
+}
+
+fn collect_expr_dependencies(expr: &Expr) -> Vec<String> {
+    let mut deps = Vec::new();
+    collect_deps_recursive(expr, &mut deps);
+    deps.sort();
+    deps.dedup();
+    deps
+}
+
+fn collect_deps_recursive(expr: &Expr, deps: &mut Vec<String>) {
+    match expr {
+        Expr::Identifier(name) => {
+            deps.push(name.clone());
+        }
+        Expr::Binary { left, right, .. } => {
+            collect_deps_recursive(left, deps);
+            collect_deps_recursive(right, deps);
+        }
+        Expr::Unary { expr, .. } => {
+            collect_deps_recursive(expr, deps);
+        }
+        Expr::Ternary {
+            condition,
+            then_expr,
+            else_expr,
+        } => {
+            collect_deps_recursive(condition, deps);
+            collect_deps_recursive(then_expr, deps);
+            collect_deps_recursive(else_expr, deps);
+        }
+        Expr::FieldAccess { base, .. } => {
+            collect_deps_recursive(base, deps);
+        }
+        Expr::OptionalChain { base, .. } => {
+            collect_deps_recursive(base, deps);
+        }
+        Expr::Call { callee, args } => {
+            collect_deps_recursive(callee, deps);
+            for arg in args {
+                collect_deps_recursive(arg, deps);
+            }
+        }
+        Expr::List(items) => {
+            for item in items {
+                collect_deps_recursive(item, deps);
+            }
+        }
+        Expr::Object(fields) => {
+            for (_, v) in fields {
+                collect_deps_recursive(v, deps);
+            }
+        }
+        Expr::StringTemplate(elements) => {
+            for el in elements {
+                if let TemplateElement::Interpolation(e) = el {
+                    collect_deps_recursive(e, deps);
+                }
+            }
+        }
+        // Literals have no dependencies
+        Expr::Null
+        | Expr::Bool(_)
+        | Expr::Int(_)
+        | Expr::Float(_)
+        | Expr::Color(_)
+        | Expr::String(_)
+        | Expr::QualifiedName(_) => {}
+    }
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use frel_compiler_core::source::Span;
+
+    fn empty_span() -> Span {
+        Span { start: 0, end: 0 }
+    }
+
+    fn test_ctx(module: &str) -> CodeGenContext<'_> {
+        CodeGenContext::new(module, &[], vec![])
+    }
+
+    fn test_ctx_with_imports<'a>(module: &'a str, imports: &[Import]) -> CodeGenContext<'a> {
+        CodeGenContext::new(module, imports, vec![])
+    }
+
+    fn test_ctx_with_locals<'a>(
+        module: &'a str,
+        imports: &[Import],
+        local_names: Vec<String>,
+    ) -> CodeGenContext<'a> {
+        CodeGenContext::new(module, imports, local_names)
+    }
+
+    #[test]
+    fn test_generate_simple_blueprint() {
+        let blueprint = Blueprint {
+            name: "Counter".to_string(),
+            params: vec![Parameter {
+                name: "initial".to_string(),
+                type_expr: TypeExpr::Named("u32".to_string()),
+                default: Some(Expr::Int(0)),
+            }],
+            body: vec![BlueprintStmt::LocalDecl(LocalDecl {
+                name: "count".to_string(),
+                type_expr: TypeExpr::Named("u32".to_string()),
+                init: Expr::Identifier("initial".to_string()),
+                span: empty_span(),
+            })],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx("myapp");
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Should generate callback for count (depends on initial)
+        assert!(output.contains("Counter$count$callback"));
+        // Should generate internal binding
+        assert!(output.contains("Counter$internal_binding"));
+        // Should set up subscription
+        assert!(output.contains("runtime.subscribe(closure_id, closure_id, Key('initial')"));
+        // Should generate metadata
+        assert!(output.contains("Counter$metadata"));
+    }
+
+    #[test]
+    fn test_generate_derived_field() {
+        let blueprint = Blueprint {
+            name: "Doubler".to_string(),
+            params: vec![],
+            body: vec![
+                BlueprintStmt::LocalDecl(LocalDecl {
+                    name: "value".to_string(),
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Expr::Int(10),
+                    span: empty_span(),
+                }),
+                BlueprintStmt::LocalDecl(LocalDecl {
+                    name: "doubled".to_string(),
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Expr::Binary {
+                        op: BinaryOp::Mul,
+                        left: Box::new(Expr::Identifier("value".to_string())),
+                        right: Box::new(Expr::Int(2)),
+                    },
+                    span: empty_span(),
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx("myapp");
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Should generate callback for doubled (depends on value)
+        assert!(output.contains("Doubler$doubled$callback"));
+        // Callback should compute value * 2
+        assert!(output.contains("runtime.get(closure_id, 'value') * 2"));
+        // Should NOT generate callback for value (no dependencies)
+        assert!(!output.contains("Doubler$value$callback"));
+    }
+
+    #[test]
+    fn test_generate_call_site() {
+        let blueprint = Blueprint {
+            name: "Parent".to_string(),
+            params: vec![],
+            body: vec![
+                BlueprintStmt::LocalDecl(LocalDecl {
+                    name: "message".to_string(),
+                    type_expr: TypeExpr::Named("String".to_string()),
+                    init: Expr::String("Hello".to_string()),
+                    span: empty_span(),
+                }),
+                BlueprintStmt::FragmentCreation(FragmentCreation {
+                    name: "Child".to_string(),
+                    args: vec![Arg {
+                        name: Some("text".to_string()),
+                        value: Expr::Identifier("message".to_string()),
+                    }],
+                    body: None,
+                    postfix: vec![],
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx("myapp");
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Should generate call site binding
+        assert!(output.contains("Parent$0$call_site_binding"));
+        // Should generate callback for text parameter
+        assert!(output.contains("Parent$0$text$callback"));
+        // Should subscribe parent to child
+        assert!(output.contains("runtime.subscribe(parent_id, child_id, Key('message')"));
+        // Metadata should reference the call site
+        assert!(output.contains("'0': { blueprint: 'myapp.Child'"));
+    }
+
+    #[test]
+    fn test_generate_call_site_with_import() {
+        // Test that imported blueprints get correct qualified names
+        let imports = vec![Import {
+            path: "test.common.text".to_string(),
+            import_all: false,
+            span: empty_span(),
+        }];
+
+        let blueprint = Blueprint {
+            name: "simple_text".to_string(),
+            params: vec![],
+            body: vec![BlueprintStmt::FragmentCreation(FragmentCreation {
+                name: "text".to_string(),
+                args: vec![],
+                body: None,
+                postfix: vec![],
+            })],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx_with_imports("blueprint.simple_text", &imports);
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Metadata should reference imported blueprint with correct qualified name
+        assert!(output.contains("'0': { blueprint: 'test.common.text'"));
+        // Should NOT contain the current module prefix for the imported blueprint
+        assert!(!output.contains("blueprint.simple_text.text"));
+    }
+
+    #[test]
+    fn test_generate_call_site_with_wildcard_import() {
+        // Test that wildcard imports resolve correctly
+        let imports = vec![Import {
+            path: "test.common".to_string(),
+            import_all: true,
+            span: empty_span(),
+        }];
+
+        let blueprint = Blueprint {
+            name: "Hello".to_string(),
+            params: vec![],
+            body: vec![BlueprintStmt::FragmentCreation(FragmentCreation {
+                name: "text".to_string(),
+                args: vec![],
+                body: None,
+                postfix: vec![],
+            })],
+            span: empty_span(),
+        };
+
+        // "Hello" is a local name, "text" comes from wildcard import
+        let ctx = test_ctx_with_locals(
+            "blueprint.simple_text",
+            &imports,
+            vec!["Hello".to_string()],
+        );
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Metadata should reference blueprint from wildcard import module
+        assert!(output.contains("'0': { blueprint: 'test.common.text'"));
+        // Should NOT contain the current module prefix for the imported blueprint
+        assert!(!output.contains("blueprint.simple_text.text"));
+    }
+
+    #[test]
+    fn test_generate_enum() {
+        let enum_decl = Enum {
+            name: "Status".to_string(),
+            variants: vec![
+                "pending".to_string(),
+                "active".to_string(),
+                "completed".to_string(),
+            ],
+            span: empty_span(),
+        };
+
+        let output = generate_enum(&enum_decl);
+
+        assert!(output.contains("export const Status = Object.freeze({"));
+        assert!(output.contains("pending: 0,"));
+        assert!(output.contains("active: 1,"));
+        assert!(output.contains("completed: 2,"));
+    }
+
+    #[test]
+    fn test_generate_scheme() {
+        let scheme = Scheme {
+            name: "User".to_string(),
+            members: vec![
+                SchemeMember::Field(SchemeField {
+                    name: "id".to_string(),
+                    type_expr: TypeExpr::Named("UUID".to_string()),
+                    instructions: vec![],
+                    span: empty_span(),
+                }),
+                SchemeMember::Field(SchemeField {
+                    name: "name".to_string(),
+                    type_expr: TypeExpr::Named("String".to_string()),
+                    instructions: vec![],
+                    span: empty_span(),
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let output = generate_scheme(&scheme);
+
+        assert!(output.contains("User$fields"));
+        assert!(output.contains("'id',"));
+        assert!(output.contains("'name',"));
+        assert!(output.contains("createUser(runtime, owner, data)"));
+        assert!(output.contains("runtime.create_datum('User', data, owner)"));
+    }
+
+    #[test]
+    fn test_generate_backend() {
+        let backend = Backend {
+            name: "CounterBackend".to_string(),
+            params: vec![],
+            members: vec![
+                BackendMember::Field(Field {
+                    name: "count".to_string(),
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Some(Expr::Int(0)),
+                    span: empty_span(),
+                }),
+                BackendMember::Command(Command {
+                    name: "increment".to_string(),
+                    params: vec![],
+                    span: empty_span(),
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let output = generate_backend(&backend);
+
+        assert!(output.contains("export class CounterBackend"));
+        // Constructor should initialize field
+        assert!(output.contains("runtime.set(closure_id, 'count', 0)"));
+        // Should generate getter/setter
+        assert!(output.contains("get count()"));
+        assert!(output.contains("set count(value)"));
+        // Should generate command stub
+        assert!(output.contains("async increment()"));
+    }
+
+    #[test]
+    fn test_generate_theme_with_variant() {
+        let theme = Theme {
+            name: "AppTheme".to_string(),
+            members: vec![
+                ThemeMember::Field(ThemeField {
+                    name: "padding".to_string(),
+                    is_asset: false,
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Some(Expr::Int(16)),
+                    span: empty_span(),
+                }),
+                ThemeMember::Variant(ThemeVariant {
+                    name: "Compact".to_string(),
+                    overrides: vec![("padding".to_string(), Expr::Int(8))],
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let output = generate_theme(&theme);
+
+        // Should generate init function
+        assert!(output.contains("AppTheme$init(runtime)"));
+        // Base theme
+        assert!(output.contains("runtime.create_datum('AppTheme', {"));
+        assert!(output.contains("padding: 16,"));
+        // Variant
+        assert!(output.contains("runtime.create_datum('AppTheme$Compact', {"));
+        assert!(output.contains("padding: 8, // override"));
+    }
+
+    #[test]
+    fn test_generate_expr_binary() {
+        let expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Identifier("a".to_string())),
+            right: Box::new(Expr::Identifier("b".to_string())),
+        };
+
+        let output = generate_expr(&expr);
+
+        assert_eq!(
+            output,
+            "(runtime.get(closure_id, 'a') + runtime.get(closure_id, 'b'))"
+        );
+    }
+
+    #[test]
+    fn test_generate_expr_ternary() {
+        let expr = Expr::Ternary {
+            condition: Box::new(Expr::Identifier("flag".to_string())),
+            then_expr: Box::new(Expr::Int(1)),
+            else_expr: Box::new(Expr::Int(0)),
+        };
+
+        let output = generate_expr(&expr);
+
+        assert_eq!(output, "(runtime.get(closure_id, 'flag') ? 1 : 0)");
+    }
+
+    #[test]
+    fn test_generate_expr_string_template() {
+        let expr = Expr::StringTemplate(vec![
+            TemplateElement::Text("Hello, ".to_string()),
+            TemplateElement::Interpolation(Box::new(Expr::Identifier("name".to_string()))),
+            TemplateElement::Text("!".to_string()),
+        ]);
+
+        let output = generate_expr(&expr);
+
+        assert!(output.contains("'Hello, '"));
+        assert!(output.contains("String(runtime.get(closure_id, 'name'))"));
+        assert!(output.contains("'!'"));
+    }
+
+    #[test]
+    fn test_collect_dependencies() {
+        let expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Binary {
+                op: BinaryOp::Mul,
+                left: Box::new(Expr::Identifier("a".to_string())),
+                right: Box::new(Expr::Identifier("b".to_string())),
+            }),
+            right: Box::new(Expr::Identifier("c".to_string())),
+        };
+
+        let deps = collect_expr_dependencies(&expr);
+
+        assert_eq!(deps, vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn test_collect_dependencies_deduplicates() {
+        let expr = Expr::Binary {
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Identifier("x".to_string())),
+            right: Box::new(Expr::Identifier("x".to_string())),
+        };
+
+        let deps = collect_expr_dependencies(&expr);
+
+        assert_eq!(deps, vec!["x"]);
+    }
+
+    #[test]
+    fn test_escape_string() {
+        assert_eq!(escape_string("hello"), "hello");
+        assert_eq!(escape_string("it's"), "it\\'s");
+        assert_eq!(escape_string("line1\nline2"), "line1\\nline2");
+        assert_eq!(escape_string("path\\to\\file"), "path\\\\to\\\\file");
+    }
+
+    #[test]
+    fn test_generate_file_complete() {
+        let file = File {
+            module: "myapp.counter".to_string(),
+            source_path: None,
+            imports: vec![],
+            declarations: vec![TopLevelDecl::Blueprint(Blueprint {
+                name: "Counter".to_string(),
+                params: vec![],
+                body: vec![BlueprintStmt::LocalDecl(LocalDecl {
+                    name: "count".to_string(),
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Expr::Int(0),
+                    span: empty_span(),
+                })],
+                span: empty_span(),
+            })],
+        };
+
+        let output = generate_file(&file);
+
+        // Header
+        assert!(output.contains("// Module: myapp.counter"));
+        // Runtime import
+        assert!(output.contains("import { Runtime, Key, OneOf, Everything } from '@frel/runtime'"));
+        // Blueprint generated
+        assert!(output.contains("Counter$internal_binding"));
+        assert!(output.contains("Counter$metadata"));
+        // Metadata registration
+        assert!(output.contains("registerMetadata(runtime)"));
+        assert!(output.contains("runtime.register_metadata('myapp.counter.Counter', Counter$metadata)"));
+    }
 }
