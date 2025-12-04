@@ -30,8 +30,9 @@ the place where the code is stored. The module system defines the actual namespa
 <module-decl> ::= "module" <module-path>
 <module-path> ::= <identifier> { "." <identifier> }
 
-<import-statement> ::= "import" <import-path>
-<import-path> ::= <module-path> [ "." <identifier> ]
+<import-statement> ::= "import" <single-import> | "import" <glob-import>
+<single-import> ::= <module-path> "." <identifier>
+<glob-import> ::= <module-path> ".*"
 
 <qualified-path> ::= <module-path> "." <identifier>
 ```
@@ -86,14 +87,14 @@ blueprint MainScreen {
 }
 ```
 
-### Whole-Module Import
+### Glob Import (Whole-Module Import)
 
-Import all declarations from a module at once:
+Import all declarations from a module at once using the `.*` syntax:
 
 ```frel
 module frel.app
 
-import frel.ui.buttons
+import frel.ui.buttons.*
 
 blueprint MainScreen {
     // All declarations from frel.ui.buttons are available
@@ -107,8 +108,8 @@ blueprint MainScreen {
 - `import` statements must appear after the `module` declaration
 - `import` statements must appear before any other declarations
 - Imports are file-scoped (do not affect other files)
-- If a path refers to a module, all declarations from that module are imported
-- If a path refers to a declaration (last component matches an export), only that declaration is imported
+- Single-declaration imports: `import module.path.Declaration` imports only `Declaration`
+- Glob imports: `import module.path.*` imports all exports from `module.path`
 
 ### Example File Structure
 
