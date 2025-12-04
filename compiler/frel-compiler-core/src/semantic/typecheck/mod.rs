@@ -233,6 +233,8 @@ impl<'a> TypeChecker<'a> {
                 }
             }
             ast::ControlStmt::Repeat { body, .. } => {
+                // Type assignment for loop variables happens in the check phase
+                // where we have access to infer_expr_type
                 for stmt in body {
                     self.resolve_blueprint_stmt_types(stmt, context_span);
                 }
@@ -640,18 +642,54 @@ impl<'a> TypeChecker<'a> {
             }
             ast::ControlStmt::Repeat {
                 iterable,
+                item_name,
                 key_expr,
                 body,
-                ..
             } => {
                 let iter_type = self.infer_expr_type(iterable);
                 operators::expect_iterable(&iter_type, self.context_span, &mut self.diagnostics);
+
+                // Get element type from iterable and assign to loop variables
+                let element_type = iter_type
+                    .element_type()
+                    .cloned()
+                    .unwrap_or(Type::Unknown);
+
+                // Find the loop scope by looking up the item variable in children
+                // (the loop scope is created as a child of current_scope during resolve)
+                let saved_scope = self.current_scope;
+                if let Some((item_id, loop_scope)) = self.symbols.lookup_in_children(
+                    self.current_scope,
+                    item_name,
+                    self.scopes,
+                ) {
+                    // Set the type of the loop variable
+                    self.symbol_types.insert(item_id, element_type);
+
+                    // Enter the loop scope for checking the body
+                    self.current_scope = loop_scope;
+
+                    // _index : u32
+                    if let Some(index_id) = self.symbols.lookup_local(loop_scope, "_index") {
+                        self.symbol_types.insert(index_id, Type::U32);
+                    }
+                    // _first : bool
+                    if let Some(first_id) = self.symbols.lookup_local(loop_scope, "_first") {
+                        self.symbol_types.insert(first_id, Type::Bool);
+                    }
+                    // _last : bool
+                    if let Some(last_id) = self.symbols.lookup_local(loop_scope, "_last") {
+                        self.symbol_types.insert(last_id, Type::Bool);
+                    }
+                }
+
                 if let Some(key) = key_expr {
                     self.infer_expr_type(key);
                 }
                 for stmt in body {
                     self.check_blueprint_stmt(stmt);
                 }
+                self.current_scope = saved_scope;
             }
             ast::ControlStmt::Select {
                 discriminant,

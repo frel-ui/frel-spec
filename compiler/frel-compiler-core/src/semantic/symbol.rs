@@ -284,6 +284,19 @@ impl SymbolTable {
         None
     }
 
+    /// Look up a name in immediate children of a scope (for finding loop scopes, etc.)
+    /// Returns the symbol ID and the child scope ID where it was found
+    pub fn lookup_in_children(&self, scope: ScopeId, name: &str, scopes: &ScopeGraph) -> Option<(SymbolId, ScopeId)> {
+        if let Some(parent_scope) = scopes.get(scope) {
+            for &child_scope in &parent_scope.children {
+                if let Some(id) = self.lookup_local(child_scope, name) {
+                    return Some((id, child_scope));
+                }
+            }
+        }
+        None
+    }
+
     /// Get all symbols defined in a scope
     pub fn symbols_in_scope(&self, scope: ScopeId) -> impl Iterator<Item = &Symbol> {
         self.scope_symbols
