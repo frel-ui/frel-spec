@@ -53,3 +53,6 @@ blueprint icon() {
 
 blueprint box() {
 }
+
+blueprint checkbox() {
+}

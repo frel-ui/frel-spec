@@ -214,10 +214,25 @@ impl Resolver {
             return None;
         }
 
-        // Check for shadowing (only for non-module scopes)
+        // Check for shadowing - only for scopes where names are accessed directly
+        // Skip shadowing check for:
+        // - Module scope (nothing above it)
+        // - Type body scopes (Scheme, Backend, Contract, Theme, Enum) - members are accessed
+        //   via qualifiers (e.g., `obj.field`), not bare identifiers
         if let Some(scope_data) = self.scopes.get(scope) {
-            if scope_data.kind != ScopeKind::Module {
-                if let Some(shadowed) = self.symbols.name_exists_in_ancestors(scope, name, &self.scopes) {
+            let skip_shadowing_check = matches!(
+                scope_data.kind,
+                ScopeKind::Module
+                    | ScopeKind::Scheme
+                    | ScopeKind::Backend
+                    | ScopeKind::Contract
+                    | ScopeKind::Theme
+                    | ScopeKind::Enum
+            );
+            if !skip_shadowing_check {
+                if let Some(shadowed) =
+                    self.symbols.name_exists_in_ancestors(scope, name, &self.scopes)
+                {
                     self.report_shadowing(name, span, shadowed);
                     return None;
                 }
@@ -459,12 +474,12 @@ impl Resolver {
                 key_expr,
                 body,
             } => {
+                // Resolve iterable in current scope (e.g., `todos` from backend)
                 self.resolve_expr(iterable);
-                if let Some(key) = key_expr {
-                    self.resolve_expr(key);
-                }
 
                 // Create scope for loop body with loop variable
+                // The loop variable must be defined BEFORE resolving key_expr
+                // because `by todo.id` needs access to `todo`
                 let loop_scope = self.scopes.create_scope(
                     ScopeKind::Block,
                     self.current_scope,
@@ -474,6 +489,11 @@ impl Resolver {
                 self.current_scope = loop_scope;
 
                 self.define_simple(item_name, SymbolKind::LocalVar, loop_scope, Span::default());
+
+                // Now resolve key_expr with loop variable in scope
+                if let Some(key) = key_expr {
+                    self.resolve_expr(key);
+                }
 
                 for stmt in body {
                     self.resolve_blueprint_stmt(stmt, params);
@@ -1161,6 +1181,42 @@ blueprint CounterView {
     }
 
     #[test]
+    fn test_resolve_repeat_with_key() {
+        // Test that the loop variable is available in the key expression
+        let source = r#"
+module test
+
+scheme Todo {
+    id: Uuid
+    text: String
+    done: bool
+}
+
+backend TodoBackend {
+    todos: List<Todo> = []
+}
+
+blueprint TodoItem { }
+
+blueprint TodoList {
+    with TodoBackend
+
+    repeat on todos by todo.id { todo ->
+        TodoItem()
+    }
+}
+"#;
+        let result = parse_and_resolve(source);
+        // The loop variable `todo` should be available in `by todo.id`
+        // (No errors about `todo` not being found)
+        assert!(
+            !result.diagnostics.has_errors(),
+            "Expected no errors, got: {:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
     fn test_resolve_duplicate_error() {
         let source = r#"
 module test
@@ -1285,5 +1341,41 @@ blueprint Editor {
         let has_save = imported_members.iter().any(|m| m.name == "save");
         assert!(has_content, "Should have content field");
         assert!(has_save, "Should have save command");
+    }
+
+    #[test]
+    fn test_resolve_text_fragment_in_repeat() {
+        // Test that using `text` fragment doesn't conflict with `text` field in scheme
+        let source = r#"
+module test
+
+scheme Todo {
+    id: Uuid
+    text: String
+    done: bool
+}
+
+backend TodoBackend {
+    todos: List<Todo> = []
+}
+
+blueprint text { }
+
+blueprint TodoList {
+    with TodoBackend
+
+    repeat on todos by todo.id { todo ->
+        text { todo.text }
+    }
+}
+"#;
+        let result = parse_and_resolve(source);
+        // Should not have shadowing errors - `text` in `text { todo.text }`
+        // is a fragment reference, not a new definition
+        assert!(
+            !result.diagnostics.has_errors(),
+            "Expected no errors, got: {:?}",
+            result.diagnostics
+        );
     }
 }
