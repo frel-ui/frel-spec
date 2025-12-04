@@ -414,12 +414,12 @@ multiSlot {
 column { at content: TwoLabels }
 
 // 7. Postfix styling (for fragment with no content)
-text { "Click" } .. padding { 8 } .. border { color: Red width: 1 }
+text { "Click" } .. padding { 8 } .. border { color: #FF0000 width: 1 }
 
 // 8. Inner styling (for fragment with content)
 button {
     .. padding { 8 }
-    .. border { color: Red width: 1 }
+    .. border { color: #FF0000 width: 1 }
 
     text { "Click" }
 }
@@ -429,13 +429,13 @@ button {
 
 ```frel
 // Higher-order blueprint with Blueprint parameter
-blueprint Container(content: Blueprint) {
-    column {
-        .. padding { 16 }
-        .. border { color: Gray width: 1 }
-        content()
+    blueprint Container(content: Blueprint) {
+        column {
+            .. padding { 16 }
+            .. border { color: #D0D5DD width: 1 }
+            content()
+        }
     }
-}
 
 // Usage - anonymous blueprint with no parameters
 Container {
@@ -529,8 +529,8 @@ button {
     at content: { text { "Save" } }
     at tooltip: {
         .. padding { 6 }
-        .. background { color: Black }
-        text { "Ctrl+S to save" } .. font { color: White }
+        .. background { color: #000000 }
+        text { "Ctrl+S to save" } .. font { color: #FFFFFF }
     }
 }
 ```

@@ -371,8 +371,8 @@ blueprint UserCard(user: User) {
 
     // Conditional display
     statusColor : Color = user.isActive ?
-                          user.isPremium ? Gold : Green :
-                          Gray
+                          user.isPremium ? #F2C94C : #16A34A :
+                          #9CA3AF
 
     statusText : String = user.isActive ? "Active" : "Inactive"
     badge : String = user.isPremium ? "Premium" : ""

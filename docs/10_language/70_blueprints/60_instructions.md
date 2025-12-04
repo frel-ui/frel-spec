@@ -38,17 +38,16 @@ padding { top: 8 left: 16 }
 - `#RRGGBBAA` - Hex RGBA
 - `rgb(r, g, b)` - RGB components (0-255, alpha defaults to 255)
 - `rgba(r, g, b, a)` - RGBA components (0-255)
-- `<color-name>` - Named color constant (e.g., `Red`, `Blue`, `Transparent`)
 
 **Examples:**
 
 ```frel
-background { color: #FF0000 }           // Red (opaque)
-background { color: #FF0000FF }         // Red (opaque, explicit alpha)
-background { color: rgb(255, 0, 0) }    // Red
-background { color: rgba(255, 0, 0, 128) } // Red, 50% transparent
+background { color: #FF0000 }           // Solid color (opaque)
+background { color: #FF0000FF }         // Same color with explicit alpha
+background { color: rgb(255, 0, 0) }    // Same using rgb()
+background { color: rgba(255, 0, 0, 128) } // 50% transparent via rgba()
 background { color: theme.background }  // Color from a theme
-border { color: Red }  // Color from a field
+border { color: statusColor }  // Color from a field
 ```
 
 ## Layout
@@ -269,9 +268,9 @@ Fills the background of the created fragment's content box and padding area.
 **Examples:**
 
 ```frel
-box { } .. background { color: White }
-box { } .. background { color: Red opacity: 0.5 }
-box { } .. background { gradient: linear(Red, Blue) }
+box { } .. background { color: #FFFFFF }
+box { } .. background { color: #FF0000 opacity: 0.5 }
+box { } .. background { gradient: linear(#FF0000, #0066FF) }
 box { } .. background { image: "background.png" }
 ```
 
@@ -383,8 +382,8 @@ Applies a color tint to vector graphics (icons).
 **Examples:**
 
 ```frel
-icon { "close" } .. tint { Black }
-icon { "star" } .. tint { #FFD700 }  // Gold
+icon { "close" } .. tint { #000000 }
+icon { "star" } .. tint { #FFD700 }  // Accent tint
 icon { "settings" } .. tint { rgba(100, 100, 100, 255) }
 ```
 
@@ -739,7 +738,7 @@ All parameters are optional.
 **Examples:**
 
 ```frel
-text { "Hello" } .. font { name: "Arial" size: 16 weight: 400 color: Black }
+text { "Hello" } .. font { name: "Arial" size: 16 weight: 400 color: #111111 }
 text { "Title" } .. font { size: 24 weight: 700 }
 text { "Body" } .. font { name: "system-ui" }
 ```
@@ -846,7 +845,7 @@ Adds an underline to the text.
 **Example:**
 
 ```frel
-text { "Link" } .. underline .. font { color: Blue }
+text { "Link" } .. underline .. font { color: #1E80FF }
 ```
 
 **Notes:**

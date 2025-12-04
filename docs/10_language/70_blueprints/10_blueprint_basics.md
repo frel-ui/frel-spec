@@ -200,7 +200,7 @@ blueprint Counter(label: String) {
     count = 0
 
     column {
-        .. padding { 16 } .. border { Red, 1 }
+        .. padding { 16 } .. border { color: #FF0000 width: 1 }
 
         button {
             .. on_click { count = count + 1 }

@@ -375,7 +375,7 @@ blueprint DataView() {
     button { "Fetch" } .. on_click { fetch_data() }
 
     when error.is_some() {
-        text { "Error: ${error.unwrap()}" } .. color { Red }
+        text { "Error: ${error.unwrap()}" } .. color { #D92D20 }
     }
 }
 ```

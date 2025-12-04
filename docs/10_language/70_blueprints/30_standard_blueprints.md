@@ -27,7 +27,7 @@ text { <string-expr> }
 text { "Hello, World!" }
 
 // With styling
-text { "Title" } .. font { size: 24 weight: 700 color: Black }
+text { "Title" } .. font { size: 24 weight: 700 color: #111111 }
 
 // Reactive text
 count : u32 = 0
@@ -38,7 +38,7 @@ text { user.bio } .. text_wrap { wrap } .. width { 300 }
 
 // Styled inline text
 text { "Click here" }
-    .. font { size: 14 color: Blue }
+    .. font { size: 14 color: #1E80FF }
     .. underline
     .. cursor { pointer }
     .. on_click { /* ... */ }
@@ -114,7 +114,7 @@ icon { <graphic-resource-ref> }
 
 ```frel
 // Basic icon
-icon { "close" } .. size { 24 } .. tint { Black }
+icon { "close" } .. size { 24 } .. tint { #000000 }
 
 // Resource reference
 icon { Icons.settings } .. width { 20 } .. height { 20 }
@@ -122,13 +122,13 @@ icon { Icons.settings } .. width { 20 } .. height { 20 }
 // Clickable icon button
 icon { "save" }
     .. width { 20 } .. height { 20 }
-    .. tint { White }
+    .. tint { #FFFFFF }
     .. cursor { pointer }
     .. on_click { /* save action */ }
 
 // Dynamic icon from state
 icon_name = is_playing ? "pause" : "play"
-icon { icon_name } .. width { 32 } .. height { 32 } .. tint { Blue }
+icon { icon_name } .. width { 32 } .. height { 32 } .. tint { #1E80FF }
 ```
 
 **Notes:**
@@ -172,7 +172,7 @@ Children are positioned using:
 // Absolute positioning
 box {
     .. width { 400 } .. height { 300 }
-    .. background { color: White }
+    .. background { color: #FFFFFF }
 
     text { "Top left" } .. position { top: 10 left: 10 }
     text { "Bottom right" } .. position { top: 270 left: 300 }
@@ -195,7 +195,7 @@ box {
     // Text centered on top
     text { "Overlay" }
         .. align_self_center
-        .. font { color: White weight: 700 }
+        .. font { color: #FFFFFF weight: 700 }
 }
 
 // Mixed positioning
@@ -341,7 +341,7 @@ row {
     .. align_items { vertical: center }
     .. gap { 12 }
 
-    icon { "user" } .. size { 32 } .. tint { Black }
+    icon { "user" } .. size { 32 } .. tint { #000000 }
     text { user.name }
 }
 

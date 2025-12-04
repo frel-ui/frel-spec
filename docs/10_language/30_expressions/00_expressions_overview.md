@@ -21,7 +21,7 @@ the full power of your host language (Rust, TypeScript, etc.).
 // ✅ Good: Simple display formatting in Frel
 blueprint UserCard(user: User) {
     greeting : String = "Hello, ${user.firstName} ${user.lastName}!"
-    statusColor : Color = user.isActive ? Green : Gray
+    statusColor : Color = user.isActive ? #16A34A : #9CA3AF
 
     text { greeting } .. color { statusColor }
 }
@@ -94,7 +94,7 @@ blueprint UserProfile(user: User) {
     text { fullName }
 
     when user.isPremium {
-        icon { "crown" } .. color { Gold }
+        icon { "crown" } .. color { #F2C94C }
     }
 }
 ```
@@ -108,7 +108,7 @@ box {
     text { "Hello" }
 }
 .. width { containerWidth * 0.8 }
-.. color { isActive ? Green : Gray }
+.. color { isActive ? #16A34A : #9CA3AF }
 ```
 
 ### Event Handlers

@@ -125,12 +125,12 @@ toast Achievement(text: String) {
     row {
         padding { 12 }
         gap { 8 }
-        background { color: Purple }
+        background { color: #6B46C1 }
         corner_radius { 4 }
         shadow { color: rgba(0, 0, 0, 128) offset_y: 2 blur: 4 }
 
-        icon { "star" } .. color { Gold }
-        text { text } .. font { color: White weight: 700 }
+        icon { "star" } .. color { #FFD700 }
+        text { text } .. font { color: #FFFFFF weight: 700 }
     }
 }
 ```
@@ -158,7 +158,7 @@ toast ProcessingNotification(message: String) {
     row {
         padding { 12 }
         gap { 8 }
-        background { color: Blue }
+        background { color: #1E80FF }
         corner_radius { 4 }
 
         text { message }
