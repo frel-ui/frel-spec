@@ -30,11 +30,14 @@ pub struct File {
 ///
 /// Can be either:
 /// - Single declaration: `import foo.bar.Baz` (imports Baz from foo.bar)
-/// - Whole module: `import foo.bar` (imports all from foo.bar if foo.bar is a module)
+/// - Whole module: `import foo.bar.*` (imports all exports from foo.bar)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    /// Full import path as written (e.g., "foo.bar.Baz" or "foo.bar")
+    /// Module path (e.g., "foo.bar" for both `import foo.bar.Baz` and `import foo.bar.*`)
     pub path: String,
+    /// If true, import all exports from the module (`import foo.bar.*`)
+    /// If false, path includes the declaration name (`import foo.bar.Baz`)
+    pub import_all: bool,
     pub span: Span,
 }
 

@@ -367,24 +367,31 @@ impl<'a> Parser<'a> {
         Some(path)
     }
 
-    /// Parse import statement: import foo.bar.Baz or import foo.bar
-    ///
-    /// The full path is stored; disambiguation between whole-module and
-    /// single-declaration imports happens during semantic analysis.
+    /// Parse import statement:
+    /// - `import foo.bar.Baz` (imports single declaration Baz from module foo.bar)
+    /// - `import foo.bar.*` (imports all exports from module foo.bar)
     fn parse_import(&mut self) -> Option<ast::Import> {
         let start = self.current().span.start;
         self.expect_contextual(contextual::IMPORT)?;
 
         let mut parts = vec![self.expect_identifier()?];
         let mut end = self.previous_span().end;
+        let mut import_all = false;
 
         while self.consume(TokenKind::Dot).is_some() {
+            // Check for `.*` (glob import)
+            if self.consume(TokenKind::Star).is_some() {
+                import_all = true;
+                end = self.previous_span().end;
+                break;
+            }
             parts.push(self.expect_identifier()?);
             end = self.previous_span().end;
         }
 
         Some(ast::Import {
             path: parts.join("."),
+            import_all,
             span: Span::new(start, end),
         })
     }
@@ -443,11 +450,24 @@ mod tests {
 
     #[test]
     fn test_parse_import() {
+        // Single-declaration import
         let result = parse("module test\nimport foo.bar.Baz");
         assert!(!result.diagnostics.has_errors());
         let file = result.file.unwrap();
         assert_eq!(file.imports.len(), 1);
         assert_eq!(file.imports[0].path, "foo.bar.Baz");
+        assert!(!file.imports[0].import_all);
+    }
+
+    #[test]
+    fn test_parse_glob_import() {
+        // Glob import (import all)
+        let result = parse("module test\nimport foo.bar.*");
+        assert!(!result.diagnostics.has_errors());
+        let file = result.file.unwrap();
+        assert_eq!(file.imports.len(), 1);
+        assert_eq!(file.imports[0].path, "foo.bar");
+        assert!(file.imports[0].import_all);
     }
 
     #[test]

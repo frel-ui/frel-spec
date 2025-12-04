@@ -92,15 +92,18 @@ impl Resolver {
 
     /// Collect import statements
     ///
-    /// In Phase 1 (without registry), we can only handle single-declaration imports
-    /// by splitting the path. Whole-module imports require registry validation.
+    /// In Phase 1 (without registry), we can only handle single-declaration imports.
+    /// Glob imports (`import foo.*`) require registry validation in Phase 2.
     fn collect_imports(&mut self, file: &ast::File) {
         for import in &file.imports {
-            // Try to split as module.name for single-declaration imports
+            if import.import_all {
+                // Glob imports need registry - skip in Phase 1
+                continue;
+            }
+            // Single-declaration import: split path as module.name
             if let Some((module, name)) = import.path.rsplit_once('.') {
                 self.imports.insert(name.to_string(), module.to_string());
             }
-            // Single-component paths (potential whole-module imports) are handled in Phase 2
         }
     }
 
@@ -977,55 +980,68 @@ impl<'a> ResolverWithRegistry<'a> {
 
     fn collect_and_validate_imports(&mut self, file: &ast::File) {
         for import in &file.imports {
-            // First, check if the full path is a module (whole-module import)
-            if let Some(module_sig) = self.registry.get(&import.path) {
-                // Whole-module import: import all exports
-                for export in module_sig.all_exports() {
-                    self.import_external_with_body(
-                        &export.name,
-                        export.kind,
-                        import.span,
-                        &import.path,
-                        export.body_scope,
-                        module_sig,
-                    );
-                    self.inner
-                        .imports
-                        .insert(export.name.clone(), import.path.clone());
-                }
-            } else if let Some((module, name)) = import.path.rsplit_once('.') {
-                // Single-declaration import
-                if let Some(module_sig) = self.registry.get(module) {
-                    if let Some(export) = module_sig.get_export(name) {
+            if import.import_all {
+                // Glob import: `import foo.bar.*`
+                // The path is the module path
+                if let Some(module_sig) = self.registry.get(&import.path) {
+                    for export in module_sig.all_exports() {
                         self.import_external_with_body(
                             &export.name,
                             export.kind,
                             import.span,
-                            module,
+                            &import.path,
                             export.body_scope,
                             module_sig,
                         );
                         self.inner
                             .imports
-                            .insert(name.to_string(), module.to_string());
-                    } else {
-                        self.inner.diagnostics.error(
-                            format!("'{}' is not exported from module '{}'", name, module),
-                            import.span,
-                        );
+                            .insert(export.name.clone(), import.path.clone());
                     }
                 } else {
                     self.inner.diagnostics.error(
-                        format!("module '{}' not found", module),
+                        format!("module '{}' not found", import.path),
                         import.span,
                     );
                 }
             } else {
-                // Single-component path that's not a known module
-                self.inner.diagnostics.error(
-                    format!("module '{}' not found", import.path),
-                    import.span,
-                );
+                // Single-declaration import: `import foo.bar.Baz`
+                // The path includes module + declaration name
+                if let Some((module, name)) = import.path.rsplit_once('.') {
+                    if let Some(module_sig) = self.registry.get(module) {
+                        if let Some(export) = module_sig.get_export(name) {
+                            self.import_external_with_body(
+                                &export.name,
+                                export.kind,
+                                import.span,
+                                module,
+                                export.body_scope,
+                                module_sig,
+                            );
+                            self.inner
+                                .imports
+                                .insert(name.to_string(), module.to_string());
+                        } else {
+                            self.inner.diagnostics.error(
+                                format!("'{}' is not exported from module '{}'", name, module),
+                                import.span,
+                            );
+                        }
+                    } else {
+                        self.inner.diagnostics.error(
+                            format!("module '{}' not found", module),
+                            import.span,
+                        );
+                    }
+                } else {
+                    // Single-component path - not valid for single-declaration import
+                    self.inner.diagnostics.error(
+                        format!(
+                            "invalid import '{}': use 'import {}.*' to import all exports",
+                            import.path, import.path
+                        ),
+                        import.span,
+                    );
+                }
             }
         }
     }

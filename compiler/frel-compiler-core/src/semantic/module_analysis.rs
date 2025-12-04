@@ -77,14 +77,27 @@ pub fn analyze_module(module: &Module, registry: &SignatureRegistry) -> ModuleAn
             // Check for conflicts between files
             for symbol in resolve_result.symbols.iter() {
                 if symbol.scope == ScopeId::ROOT {
-                    if combined_symbols.lookup_local(ScopeId::ROOT, &symbol.name).is_some() {
-                        combined_diagnostics.error(
-                            format!(
-                                "duplicate definition of '{}' (also defined in another file)",
-                                symbol.name
-                            ),
-                            symbol.def_span,
-                        );
+                    if let Some(existing_id) =
+                        combined_symbols.lookup_local(ScopeId::ROOT, &symbol.name)
+                    {
+                        let existing = combined_symbols.get(existing_id);
+                        // Allow duplicate imports from the same source module
+                        let is_same_import = match (&existing, &symbol.source_module) {
+                            (Some(e), Some(new_source)) => {
+                                e.source_module.as_ref() == Some(new_source)
+                            }
+                            _ => false,
+                        };
+
+                        if !is_same_import {
+                            combined_diagnostics.error(
+                                format!(
+                                    "duplicate definition of '{}' (also defined in another file)",
+                                    symbol.name
+                                ),
+                                symbol.def_span,
+                            );
+                        }
                     }
                 }
             }
@@ -244,6 +257,219 @@ scheme Item {
         assert!(
             result.diagnostics.iter().any(|d| d.message.contains("'Missing' is not exported")),
             "Expected 'not exported' error, got: {:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_self_import_module_not_in_registry() {
+        // Test what happens when a module tries to import from itself
+        // and its signature is NOT in the registry (fresh compile)
+        let source = r#"
+module test.app
+
+import test.app.User
+
+scheme User {
+    id: i64
+}
+"#;
+        let parse_result = parser::parse(source);
+        assert!(!parse_result.diagnostics.has_errors());
+        let file = parse_result.file.unwrap();
+        let module = Module::from_file(file);
+
+        // Empty registry - the module's own signature is NOT registered
+        let registry = SignatureRegistry::new();
+
+        let result = analyze_module(&module, &registry);
+
+        // Should fail because the module can't find itself in the registry
+        assert!(!result.success());
+        assert!(
+            result.diagnostics.iter().any(|d| d.message.contains("module 'test.app' not found")),
+            "Expected 'module not found' error for self-import, got: {:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_self_import_module_in_registry() {
+        // Test what happens when a module tries to import from itself
+        // and its signature IS in the registry (e.g., recompilation in server)
+        let source = r#"
+module test.app
+
+import test.app.User
+
+scheme User {
+    id: i64
+}
+"#;
+        let parse_result = parser::parse(source);
+        assert!(!parse_result.diagnostics.has_errors());
+        let file = parse_result.file.unwrap();
+        let module = Module::from_file(file);
+
+        // First, build and register the module's signature (simulating previous compile)
+        let sig_result = build_signature(&module);
+        let mut registry = SignatureRegistry::new();
+        registry.register(sig_result.signature);
+
+        // Now recompile the same module with itself in the registry
+        let result = analyze_module(&module, &registry);
+
+        // This should fail with duplicate definition since User is both
+        // imported from registry AND defined locally
+        assert!(
+            !result.success(),
+            "Self-import should cause an error, but got success"
+        );
+    }
+
+    #[test]
+    fn test_circular_imports() {
+        // Test circular imports: module_a imports module_b, module_b imports module_a
+        // This is legal and should work if we compile in the right order
+
+        // First compile module_a (without module_b available yet - import will fail)
+        let source_a = r#"
+module module_a
+
+scheme UserA {
+    id: i64
+}
+"#;
+        // First compile module_b (without module_a available yet)
+        let source_b = r#"
+module module_b
+
+scheme UserB {
+    name: String
+}
+"#;
+
+        // Build signatures for both (no imports yet)
+        let parse_a = parser::parse(source_a);
+        let module_a = Module::from_file(parse_a.file.unwrap());
+        let sig_a = build_signature(&module_a);
+
+        let parse_b = parser::parse(source_b);
+        let module_b = Module::from_file(parse_b.file.unwrap());
+        let sig_b = build_signature(&module_b);
+
+        // Register both signatures
+        let mut registry = SignatureRegistry::new();
+        registry.register(sig_a.signature);
+        registry.register(sig_b.signature);
+
+        // Now compile module_a with import from module_b
+        let source_a_with_import = r#"
+module module_a
+
+import module_b.UserB
+
+scheme UserA {
+    id: i64
+    friend: UserB
+}
+"#;
+        // And module_b with import from module_a
+        let source_b_with_import = r#"
+module module_b
+
+import module_a.UserA
+
+scheme UserB {
+    name: String
+    owner: UserA
+}
+"#;
+
+        let parse_a2 = parser::parse(source_a_with_import);
+        let module_a2 = Module::from_file(parse_a2.file.unwrap());
+        let result_a = analyze_module(&module_a2, &registry);
+
+        let parse_b2 = parser::parse(source_b_with_import);
+        let module_b2 = Module::from_file(parse_b2.file.unwrap());
+        let result_b = analyze_module(&module_b2, &registry);
+
+        println!("Module A success: {}", result_a.success());
+        for diag in result_a.diagnostics.iter() {
+            println!("  A: {}", diag.message);
+        }
+
+        println!("Module B success: {}", result_b.success());
+        for diag in result_b.diagnostics.iter() {
+            println!("  B: {}", diag.message);
+        }
+
+        // Both should succeed - circular imports are allowed
+        // as long as signatures are in the registry
+        assert!(result_a.success(), "Module A should compile");
+        assert!(result_b.success(), "Module B should compile");
+    }
+
+    #[test]
+    fn test_duplicate_import_across_files() {
+        // Test: two files in the same module both import the same thing
+        // File B: module b, import a.User
+        // File C: module b, import a.User
+
+        // First, create module_a with User
+        let source_a = r#"
+module module_a
+
+scheme User {
+    id: i64
+}
+"#;
+        let parse_a = parser::parse(source_a);
+        let module_a = Module::from_file(parse_a.file.unwrap());
+        let sig_a = build_signature(&module_a);
+
+        let mut registry = SignatureRegistry::new();
+        registry.register(sig_a.signature);
+
+        // Now create module_b with TWO files, both importing User from module_a
+        let source_b1 = r#"
+module module_b
+
+import module_a.User
+
+scheme Profile {
+    user: User
+}
+"#;
+        let source_b2 = r#"
+module module_b
+
+import module_a.User
+
+scheme Account {
+    owner: User
+}
+"#;
+
+        let parse_b1 = parser::parse(source_b1);
+        let parse_b2 = parser::parse(source_b2);
+
+        let module_b = Module::from_files(
+            "module_b".to_string(),
+            vec![parse_b1.file.unwrap(), parse_b2.file.unwrap()],
+        );
+
+        let result = analyze_module(&module_b, &registry);
+
+        println!("Module B (2 files) success: {}", result.success());
+        for diag in result.diagnostics.iter() {
+            println!("  - {}", diag.message);
+        }
+
+        // Same import in multiple files should be allowed
+        assert!(
+            result.success(),
+            "Same import in multiple files should be allowed, got errors: {:?}",
             result.diagnostics
         );
     }
