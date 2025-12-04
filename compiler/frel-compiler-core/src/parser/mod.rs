@@ -104,6 +104,11 @@ impl<'a> Parser<'a> {
         self.tokens.get(self.cursor + n)
     }
 
+    /// Get the kind of the next token (after current)
+    fn peek_kind(&self) -> Option<TokenKind> {
+        self.peek().map(|t| t.kind)
+    }
+
     /// Check if we're at the end of file
     fn at_end(&self) -> bool {
         self.current_kind() == TokenKind::Eof

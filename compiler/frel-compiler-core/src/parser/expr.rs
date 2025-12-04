@@ -308,6 +308,12 @@ impl<'a> Parser<'a> {
             // Identifier or qualified name
             TokenKind::Identifier => {
                 let first = self.current_text().to_string();
+
+                // Check for rgb() or rgba() color constructor
+                if (first == "rgb" || first == "rgba") && self.peek_kind() == Some(TokenKind::LParen) {
+                    return self.parse_rgb_color(&first);
+                }
+
                 self.advance();
 
                 // Check if this is a qualified name (Enum.Variant or module.name)
@@ -513,6 +519,52 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parse rgb(r, g, b) or rgba(r, g, b, a) color constructor
+    fn parse_rgb_color(&mut self, func_name: &str) -> Option<Expr> {
+        let is_rgba = func_name == "rgba";
+        self.advance(); // consume 'rgb' or 'rgba'
+        self.expect(TokenKind::LParen)?;
+
+        // Parse R component
+        let r = self.parse_color_component()?;
+        self.expect(TokenKind::Comma)?;
+
+        // Parse G component
+        let g = self.parse_color_component()?;
+        self.expect(TokenKind::Comma)?;
+
+        // Parse B component
+        let b = self.parse_color_component()?;
+
+        // Parse A component for rgba
+        let a = if is_rgba {
+            self.expect(TokenKind::Comma)?;
+            self.parse_color_component()?
+        } else {
+            255 // Default full opacity for rgb()
+        };
+
+        self.expect(TokenKind::RParen)?;
+
+        // Convert to RGBA u32
+        let color = ((r as u32) << 24) | ((g as u32) << 16) | ((b as u32) << 8) | (a as u32);
+        Some(Expr::Color(color))
+    }
+
+    /// Parse a single color component (0-255)
+    fn parse_color_component(&mut self) -> Option<u8> {
+        if self.current_kind() != TokenKind::IntLiteral {
+            self.error_expected("integer (0-255)");
+            return None;
+        }
+        let text = self.current_text();
+        let value = self.parse_int_literal(text);
+        self.advance();
+
+        // Clamp to 0-255 range
+        Some(value.clamp(0, 255) as u8)
+    }
+
     /// Parse string content (remove quotes, handle escapes)
     fn parse_string_content(&self, s: &str) -> String {
         let inner = &s[1..s.len() - 1]; // Remove quotes
@@ -655,6 +707,41 @@ mod tests {
             assert!(matches!(*right, Expr::Binary { .. }));
         } else {
             panic!("Expected binary");
+        }
+    }
+
+    #[test]
+    fn test_rgb_color() {
+        // rgb(255, 0, 0) -> red with full opacity
+        if let Some(Expr::Color(c)) = parse_expr("rgb(255, 0, 0)") {
+            // Format: RRGGBBAA
+            assert_eq!(c, 0xFF0000FF, "Expected red (0xFF0000FF), got 0x{:08X}", c);
+        } else {
+            panic!("Expected color");
+        }
+
+        // rgb(0, 255, 0) -> green
+        if let Some(Expr::Color(c)) = parse_expr("rgb(0, 255, 0)") {
+            assert_eq!(c, 0x00FF00FF, "Expected green (0x00FF00FF), got 0x{:08X}", c);
+        } else {
+            panic!("Expected color");
+        }
+    }
+
+    #[test]
+    fn test_rgba_color() {
+        // rgba(255, 0, 0, 128) -> red with 50% opacity
+        if let Some(Expr::Color(c)) = parse_expr("rgba(255, 0, 0, 128)") {
+            assert_eq!(c, 0xFF000080, "Expected 0xFF000080, got 0x{:08X}", c);
+        } else {
+            panic!("Expected color");
+        }
+
+        // rgba(0, 0, 0, 0) -> fully transparent black
+        if let Some(Expr::Color(c)) = parse_expr("rgba(0, 0, 0, 0)") {
+            assert_eq!(c, 0x00000000, "Expected 0x00000000, got 0x{:08X}", c);
+        } else {
+            panic!("Expected color");
         }
     }
 }

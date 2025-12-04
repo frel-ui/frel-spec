@@ -533,6 +533,9 @@ impl Resolver {
 
         match instr {
             ast::InstructionExpr::Simple(inst) => {
+                // Set context span for error reporting
+                self.context_span = inst.span;
+
                 for (param_name, expr) in &inst.params {
                     // Check if this is a simple identifier
                     if let ast::Expr::Identifier(value) = expr {
