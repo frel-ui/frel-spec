@@ -1,209 +1,349 @@
 # Runtime Data Model
 
-1. The application state is represented by a (possibly high) number of datum.
-2. Reactive connections between datum are represented by subscriptions.
-3. `Datum` = the sole source of truth.
-4. Change propagation is push: when a datum changes, it notifies subscribers.
-5. Value access is pull: subscribers decide when to get data from the datum (might be immediate, but could be deferred).
+This document describes the Frel runtime data model, including storage structures, identity
+management, closures, subscriptions, and the notification system.
 
-Core tenets:
+## Core Tenets
 
-- **Single abstraction**: `Datum`.
-- **One promise**: “You’ll be notified when the truth might have changed.”
-- **One action**: “Call `get` when you care.”
+1. The application state is represented by datums and closures stored in global maps.
+2. Reactive connections are represented by subscriptions.
+3. Change propagation is push: when data changes, it notifies subscribers.
+4. Value access is pull: subscribers decide when to get data (might be immediate or deferred).
+5. One single thread manages the state of the application, no multi-thread synchronization is needed.
 
-**Notes**
+**One promise**: "You'll be notified when the truth might have changed."
 
-One single thread manages the state of the application, no multi-thread synchronization is needed.
+**One action**: "Call `get` when you care."
+
+## Runtime Maps
+
+The runtime maintains five global maps:
+
+### Shared Identity Space
+
+The `datum` and `closures` maps share an identity space using low-bit encoding. This prevents
+closure fields from accidentally holding closure identities - they are in different identity spaces.
+
+| Map | Identity bits | Contents |
+|-----|---------------|----------|
+| `datum` | `...0` | Scheme/collection instances created by blueprints |
+| `closures` | `...1` | Blueprint instances (structural + cleanup + fields) |
+
+### Separate Identity Spaces
+
+These maps have their own identity counters. They are internal runtime machinery, never stored in
+fields.
+
+| Map | Contents |
+|-----|----------|
+| `subscriptions` | Subscription records |
+| `functions` | Callback functions |
+
+### Static Lookup
+
+| Map | Key | Contents |
+|-----|-----|----------|
+| `metadata` | Qualified name | Function tables, validation rules, type info |
+
+## Datum
+
+Datums are scheme and collection instances created by blueprints. They participate in the
+reactive system and can be referenced from closure fields.
+
+**Datum structure:**
+
+```javascript
+datum[2000] = {
+    identity_id: 2000,              // even number (low bit = 0)
+    type: "User",
+    structural_rev: 1,
+    carried_rev: 1,
+    set_generation: 0,
+    availability: "Ready",
+    error: null,
+    owner: null,                    // closure identity that owns this datum
+    fields: {
+        name: "Alice",              // intrinsic: stored directly
+        age: 30,                    // intrinsic: stored directly
+        profile: 2002               // composite: stored as datum identity
+    },
+    items: null,                    // for collections
+    subscriptions: []               // subscription IDs observing this datum
+}
+```
+
+**Field storage:**
+
+- **Intrinsic types** (primitives, String, enums): stored directly as values
+- **Composite types** (schemes, collections): stored as datum identities
+
+**Collections:**
+
+```javascript
+// List<i32> - intrinsic items stored directly
+datum[2004] = {
+    identity_id: 2004,
+    type: "List<i32>",
+    // ... other fields ...
+    fields: null,
+    items: [10, 20, 30]
+}
+
+// List<User> - composite items stored as identities
+datum[2006] = {
+    identity_id: 2006,
+    type: "List<User>",
+    // ... other fields ...
+    fields: null,
+    items: [2000, 2002, 2008]       // datum identities
+}
+```
+
+## Closures
+
+Closures are blueprint instances created when a blueprint is instantiated. A closure has three
+distinct parts:
+
+```
+Closure = {
+    structural: { parent, children }           // unsubscribable, holds closure identities
+    cleanup: { subscriptions, owned_datum }    // unsubscribable
+    fields: { ... }                            // subscribable
+}
+```
+
+**Critical constraint:** Closure fields can hold:
+- Intrinsic values (stored directly)
+- Datum identities (even numbers)
+
+Closure fields **cannot** hold closure identities. This is enforced by the identity encoding -
+closures have odd identities, datums have even identities.
+
+**Closure structure:**
+
+```javascript
+closures[1001] = {
+    closure_id: 1001,               // odd number (low bit = 1)
+    blueprint: "Middle",
+
+    // Structural (unsubscribable, holds closure identities)
+    parent_closure_id: 1003,
+    child_closure_ids: [1005, 1007],
+
+    // Cleanup (unsubscribable)
+    subscriptions_to_this: [4001, 4002],
+    subscriptions_by_this: [4003, 4004],
+    owned_datum: [2000, 2002],
+
+    // Fields (subscribable)
+    fields: {
+        p1: "Hello",                // intrinsic
+        p2: 2000,                   // datum identity
+        count: 42                   // intrinsic
+    }
+}
+```
+
+**Structural vs Fields:**
+
+The structural part (parent/children) uses closure identities to form the fragment tree. This is
+separate from the reactive field system. When a closure is destroyed, its structural links are
+used to tear down child closures.
+
+The cleanup part tracks what the closure owns for proper cleanup: subscriptions it participates
+in and datums it created.
 
 ## Subscriptions
 
-Subscriptions describe what happens when a datum changes.
-
-| Property            | Description                                          |
-|---------------------|------------------------------------------------------|
-| **Subscription Id** | A unique identifier of this **subscription**.        |
-| **Datum Identity**  | The datum this subscription belongs to.              |
-| **Selector**        | Selects which changes should trigger a notification. |
-| **Callback Id**     | Id of the function that handles the notification.    |
+Subscriptions connect data sources to callbacks. They can target either datum or closure fields.
 
 ```javascript
-subscriptions[1001] = {
-    subscription_id: 1001,
-    datum_id: 2001,
-    selector: "Everything",
-    callback_id: 3001
+subscriptions[4001] = {
+    subscription_id: 4001,
+    source_id: 1001,                // datum or closure identity
+    target_id: 1003,                // datum or closure identity
+    selector: "Everything",         // or Key("fieldName"), OneOf("f1", "f2")
+    callback_id: 3001               // function identity
 }
 ```
 
-## 1. Core Storage Strategy
+**Selectors:**
 
-The runtime uses **two-tier storage** based on type category:
+| Selector | Triggers when |
+|----------|---------------|
+| `Everything` | Any change (structural or carried) |
+| `Structural` | Structural revision increments |
+| `Carried` | Carried revision increments (but NOT structural) |
+| `Key("name")` | Specific field changes |
+| `OneOf("a", "b")` | Any of the listed fields change |
 
-### 1.1 Intrinsic Types (Optimized)
+## Functions
 
-**Intrinsic types** (primitives, String, enums) are **stored directly as values** without
-the full datum structure. This is an optimization that is possible because:
-
-- Intrinsic datum is immutable - changing means creating a new value
-- Compiler knows types statically
-- Identity is the value itself
-- Change tracking is provided by the datum that contains the intrinsic datum
+Functions are callbacks registered by the generated code. They are called during notification
+processing.
 
 ```javascript
-fields = {
-    count: 42,
-    name: "Alice",
-    is_active: true
+functions[3001] = function(runtime, subscription) {
+    runtime.set(
+        subscription.target_id,
+        "sum",
+        runtime.get(subscription.source_id, "p1") + runtime.get(subscription.source_id, "p2")
+    )
 }
 ```
 
-### 1.2 Composite Types (Full Datum Structure)
+## Metadata
 
-**Composite types** (schemes, collections, arenas, backends) need full reactive tracking.
+Metadata is keyed by qualified name (not identity). It contains static, compile-time information:
 
-**Datum structure for composite types:**
+- Function tables (internal binding, call site bindings)
+- Validation rules
+- Type information
 
 ```javascript
-datum[2001] = {
-  identity_id: 2001,
-  type: "User",
-  structural_rev: 0,
-  carried_rev: 5,
-  set_generation: 0,
-  availability: "Ready",
-  error: null,
-  owner: null,
-  fields: {
-    id: 100,
-    name: "Alice",
-    profile: 3001
-  },
-  items: null,
-  entries: null,
-  subscriptions: [ 10, 11 ]
+metadata["myapp.Counter"] = {
+    internal_binding: Counter$internal_binding,
+    call_sites: {
+        "42": { blueprint: "myapp.Display", binding: Counter$42$call_site_binding }
+    }
 }
 ```
 
-The meaning of fields is described in these documents:
+## Events and Notifications
 
-- [Data Model Basics](/docs/10_language/20_data_model/01_data_model_basics.md)
-- [Reactivity Model](/docs/10_language/20_data_model/03_reactivity.md)
+The runtime is event-driven. Events come from:
+- User actions (mouse, keyboard, gestures)
+- Network traffic
+- Timers
 
-For information about ownership semantics, see the [Ownership and Assignment](../20_data_model/02_type_system.md#ownership-and-assignment) section in the Reactivity Model.
+### Event Queue
 
-## 2. Schemes: Mixed Intrinsic and Composite Fields
+The event queue provides two functions:
+
+- `put_event`: Thread-safe, can be called from any thread
+- `drain_events`: **NOT** thread-safe, called only from the main UI thread
+
+### Notification Queue
+
+When an event changes data, notifications are created for each affected subscription.
+
+Both `put_notification` and `drain_notifications` are **NOT** thread-safe - they run from
+`drain_events` on the main thread.
+
+**Key properties:**
+
+- Notifications are subscription IDs
+- Processing does **NOT** preserve subscription order
+- Notifications are processed in batches called *generations*
+
+### Drain Cycle
+
+`drain_notifications` works in a loop:
+
+1. **Sanity check**: Loop must finish in ≤ `GEN_LIMIT` cycles (1000 by default)
+2. **Take**: All pending notifications from queue → the *processed generation*
+3. **Reset**: Empty queue and increment generation counter
+4. **Execute**: Call callback functions of the processed generation
+   - May change data → those changes belong to the *next generation*
+   - May queue a re-render (processed outside the data subsystem)
+5. **Stop**: If the next generation has no notifications
+
+This ensures all cascading changes are applied before the cycle completes.
+
+### Generation Tracking
+
+When a field changes, the runtime saves the current generation into `set_generation` of the
+datum/closure structure.
+
+### Subscribe During Drain
+
+When subscribing during drain (the common case):
+
+- If `set_generation == current_generation`: queue a notification immediately
+- Otherwise: wait for normal change mechanism to trigger notification
+
+### Unsubscribe During Drain
+
+Unsubscribing simply removes the subscription. If the subscription ID is reached later in the
+drain cycle, it's skipped (subscription no longer exists).
+
+## Example: Blueprint Instantiation
 
 ```frel
-scheme UserWithProfile {
-    name : String              // Intrinsic
-    age : i32                  // Intrinsic
-    profile : Profile          // Composite (another scheme)
+blueprint Outer {
+    Middle("Hello")
+}
+
+blueprint Middle(p1: String) {
+    count: u32 = 42
+    Inner(p1, count)
+}
+
+blueprint Inner(p1: String, p2: u32) {
+    text { "${p1}: ${p2}" }
 }
 ```
 
-**UserWithProfile instance:**
+**Runtime state after instantiation:**
 
 ```javascript
-datum[2001] = {
-  identity_id: 2001,
-  type: "UserWithProfile",
-  structural_rev: 0,
-  carried_rev: 0,
-  set_generation: 0,
-  availability: "Ready",
-  error: null,
-  owner: null,
-  fields: {
-    name: "Alice",
-    age: 30,
-    profile: 3001
-  },
-  items: null,
-  entries: null,
-  subscriptions: []
+// Outer closure
+closures[1001] = {
+    closure_id: 1001,
+    blueprint: "Outer",
+    parent_closure_id: null,
+    child_closure_ids: [1003],
+    subscriptions_to_this: [],
+    subscriptions_by_this: [],
+    owned_datum: [],
+    fields: {}
+}
+
+// Middle closure
+closures[1003] = {
+    closure_id: 1003,
+    blueprint: "Middle",
+    parent_closure_id: 1001,
+    child_closure_ids: [1005],
+    subscriptions_to_this: [4001, 4002],
+    subscriptions_by_this: [],
+    owned_datum: [],
+    fields: {
+        p1: "Hello",
+        count: 42
+    }
+}
+
+// Inner closure
+closures[1005] = {
+    closure_id: 1005,
+    blueprint: "Inner",
+    parent_closure_id: 1003,
+    child_closure_ids: [],
+    subscriptions_to_this: [],
+    subscriptions_by_this: [4001, 4002],
+    owned_datum: [],
+    fields: {
+        p1: "Hello",
+        p2: 42
+    }
+}
+
+// Subscription: Middle.p1 -> Inner.p1
+subscriptions[4001] = {
+    subscription_id: 4001,
+    source_id: 1003,
+    target_id: 1005,
+    selector: Key("p1"),
+    callback_id: 3001
+}
+
+// Subscription: Middle.count -> Inner.p2
+subscriptions[4002] = {
+    subscription_id: 4002,
+    source_id: 1003,
+    target_id: 1005,
+    selector: Key("count"),
+    callback_id: 3002
 }
 ```
-
-- `name`: Intrinsic, stored directly as string
-- `age`: Intrinsic, stored directly as number
-- `profile`: Composite, stored as identityId
-- `owner`: null (this is a root datum, not owned by another)
-
-**The Profile scheme (separate datum):**
-
-```javascript
-datum[3001] = {
-  identity_id: 3001,
-  type: "Profile",
-  structural_rev: 0,
-  carried_rev: 0,
-  set_generation: 0,
-  availability: "Ready",
-  error: null,
-  owner: 2001,
-  fields: {
-    bio: "Software engineer",
-    avatar: "https://..."
-  },
-  items: null,
-  entries: null,
-  subscriptions: []
-}
-```
-
-- `owner`: 2001 (owned by userDatum - changes propagate up the ownership chain)
-
-## 3. Collections
-
-**List<i32> with values [10, 20, 30]:**
-
-```javascript
-datum[3001] = {
-  identity_id: 3001,
-  type: "List<i32>",
-  structural_rev: 0,
-  carried_rev: 0,
-  set_generation: 0,
-  availability: "Ready",
-  error: null,
-  owner: null,
-  fields: null,
-  items: [
-    10,
-    20,
-    30
-  ],
-  entries: null,
-  subscriptions: []
-}
-```
-
-- `items`: Plain numbers, no wrappers!
-- `owner`: null (root datum)
-
-**List<User> with composite items:**
-
-```javascript
-datum[3002] = {
-  identity_id: 3002,
-  type: "List<User>",
-  structural_rev: 0,
-  carried_rev: 0,
-  set_generation: 0,
-  availability: "Ready",
-  error: null,
-  owner: null,
-  fields: null,
-  items: [
-    2001,
-    2002,
-    2003
-  ],
-  entries: null,
-  subscriptions: []
-}
-```
-
-- `items`: identityIds of User datums (each User datum has `owner: 3002`)
-- `owner`: null (root datum)
