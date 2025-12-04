@@ -43,6 +43,7 @@ theme AppTheme {
     set warning {  }
     set success {  }
     set highlighted {  }
+    set card { }
     set card_style {  }
     set status_badge {  }
 }

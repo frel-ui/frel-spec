@@ -499,6 +499,16 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
+        // Assign types to blueprint parameters
+        for param in &bp.params {
+            let param_type = self.resolve_type_expr(&param.type_expr, bp.span);
+            if let Some(param_symbol_id) =
+                self.symbols.lookup_local(self.current_scope, &param.name)
+            {
+                self.symbol_types.insert(param_symbol_id, param_type);
+            }
+        }
+
         // First pass: resolve types for `with` imported symbols and LocalDecl
         for stmt in &bp.body {
             match stmt {

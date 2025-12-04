@@ -2,7 +2,14 @@ module instructions.instruction_expr_ternary
 
 import test.common.*
 
-blueprint InstructionExprTernary {
+blueprint InstructionExprTernary(
+    is_enabled : bool,
+    is_selected : bool,
+    count : u32,
+    is_visible : bool,
+    is_error : bool,
+    is_warning : bool
+) {
     // simple ternary
     box { }
         .. is_enabled ? background { color: #00FF00 } else background { color: #CCCCCC }

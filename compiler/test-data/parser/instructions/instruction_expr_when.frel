@@ -5,7 +5,7 @@ import test.common.*
 blueprint InstructionExprWhen(
     is_active : bool,
     is_highlighted : bool,
-    count : bool,
+    count : u32,
     is_visible : bool,
     is_error : bool,
     is_critical : bool
