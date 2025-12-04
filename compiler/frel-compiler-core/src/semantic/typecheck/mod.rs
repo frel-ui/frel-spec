@@ -334,7 +334,7 @@ impl<'a> TypeChecker<'a> {
         for decl in &file.declarations {
             match decl {
                 ast::TopLevelDecl::Backend(be) => self.check_backend(be),
-                ast::TopLevelDecl::Blueprint(bp) => self.check_blueprint(bp),
+                ast::TopLevelDecl::Blueprint(bp) => self.check_blueprint(bp, file),
                 ast::TopLevelDecl::Scheme(sc) => self.check_scheme(sc),
                 ast::TopLevelDecl::Theme(th) => self.check_theme(th),
                 _ => {} // Other declarations don't need expression checking
@@ -488,7 +488,7 @@ impl<'a> TypeChecker<'a> {
         self.context_span = Span::default();
     }
 
-    fn check_blueprint(&mut self, bp: &ast::Blueprint) {
+    fn check_blueprint(&mut self, bp: &ast::Blueprint, file: &ast::File) {
         // Enter the blueprint's body scope for local/field lookups
         let saved_scope = self.current_scope;
         if let Some(symbol_id) = self.symbols.lookup_local(ScopeId::ROOT, &bp.name) {
@@ -541,6 +541,14 @@ impl<'a> TypeChecker<'a> {
                                         }
                                     }
                                 }
+
+                                // Check for parameter/backend field conflicts
+                                self.check_parameter_backend_conflicts(
+                                    &bp.params,
+                                    backend_name,
+                                    file,
+                                    bp.span,
+                                );
                             }
                         }
                     }
@@ -565,6 +573,78 @@ impl<'a> TypeChecker<'a> {
 
         self.current_scope = saved_scope;
         self.context_span = Span::default();
+    }
+
+    /// Check for conflicts between blueprint parameters and backend fields with the same name.
+    /// Reports errors if:
+    /// - Types don't match
+    /// - Both have default/init values
+    fn check_parameter_backend_conflicts(
+        &mut self,
+        params: &[ast::Parameter],
+        backend_name: &str,
+        file: &ast::File,
+        context_span: Span,
+    ) {
+        // Find the backend in the file
+        let backend = file.declarations.iter().find_map(|decl| {
+            if let ast::TopLevelDecl::Backend(be) = decl {
+                if be.name == backend_name {
+                    return Some(be);
+                }
+            }
+            None
+        });
+
+        let Some(backend) = backend else {
+            return; // Backend not found in this file (might be a parameter type)
+        };
+
+        // Check each parameter against backend fields
+        for param in params {
+            // Find matching field in backend
+            let field = backend.members.iter().find_map(|member| {
+                if let ast::BackendMember::Field(f) = member {
+                    if f.name == param.name {
+                        return Some(f);
+                    }
+                }
+                None
+            });
+
+            let Some(field) = field else {
+                continue; // No matching field
+            };
+
+            // Resolve both types for comparison
+            let param_type = self.resolve_type_expr(&param.type_expr, context_span);
+            let field_type = self.resolve_type_expr(&field.type_expr, field.span);
+
+            // Check type compatibility
+            if param_type != Type::Unknown && field_type != Type::Unknown && param_type != field_type
+            {
+                self.diagnostics.add(Diagnostic::from_code(
+                    &codes::E0407,
+                    context_span,
+                    format!(
+                        "parameter '{}' has type '{}' but backend field has type '{}'",
+                        param.name, param_type, field_type
+                    ),
+                ));
+            }
+
+            // Check for conflicting defaults
+            if param.default.is_some() && field.init.is_some() {
+                self.diagnostics.add(Diagnostic::from_code(
+                    &codes::E0408,
+                    context_span,
+                    format!(
+                        "both parameter '{}' and its corresponding backend field have default values",
+                        param.name
+                    ),
+                ));
+            }
+        }
     }
 
     fn check_blueprint_stmt(&mut self, stmt: &ast::BlueprintStmt) {
@@ -1207,6 +1287,98 @@ blueprint StatusView {
         assert!(
             typecheck_result.diagnostics.iter().any(|d| d.message.contains("no variant `Invalid`")),
             "Should have error about invalid variant: {:?}",
+            typecheck_result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_parameter_backend_merge_valid() {
+        // Valid merge: parameter and backend field have same name and type
+        let source = r#"
+module test
+
+backend CounterBackend {
+    count : i32 = 0
+}
+
+blueprint Counter(count : i32) {
+    with CounterBackend
+    doubled : i32 = count * 2
+}
+"#;
+        let (resolve_result, typecheck_result) = resolve_and_typecheck_source(source);
+        assert!(
+            !resolve_result.diagnostics.has_errors(),
+            "Should not have resolve errors: {:?}",
+            resolve_result.diagnostics
+        );
+        assert!(
+            !typecheck_result.has_errors(),
+            "Should not have typecheck errors for valid merge: {:?}",
+            typecheck_result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_parameter_backend_merge_type_mismatch() {
+        // Type mismatch: parameter has different type than backend field
+        let source = r#"
+module test
+
+backend DataBackend {
+    data : String = "hello"
+}
+
+blueprint DataView(data : i32) {
+    with DataBackend
+    doubled : i32 = data * 2
+}
+"#;
+        let (resolve_result, typecheck_result) = resolve_and_typecheck_source(source);
+        assert!(
+            !resolve_result.diagnostics.has_errors(),
+            "Should not have resolve errors: {:?}",
+            resolve_result.diagnostics
+        );
+        assert!(
+            typecheck_result.has_errors(),
+            "Should have typecheck error for type mismatch"
+        );
+        assert!(
+            typecheck_result.diagnostics.iter().any(|d| d.code.as_deref() == Some("E0407")),
+            "Should have E0407 error for type mismatch: {:?}",
+            typecheck_result.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_parameter_backend_merge_conflicting_defaults() {
+        // Conflicting defaults: both parameter and backend field have default values
+        let source = r#"
+module test
+
+backend AmountBackend {
+    amount : i32 = 5
+}
+
+blueprint AmountView(amount : i32 = 10) {
+    with AmountBackend
+    doubled : i32 = amount * 2
+}
+"#;
+        let (resolve_result, typecheck_result) = resolve_and_typecheck_source(source);
+        assert!(
+            !resolve_result.diagnostics.has_errors(),
+            "Should not have resolve errors: {:?}",
+            resolve_result.diagnostics
+        );
+        assert!(
+            typecheck_result.has_errors(),
+            "Should have typecheck error for conflicting defaults"
+        );
+        assert!(
+            typecheck_result.diagnostics.iter().any(|d| d.code.as_deref() == Some("E0408")),
+            "Should have E0408 error for conflicting defaults: {:?}",
             typecheck_result.diagnostics
         );
     }

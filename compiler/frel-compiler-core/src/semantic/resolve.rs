@@ -310,8 +310,15 @@ impl Resolver {
                                 .collect();
 
                             // Import each member into the current blueprint scope
+                            // Skip members that match a parameter name (parameter takes precedence)
                             for (member_name, member_kind, member_span) in members_to_import {
-                                self.define_simple(&member_name, member_kind, self.current_scope, member_span);
+                                // Check if a parameter with this name already exists
+                                let is_parameter = params.iter().any(|p| p.name == member_name);
+                                if !is_parameter {
+                                    self.define_simple(&member_name, member_kind, self.current_scope, member_span);
+                                }
+                                // If it is a parameter, skip import - the parameter defines it.
+                                // Type compatibility is checked during the typecheck phase.
                             }
                         }
                     }
