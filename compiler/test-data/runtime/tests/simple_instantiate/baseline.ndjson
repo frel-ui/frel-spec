@@ -1,0 +1,4 @@
+{"timestamp":0,"category":"closure","event":"create","data":{"id":1,"blueprint":"simple_instantiate.Main","parent":null}}
+{"timestamp":0,"category":"closure","event":"instantiate","data":{"id":1,"blueprint":"simple_instantiate.Main","params":{}}}
+{"timestamp":0,"category":"closure","event":"create","data":{"id":3,"blueprint":"testing.T0","parent":1}}
+{"timestamp":0,"category":"closure","event":"instantiate","data":{"id":3,"blueprint":"testing.T0","params":{}}}

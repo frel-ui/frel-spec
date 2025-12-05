@@ -1,10 +1,21 @@
-# Parser Testing Framework
+# Testing Framework
 
-This document describes the testing framework for the Frel parser, located in `compiler/frel-compiler-test`.
+This document describes the testing frameworks for Frel components.
 
 ## Overview
 
-The parser testing framework validates that the Frel parser correctly handles both valid and invalid source files. Tests are organized as `.frel` files in `compiler/test-data/`.
+Frel has two primary testing frameworks:
+
+| Component | Location | Approach |
+|-----------|----------|----------|
+| Parser | `compiler/frel-compiler-test` | AST comparison with locked baselines |
+| Runtime | `host/javascript/runtime` | Trace-based verification with NDJSON baselines |
+
+---
+
+# Parser Testing
+
+The parser testing framework validates that the Frel parser correctly handles both valid and invalid source files. Tests are organized as `.frel` files in `compiler/test-data/parser/`.
 
 ## Test Categories
 
@@ -153,3 +164,198 @@ For locked tests:
 - **Locked Success + parse fails OR output differs** → FAIL
 - **Locked Error + parse fails + error matches** → PASS
 - **Locked Error + parse succeeds OR error differs** → FAIL
+
+---
+
+# Runtime Testing
+
+The runtime testing framework validates the reactive runtime behavior using trace-based verification.
+Tests are organized in `compiler/test-data/runtime/tests/`.
+
+## Overview
+
+Runtime tests work by:
+
+1. Running a Frel application with tracing enabled
+2. Capturing all trace events during execution
+3. Comparing the captured trace against an expected baseline (NDJSON format)
+
+This approach provides deterministic, reproducible tests that verify the exact sequence of
+runtime operations.
+
+## Trace Categories
+
+The tracer captures events in these categories:
+
+| Category | Events | Description |
+|----------|--------|-------------|
+| `datum` | create, destroy | Datum lifecycle |
+| `closure` | create, destroy, instantiate | Closure/fragment lifecycle |
+| `field` | set | Field value changes (with old/new values) |
+| `subscription` | subscribe, unsubscribe, notify | Reactive subscriptions |
+| `notification` | drain_start, drain_end, generation, callback | Drain loop execution |
+
+## Test Structure
+
+Each test has its own directory:
+
+```
+compiler/test-data/runtime/
+├── testing.frel              # Reusable test fragments (T0, T1, HO, etc.)
+├── build/
+│   └── testing.js            # Compiled testing module
+└── tests/
+    ├── simple_instantiate/
+    │   ├── simple_instantiate.frel   # Test source
+    │   ├── simple_instantiate.js     # Compiled output
+    │   └── baseline.ndjson           # Expected trace
+    └── reactive_field/
+        ├── reactive_field.frel
+        ├── reactive_field.js
+        └── baseline.ndjson
+```
+
+### Convention
+
+- Each test has a `Main` blueprint as the entry point
+- Tests can import from `testing.frel` for reusable fragments
+- Baseline files use NDJSON format (one JSON object per line)
+
+## NDJSON Baseline Format
+
+Baselines are stored as newline-delimited JSON for git-friendly diffs:
+
+```json
+{"timestamp":0,"category":"closure","event":"create","data":{"id":1,"blueprint":"test.Main","parent":null}}
+{"timestamp":0,"category":"closure","event":"instantiate","data":{"id":1,"blueprint":"test.Main","params":{}}}
+{"timestamp":0,"category":"field","event":"set","data":{"id":1,"field":"count","new":0,"generation":0}}
+```
+
+Benefits:
+- Each event is on its own line
+- Git diffs show exactly which events changed
+- Easy to read and edit manually
+- Streamable for large traces
+
+## Testing API
+
+The runtime provides testing utilities in `@frel/runtime`:
+
+```typescript
+import {
+    runTest,
+    parseNdjson,
+    compareTraces,
+    assertTracesMatch,
+    createTestRuntime,
+} from '@frel/runtime';
+
+// Run a test with a register function
+const result = runTest(registerMetadata, {
+    categories: new Set(['closure', 'field']),  // Optional filter
+    entryBlueprint: 'test.Main',                // Optional override
+});
+
+// Result contains:
+// - result.events: TraceEvent[]
+// - result.snapshot: RuntimeSnapshot
+// - result.rootId: number
+
+// Compare with baseline
+const baseline = parseNdjson(baselineContent);
+const diffs = compareTraces(result.events, baseline, {
+    ignoreTimestamps: true,
+});
+
+// Or use assertion
+assertTracesMatch(result.events, baseline);
+```
+
+## Running Tests
+
+```bash
+# From host/javascript/runtime directory
+cd host/javascript/runtime
+
+# Build the runtime
+npm run build
+
+# Run tests (using Node.js test runner)
+npm test
+```
+
+## Workflow
+
+### Adding a New Runtime Test
+
+1. Create a new directory in `compiler/test-data/runtime/tests/`:
+   ```
+   mkdir tests/my_new_test
+   ```
+
+2. Create the Frel source file with a `Main` blueprint:
+   ```frel
+   module my_new_test
+
+   blueprint Main {
+       // Test content
+   }
+   ```
+
+3. Compile to JavaScript (using the Frel compiler)
+
+4. Run once to generate initial trace, then save as baseline:
+   ```typescript
+   const result = runTest(registerMetadata);
+   const ndjson = serializeToNdjson(result.events);
+   // Save to baseline.ndjson
+   ```
+
+5. Verify the baseline is correct, then commit
+
+### Updating Baselines
+
+When runtime behavior changes intentionally:
+
+1. Run the test to get new trace
+2. Review the diff to ensure changes are expected
+3. Update `baseline.ndjson` with the new trace
+4. Commit the updated baseline
+
+## Debugging with Traces
+
+Enable console tracing for debugging:
+
+```typescript
+import { Runtime, createDebugTracer } from '@frel/runtime';
+
+const tracer = createDebugTracer();
+const runtime = new Runtime({ tracer });
+
+// All operations are logged to console with colors
+runtime.run('myapp.Main');
+```
+
+Output:
+```
+[closure] create id=1 blueprint="myapp.Main" parent=null
+[closure] instantiate id=1 blueprint="myapp.Main" params={}
+[field] set id=1 field="count" new=0 generation=0
+[subscription] subscribe id=0 source=1 target=1 selector="Key(count)"
+```
+
+## Snapshot Testing
+
+Capture final state for additional verification:
+
+```typescript
+const result = runTest(registerMetadata);
+
+// Check final state
+const snapshot = result.snapshot;
+expect(snapshot.closures.size).toBe(2);
+
+const main = snapshot.closures.get(1);
+expect(main.fields.count).toBe(0);
+expect(main.fields.doubled).toBe(0);
+```

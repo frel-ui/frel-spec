@@ -15,9 +15,19 @@ import type {
     Callback,
     Availability,
     BlueprintMetadata,
+    RuntimeSnapshot,
+    DatumSnapshotData,
+    ClosureSnapshotData,
 } from './types.js';
+import { Tracer, selectorToString } from './tracer.js';
 
 const GEN_LIMIT = 1000;
+
+/** Options for Runtime constructor */
+export interface RuntimeOptions {
+    /** Optional tracer for debugging and testing */
+    tracer?: Tracer;
+}
 
 export class Runtime {
     // Maps
@@ -40,6 +50,13 @@ export class Runtime {
     private event_queue: unknown[] = [];
     private notification_queue: Set<SubscriptionIdentity> = new Set();
     private current_generation: number = 0;
+
+    // Tracing
+    private tracer?: Tracer;
+
+    constructor(options?: RuntimeOptions) {
+        this.tracer = options?.tracer;
+    }
 
     // ========================================================================
     // Identity Allocation
@@ -97,6 +114,9 @@ export class Runtime {
             subscriptions: new Set(),
         };
         this.datum.set(id, datum);
+
+        this.tracer?.trace('datum', 'create', { id, type, fields, owner });
+
         return id;
     }
 
@@ -116,6 +136,9 @@ export class Runtime {
             subscriptions: new Set(),
         };
         this.datum.set(id, datum);
+
+        this.tracer?.trace('datum', 'create', { id, type, items, owner });
+
         return id;
     }
 
@@ -133,6 +156,8 @@ export class Runtime {
         }
 
         this.datum.delete(id);
+
+        this.tracer?.trace('datum', 'destroy', { id });
     }
 
     // ========================================================================
@@ -161,6 +186,8 @@ export class Runtime {
                 parent.child_closure_ids.push(id);
             }
         }
+
+        this.tracer?.trace('closure', 'create', { id, blueprint: blueprint_name, parent: parent_closure_id });
 
         return id;
     }
@@ -217,6 +244,8 @@ export class Runtime {
 
         // 6. Remove the closure
         this.closures.delete(id);
+
+        this.tracer?.trace('closure', 'destroy', { id });
     }
 
     // ========================================================================
@@ -253,6 +282,14 @@ export class Runtime {
         datum.carried_rev++;
         datum.set_generation = this.current_generation;
 
+        this.tracer?.trace('field', 'set', {
+            id,
+            field,
+            old: old_value,
+            new: value,
+            generation: this.current_generation,
+        });
+
         // Notify subscribers
         this.notify_subscribers(id, datum.subscriptions, 'structural', field);
 
@@ -271,6 +308,14 @@ export class Runtime {
 
         closure.fields[field] = value;
         closure.set_generation = this.current_generation;
+
+        this.tracer?.trace('field', 'set', {
+            id,
+            field,
+            old: old_value,
+            new: value,
+            generation: this.current_generation,
+        });
 
         // Notify subscribers
         this.notify_subscribers(id, closure.subscriptions_to_this, 'structural', field);
@@ -302,6 +347,11 @@ export class Runtime {
             const matches = this.selector_matches(sub.selector, change_type, field);
             if (matches) {
                 this.notification_queue.add(sub_id);
+                this.tracer?.trace('subscription', 'notify', {
+                    sub_id,
+                    source: id,
+                    selector: selectorToString(sub.selector),
+                });
             }
         }
     }
@@ -406,6 +456,13 @@ export class Runtime {
             target?.subscriptions_by_this.add(sub_id);
         }
 
+        this.tracer?.trace('subscription', 'subscribe', {
+            id: sub_id,
+            source: source_id,
+            target: target_id,
+            selector: selectorToString(selector),
+        });
+
         // Subscribe during drain: check if we need immediate notification
         const set_gen = this.is_datum(source_id)
             ? this.datum.get(source_id)?.set_generation
@@ -438,6 +495,8 @@ export class Runtime {
         }
 
         this.subscriptions.delete(sub_id);
+
+        this.tracer?.trace('subscription', 'unsubscribe', { id: sub_id });
     }
 
     // ========================================================================
@@ -483,10 +542,23 @@ export class Runtime {
             closure.fields[key] = value;
         }
 
-        // Call internal binding
+        this.tracer?.trace('closure', 'instantiate', { id: closure_id, blueprint: blueprint_name, params });
+
         const meta = this.metadata.get(blueprint_name);
-        if (meta?.internal_binding) {
-            meta.internal_binding(this, closure_id);
+        if (meta) {
+            // Call internal binding (if present)
+            if (meta.internal_binding) {
+                meta.internal_binding(this, closure_id);
+            }
+
+            // Instantiate top-level children
+            for (const idx of meta.top_children) {
+                const call_site = meta.call_sites[idx];
+                if (call_site) {
+                    const child_id = this.instantiate(call_site.blueprint, closure_id, {});
+                    call_site.binding(this, closure_id, child_id);
+                }
+            }
         }
 
         return closure_id;
@@ -518,6 +590,10 @@ export class Runtime {
     // ========================================================================
 
     private drain_notifications(): void {
+        if (this.notification_queue.size === 0) return;
+
+        this.tracer?.trace('notification', 'drain_start', { queue_size: this.notification_queue.size });
+
         let generation_count = 0;
 
         while (this.notification_queue.size > 0) {
@@ -534,6 +610,8 @@ export class Runtime {
             this.notification_queue.clear();
             this.current_generation++;
 
+            this.tracer?.trace('notification', 'generation', { generation: this.current_generation, callbacks: processed.length });
+
             // Execute callbacks
             for (const sub_id of processed) {
                 const sub = this.subscriptions.get(sub_id);
@@ -541,10 +619,13 @@ export class Runtime {
 
                 const callback = this.functions.get(sub.callback_id);
                 if (callback) {
+                    this.tracer?.trace('notification', 'callback', { sub_id, callback_id: sub.callback_id });
                     callback(this, sub);
                 }
             }
         }
+
+        this.tracer?.trace('notification', 'drain_end', { generations: generation_count });
     }
 
     // ========================================================================
@@ -553,6 +634,77 @@ export class Runtime {
 
     get_current_generation(): number {
         return this.current_generation;
+    }
+
+    // ========================================================================
+    // Entry Point
+    // ========================================================================
+
+    /**
+     * Run the application by instantiating the entry blueprint.
+     *
+     * If no entryBlueprint is provided, finds a blueprint ending with ".Main"
+     * in the registered metadata.
+     *
+     * @param entryBlueprint - Optional fully qualified blueprint name (e.g., "mymodule.Main")
+     * @returns The root closure ID
+     */
+    run(entryBlueprint?: string): ClosureIdentity {
+        let blueprintName = entryBlueprint;
+
+        if (!blueprintName) {
+            // Find a blueprint ending with ".Main"
+            for (const name of this.metadata.keys()) {
+                if (name.endsWith('.Main')) {
+                    blueprintName = name;
+                    break;
+                }
+            }
+        }
+
+        if (!blueprintName) {
+            throw new Error(
+                'No entry blueprint found. Either pass a blueprint name to run() or ' +
+                'register a blueprint ending with ".Main"'
+            );
+        }
+
+        const rootId = this.instantiate(blueprintName, null, {});
+        this.drain_notifications();
+        return rootId;
+    }
+
+    // ========================================================================
+    // Snapshot
+    // ========================================================================
+
+    /**
+     * Capture a snapshot of the current runtime state.
+     * Useful for testing and debugging.
+     */
+    snapshot(): RuntimeSnapshot {
+        const datums: Map<DatumIdentity, DatumSnapshotData> = new Map();
+        const closures: Map<ClosureIdentity, ClosureSnapshotData> = new Map();
+
+        for (const [id, datum] of this.datum) {
+            datums.set(id, {
+                type: datum.type,
+                fields: datum.fields ? { ...datum.fields } : null,
+                items: datum.items ? [...datum.items] : null,
+                availability: datum.availability,
+            });
+        }
+
+        for (const [id, closure] of this.closures) {
+            closures.set(id, {
+                blueprint: closure.blueprint,
+                parent: closure.parent_closure_id,
+                children: [...closure.child_closure_ids],
+                fields: { ...closure.fields },
+            });
+        }
+
+        return { datums, closures };
     }
 }
 

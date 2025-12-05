@@ -1,0 +1,9 @@
+{"timestamp":0,"category":"closure","event":"create","data":{"id":1,"blueprint":"reactive_field.Main","parent":null}}
+{"timestamp":0,"category":"closure","event":"instantiate","data":{"id":1,"blueprint":"reactive_field.Main","params":{}}}
+{"timestamp":0,"category":"field","event":"set","data":{"id":1,"field":"count","new":0,"generation":0}}
+{"timestamp":0,"category":"field","event":"set","data":{"id":1,"field":"doubled","new":0,"generation":0}}
+{"timestamp":0,"category":"subscription","event":"subscribe","data":{"id":0,"source":1,"target":1,"selector":"Key(count)"}}
+{"timestamp":0,"category":"notification","event":"drain_start","data":{"queue_size":1}}
+{"timestamp":0,"category":"notification","event":"generation","data":{"generation":1,"callbacks":1}}
+{"timestamp":0,"category":"notification","event":"callback","data":{"sub_id":0,"callback_id":0}}
+{"timestamp":0,"category":"notification","event":"drain_end","data":{"generations":1}}

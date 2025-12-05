@@ -1,0 +1,8 @@
+module simple_instantiate
+
+import testing.*
+
+// Simple test: instantiate a Main that creates a T0
+blueprint Main {
+    T0()
+}

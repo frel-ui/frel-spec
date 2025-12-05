@@ -1,0 +1,7 @@
+module reactive_field
+
+// Test reactive field initialization and subscription
+blueprint Main {
+    count: i32 = 0
+    doubled: i32 = count * 2
+}

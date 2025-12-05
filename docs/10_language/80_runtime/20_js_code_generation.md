@@ -140,15 +140,18 @@ functions.
 
 ```javascript
 metadata["myapp.Counter"] = {
+    // Optional: only present if there are fields to initialize
     internal_binding: Counter$internal_binding,
+    // Indices into call_sites for immediate instantiation
+    top_children: [0, 1],
     call_sites: {
-        "1": {
+        "0": {
             blueprint: "myapp.Display",
-            binding: Counter$1$call_site_binding
+            binding: Counter$0$call_site_binding
         },
-        "2": {
+        "1": {
             blueprint: "myapp.Label",
-            binding: Counter$2$call_site_binding
+            binding: Counter$1$call_site_binding
         }
     }
 }
@@ -158,6 +161,11 @@ metadata["myapp.AppTheme"] = {
     variants: ["Compact"]
 }
 ```
+
+The `top_children` array contains indices of `call_sites` that should be instantiated
+immediately when the blueprint is instantiated. Children inside control statements
+(`when`, `repeat`, `select`) are not top-level - they are instantiated by those control
+blueprints when their conditions are met.
 
 ## Complete Example
 
@@ -231,20 +239,20 @@ function AddButton$internal_binding(runtime, closure_id) {
 // Call Site Binding Functions
 // ============================================
 
-// TodoApp -> TodoList (call site #1)
-function TodoApp$1$call_site_binding(runtime, parent_id, child_id) {
+// TodoApp -> TodoList (call site #0)
+function TodoApp$0$call_site_binding(runtime, parent_id, child_id) {
     runtime.set(child_id, "items", runtime.get(parent_id, "items"))
     runtime.subscribe(parent_id, child_id, Key("items"), TodoList$items$callback)
 }
 
-// TodoApp -> AddButton (call site #2)
-function TodoApp$2$call_site_binding(runtime, parent_id, child_id) {
+// TodoApp -> AddButton (call site #1)
+function TodoApp$1$call_site_binding(runtime, parent_id, child_id) {
     runtime.set(child_id, "items", runtime.get(parent_id, "items"))
     runtime.subscribe(parent_id, child_id, Key("items"), AddButton$items$callback)
 }
 
-// TodoList -> TodoRow (call site #1, inside repeat)
-function TodoList$1$call_site_binding(runtime, parent_id, child_id) {
+// TodoList -> TodoRow (call site #0, inside repeat)
+function TodoList$0$call_site_binding(runtime, parent_id, child_id) {
     runtime.set(child_id, "item", runtime.get(parent_id, "item"))
     runtime.subscribe(parent_id, child_id, Key("item"), TodoRow$item$callback)
 }
@@ -255,26 +263,30 @@ function TodoList$1$call_site_binding(runtime, parent_id, child_id) {
 
 metadata["myapp.TodoApp"] = {
     internal_binding: TodoApp$internal_binding,
+    top_children: [0, 1],  // TodoList and AddButton
     call_sites: {
-        "1": { blueprint: "myapp.TodoList", binding: TodoApp$1$call_site_binding },
-        "2": { blueprint: "myapp.AddButton", binding: TodoApp$2$call_site_binding }
+        "0": { blueprint: "myapp.TodoList", binding: TodoApp$0$call_site_binding },
+        "1": { blueprint: "myapp.AddButton", binding: TodoApp$1$call_site_binding }
     }
 }
 
 metadata["myapp.TodoList"] = {
-    internal_binding: TodoList$internal_binding,
+    // No internal_binding (no fields)
+    top_children: [],  // TodoRow is inside repeat, not a top child
     call_sites: {
-        "1": { blueprint: "myapp.TodoRow", binding: TodoList$1$call_site_binding }
+        "0": { blueprint: "myapp.TodoRow", binding: TodoList$0$call_site_binding }
     }
 }
 
 metadata["myapp.TodoRow"] = {
-    internal_binding: TodoRow$internal_binding,
+    // No internal_binding (no fields)
+    top_children: [],
     call_sites: {}
 }
 
 metadata["myapp.AddButton"] = {
-    internal_binding: AddButton$internal_binding,
+    // No internal_binding (no fields)
+    top_children: [],
     call_sites: {}
 }
 ```

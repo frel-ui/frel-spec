@@ -74,7 +74,10 @@ export interface SubscriptionData {
 
 /** Metadata for a blueprint */
 export interface BlueprintMetadata {
-    internal_binding: (runtime: Runtime, closure_id: ClosureIdentity) => void;
+    /** Optional: only present if there are fields to initialize or subscriptions to set up */
+    internal_binding?: (runtime: Runtime, closure_id: ClosureIdentity) => void;
+    /** Indices into call_sites for children to instantiate immediately */
+    top_children: number[];
     call_sites: Record<string, CallSiteMetadata>;
 }
 
@@ -82,6 +85,32 @@ export interface BlueprintMetadata {
 export interface CallSiteMetadata {
     blueprint: string;
     binding: (runtime: Runtime, parent_id: ClosureIdentity, child_id: ClosureIdentity) => void;
+}
+
+// ========================================================================
+// Snapshot Types (for testing and debugging)
+// ========================================================================
+
+/** Simplified datum data for snapshots */
+export interface DatumSnapshotData {
+    type: string;
+    fields: Record<string, unknown> | null;
+    items: unknown[] | null;
+    availability: Availability;
+}
+
+/** Simplified closure data for snapshots */
+export interface ClosureSnapshotData {
+    blueprint: string;
+    parent: ClosureIdentity | null;
+    children: ClosureIdentity[];
+    fields: Record<string, unknown>;
+}
+
+/** Runtime state snapshot */
+export interface RuntimeSnapshot {
+    datums: Map<DatumIdentity, DatumSnapshotData>;
+    closures: Map<ClosureIdentity, ClosureSnapshotData>;
 }
 
 // Forward declaration for Runtime (actual class in runtime.ts)

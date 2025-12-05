@@ -1,0 +1,13 @@
+module testing
+
+blueprint T0 {
+
+}
+
+blueprint T1(i : i32) {
+
+}
+
+blueprint HO(lo : Blueprint<i32>) {
+
+}

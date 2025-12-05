@@ -189,8 +189,11 @@ fn generate_blueprint(blueprint: &Blueprint, ctx: &CodeGenContext) -> String {
         })
         .collect();
 
-    // Collect call sites (fragment creations)
+    // Collect all call sites (fragment creations, including nested ones)
     let call_sites: Vec<_> = collect_fragment_creations(&blueprint.body);
+
+    // Collect top-level children (direct fragment creations, not inside when/repeat/select)
+    let top_children: Vec<usize> = collect_top_children(&blueprint.body, &call_sites);
 
     // Generate subscription callbacks for derived fields
     for field in &fields {
@@ -205,7 +208,8 @@ fn generate_blueprint(blueprint: &Blueprint, ctx: &CodeGenContext) -> String {
         output.push_str(&generate_call_site_callbacks(name, idx, call_site));
     }
 
-    // Generate internal binding function
+    // Generate internal binding function (if non-empty)
+    let has_internal_binding = has_internal_binding_content(&blueprint.params, &fields);
     output.push_str(&generate_internal_binding(name, &blueprint.params, &fields));
 
     // Generate call site binding functions
@@ -214,9 +218,27 @@ fn generate_blueprint(blueprint: &Blueprint, ctx: &CodeGenContext) -> String {
     }
 
     // Generate metadata object
-    output.push_str(&generate_blueprint_metadata(name, &call_sites, ctx));
+    output.push_str(&generate_blueprint_metadata(
+        name,
+        &call_sites,
+        &top_children,
+        has_internal_binding,
+        ctx,
+    ));
 
     output
+}
+
+/// Extract a ContentExpr from a fragment body if present
+fn extract_content_expr(body: &Option<FragmentBody>) -> Option<&Expr> {
+    if let Some(FragmentBody::Default(stmts)) = body {
+        for stmt in stmts {
+            if let BlueprintStmt::ContentExpr(expr) = stmt {
+                return Some(expr);
+            }
+        }
+    }
+    None
 }
 
 fn collect_fragment_creations(stmts: &[BlueprintStmt]) -> Vec<&FragmentCreation> {
@@ -267,6 +289,23 @@ fn collect_fragment_creations(stmts: &[BlueprintStmt]) -> Vec<&FragmentCreation>
     result
 }
 
+/// Collect indices of top-level children (direct fragment creations at the body level).
+/// These are the children that should be instantiated immediately by the runtime.
+/// Children inside control statements (when/repeat/select) are not top-level.
+fn collect_top_children(stmts: &[BlueprintStmt], all_call_sites: &[&FragmentCreation]) -> Vec<usize> {
+    let mut result = Vec::new();
+    for stmt in stmts {
+        if let BlueprintStmt::FragmentCreation(fc) = stmt {
+            // Find this fragment creation's index in all_call_sites
+            if let Some(idx) = all_call_sites.iter().position(|cs| std::ptr::eq(*cs, fc)) {
+                result.push(idx);
+            }
+        }
+        // Control statements are not traversed - their children are not top-level
+    }
+    result
+}
+
 fn generate_field_callback(blueprint_name: &str, field: &LocalDecl) -> Option<String> {
     // Generate callback for fields with dependencies
     let deps = collect_expr_dependencies(&field.init);
@@ -275,7 +314,7 @@ fn generate_field_callback(blueprint_name: &str, field: &LocalDecl) -> Option<St
     }
 
     let callback_name = format!("{}${}$callback", blueprint_name, field.name);
-    let expr_js = generate_expr(&field.init);
+    let expr_js = generate_expr(&field.init, "closure_id");
 
     Some(format!(
         "function {callback_name}(runtime, subscription) {{\n\
@@ -298,7 +337,7 @@ fn generate_call_site_callbacks(
     for arg in &call_site.args {
         let param_name = arg.name.as_ref().map(|s| s.as_str()).unwrap_or("_");
         let callback_name = format!("{}${}${}$callback", blueprint_name, idx, param_name);
-        let expr_js = generate_expr(&arg.value);
+        let expr_js = generate_expr(&arg.value, "closure_id");
 
         output.push_str(&format!(
             "function {callback_name}(runtime, subscription) {{\n\
@@ -311,7 +350,31 @@ fn generate_call_site_callbacks(
         ));
     }
 
+    // Handle ContentExpr in body (e.g., text { "Hello" } or text { item.title })
+    if let Some(content_expr) = extract_content_expr(&call_site.body) {
+        let deps = collect_expr_dependencies(content_expr);
+        if !deps.is_empty() {
+            let callback_name = format!("{}${}$content$callback", blueprint_name, idx);
+            let expr_js = generate_expr(content_expr, "closure_id");
+
+            output.push_str(&format!(
+                "function {callback_name}(runtime, subscription) {{\n\
+                 \x20\x20const closure_id = subscription.source_id;\n\
+                 \x20\x20runtime.set(subscription.target_id, 'content', {expr_js});\n\
+                 }}\n\n",
+                callback_name = callback_name,
+                expr_js = expr_js
+            ));
+        }
+    }
+
     output
+}
+
+/// Returns true if internal_binding would be non-empty
+fn has_internal_binding_content(params: &[Parameter], fields: &[&LocalDecl]) -> bool {
+    // Has content if any parameter has a default or any field exists
+    params.iter().any(|p| p.default.is_some()) || !fields.is_empty()
 }
 
 fn generate_internal_binding(
@@ -319,6 +382,11 @@ fn generate_internal_binding(
     params: &[Parameter],
     fields: &[&LocalDecl],
 ) -> String {
+    // Skip generating empty functions
+    if !has_internal_binding_content(params, fields) {
+        return String::new();
+    }
+
     let mut output = String::new();
     let fn_name = format!("{}$internal_binding", blueprint_name);
 
@@ -327,7 +395,7 @@ fn generate_internal_binding(
     // Initialize parameters with defaults if provided
     for param in params {
         if let Some(default) = &param.default {
-            let default_js = generate_expr(default);
+            let default_js = generate_expr(default, "closure_id");
             output.push_str(&format!(
                 "\x20\x20if (runtime.get(closure_id, '{name}') === undefined) {{\n\
                  \x20\x20\x20\x20runtime.set(closure_id, '{name}', {default_js});\n\
@@ -341,7 +409,7 @@ fn generate_internal_binding(
     // Initialize and subscribe derived fields
     for field in fields {
         let deps = collect_expr_dependencies(&field.init);
-        let init_js = generate_expr(&field.init);
+        let init_js = generate_expr(&field.init, "closure_id");
 
         // Initialize field
         output.push_str(&format!(
@@ -389,7 +457,7 @@ fn generate_call_site_binding(
 
     for arg in &call_site.args {
         let param_name = arg.name.as_ref().map(|s| s.as_str()).unwrap_or("_");
-        let expr_js = generate_expr(&arg.value);
+        let expr_js = generate_expr(&arg.value, "parent_id");
         let deps = collect_expr_dependencies(&arg.value);
 
         // Initialize child parameter
@@ -419,6 +487,38 @@ fn generate_call_site_binding(
         }
     }
 
+    // Handle ContentExpr in body (e.g., text { "Hello" } or text { item.title })
+    if let Some(content_expr) = extract_content_expr(&call_site.body) {
+        let expr_js = generate_expr(content_expr, "parent_id");
+        let deps = collect_expr_dependencies(content_expr);
+
+        // Initialize the content parameter
+        output.push_str(&format!(
+            "\x20\x20runtime.set(child_id, 'content', {});\n",
+            expr_js
+        ));
+
+        // Subscribe if there are dependencies
+        if !deps.is_empty() {
+            let callback_name = format!("{}${}$content$callback", blueprint_name, idx);
+            let selector = if deps.len() == 1 {
+                format!("Key('{}')", deps[0])
+            } else {
+                format!(
+                    "OneOf({})",
+                    deps.iter()
+                        .map(|d| format!("'{}'", d))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            };
+            output.push_str(&format!(
+                "\x20\x20runtime.subscribe(parent_id, child_id, {}, {});\n",
+                selector, callback_name
+            ));
+        }
+    }
+
     output.push_str("}\n\n");
     output
 }
@@ -426,15 +526,32 @@ fn generate_call_site_binding(
 fn generate_blueprint_metadata(
     blueprint_name: &str,
     call_sites: &[&FragmentCreation],
+    top_children: &[usize],
+    has_internal_binding: bool,
     ctx: &CodeGenContext,
 ) -> String {
     let mut output = String::new();
 
+    output.push_str(&format!("export const {}$metadata = {{\n", blueprint_name));
+
+    // Only include internal_binding if it exists
+    if has_internal_binding {
+        output.push_str(&format!(
+            "\x20\x20internal_binding: {}$internal_binding,\n",
+            blueprint_name
+        ));
+    }
+
+    // Top children array (indices of call_sites to instantiate immediately)
+    let top_children_str = top_children
+        .iter()
+        .map(|i| i.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
     output.push_str(&format!(
-        "export const {}$metadata = {{\n\
-         \x20\x20internal_binding: {}$internal_binding,\n\
+        "\x20\x20top_children: [{}],\n\
          \x20\x20call_sites: {{\n",
-        blueprint_name, blueprint_name
+        top_children_str
     ));
 
     for (idx, call_site) in call_sites.iter().enumerate() {
@@ -489,7 +606,7 @@ fn generate_backend(backend: &Backend) -> String {
     for member in &backend.members {
         if let BackendMember::Field(field) = member {
             if let Some(init) = &field.init {
-                let init_js = generate_expr(init);
+                let init_js = generate_expr(init, "closure_id");
                 output.push_str(&format!(
                     "    runtime.set(closure_id, '{}', {});\n",
                     field.name, init_js
@@ -608,7 +725,8 @@ fn generate_theme(theme: &Theme) -> String {
     for field in &fields {
         if !field.is_asset {
             if let Some(init) = &field.init {
-                let init_js = generate_expr(init);
+                // Theme values are typically literals, datum_var unused
+                let init_js = generate_expr(init, "closure_id");
                 output.push_str(&format!("    {}: {},\n", field.name, init_js));
             }
         }
@@ -627,7 +745,8 @@ fn generate_theme(theme: &Theme) -> String {
         for field in &fields {
             if !field.is_asset {
                 if let Some(init) = &field.init {
-                    let init_js = generate_expr(init);
+                    // Theme values are typically literals, datum_var unused
+                    let init_js = generate_expr(init, "closure_id");
                     output.push_str(&format!("    {}: {},\n", field.name, init_js));
                 }
             }
@@ -635,7 +754,8 @@ fn generate_theme(theme: &Theme) -> String {
 
         // Apply overrides
         for (name, expr) in &variant.overrides {
-            let expr_js = generate_expr(expr);
+            // Theme values are typically literals, datum_var unused
+            let expr_js = generate_expr(expr, "closure_id");
             output.push_str(&format!("    {}: {}, // override\n", name, expr_js));
         }
 
@@ -668,7 +788,7 @@ fn generate_arena(arena: &Arena) -> String {
 // Expression Generation
 // ============================================================================
 
-fn generate_expr(expr: &Expr) -> String {
+fn generate_expr(expr: &Expr, datum_var: &str) -> String {
     match expr {
         Expr::Null => "null".to_string(),
         Expr::Bool(b) => b.to_string(),
@@ -676,25 +796,25 @@ fn generate_expr(expr: &Expr) -> String {
         Expr::Float(f) => f.to_string(),
         Expr::Color(c) => format!("0x{:08X}", c),
         Expr::String(s) => format!("'{}'", escape_string(s)),
-        Expr::StringTemplate(elements) => generate_template(elements),
+        Expr::StringTemplate(elements) => generate_template(elements, datum_var),
         Expr::List(items) => {
-            let items_js: Vec<_> = items.iter().map(generate_expr).collect();
+            let items_js: Vec<_> = items.iter().map(|e| generate_expr(e, datum_var)).collect();
             format!("[{}]", items_js.join(", "))
         }
         Expr::Object(fields) => {
             let fields_js: Vec<_> = fields
                 .iter()
-                .map(|(k, v)| format!("{}: {}", k, generate_expr(v)))
+                .map(|(k, v)| format!("{}: {}", k, generate_expr(v, datum_var)))
                 .collect();
             format!("{{ {} }}", fields_js.join(", "))
         }
         Expr::Identifier(name) => {
-            format!("runtime.get(closure_id, '{}')", name)
+            format!("runtime.get({}, '{}')", datum_var, name)
         }
         Expr::QualifiedName(parts) => parts.join("."),
         Expr::Binary { op, left, right } => {
-            let left_js = generate_expr(left);
-            let right_js = generate_expr(right);
+            let left_js = generate_expr(left, datum_var);
+            let right_js = generate_expr(right, datum_var);
             let op_js = match op {
                 BinaryOp::Add => "+",
                 BinaryOp::Sub => "-",
@@ -715,7 +835,7 @@ fn generate_expr(expr: &Expr) -> String {
             format!("({} {} {})", left_js, op_js, right_js)
         }
         Expr::Unary { op, expr } => {
-            let expr_js = generate_expr(expr);
+            let expr_js = generate_expr(expr, datum_var);
             let op_js = match op {
                 UnaryOp::Not => "!",
                 UnaryOp::Neg => "-",
@@ -728,13 +848,13 @@ fn generate_expr(expr: &Expr) -> String {
             then_expr,
             else_expr,
         } => {
-            let cond_js = generate_expr(condition);
-            let then_js = generate_expr(then_expr);
-            let else_js = generate_expr(else_expr);
+            let cond_js = generate_expr(condition, datum_var);
+            let then_js = generate_expr(then_expr, datum_var);
+            let else_js = generate_expr(else_expr, datum_var);
             format!("({} ? {} : {})", cond_js, then_js, else_js)
         }
         Expr::FieldAccess { base, field } => {
-            let base_js = generate_expr(base);
+            let base_js = generate_expr(base, datum_var);
             // If base is an identifier, we need to get the datum first
             if matches!(base.as_ref(), Expr::Identifier(_)) {
                 format!("runtime.get({}, '{}')", base_js, field)
@@ -743,24 +863,24 @@ fn generate_expr(expr: &Expr) -> String {
             }
         }
         Expr::OptionalChain { base, field } => {
-            let base_js = generate_expr(base);
+            let base_js = generate_expr(base, datum_var);
             format!("{}?.{}", base_js, field)
         }
         Expr::Call { callee, args } => {
-            let callee_js = generate_expr(callee);
-            let args_js: Vec<_> = args.iter().map(generate_expr).collect();
+            let callee_js = generate_expr(callee, datum_var);
+            let args_js: Vec<_> = args.iter().map(|e| generate_expr(e, datum_var)).collect();
             format!("{}({})", callee_js, args_js.join(", "))
         }
     }
 }
 
-fn generate_template(elements: &[TemplateElement]) -> String {
+fn generate_template(elements: &[TemplateElement], datum_var: &str) -> String {
     let parts: Vec<String> = elements
         .iter()
         .map(|el| match el {
             TemplateElement::Text(s) => format!("'{}'", escape_string(s)),
             TemplateElement::Interpolation(expr) => {
-                format!("String({})", generate_expr(expr))
+                format!("String({})", generate_expr(expr, datum_var))
             }
         })
         .collect();
@@ -1050,6 +1170,71 @@ mod tests {
     }
 
     #[test]
+    fn test_generate_content_expr_static() {
+        // Test that static ContentExpr (e.g., text { "Hello" }) generates correct code
+        let blueprint = Blueprint {
+            name: "Hello".to_string(),
+            params: vec![],
+            body: vec![BlueprintStmt::FragmentCreation(FragmentCreation {
+                name: "text".to_string(),
+                args: vec![],
+                body: Some(FragmentBody::Default(vec![BlueprintStmt::ContentExpr(
+                    Expr::String("Hello, World!".to_string()),
+                )])),
+                postfix: vec![],
+            })],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx("myapp");
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Should generate call site binding that sets content
+        assert!(output.contains("Hello$0$call_site_binding"));
+        assert!(output.contains("runtime.set(child_id, 'content', 'Hello, World!')"));
+        // No callback needed for static content
+        assert!(!output.contains("Hello$0$content$callback"));
+    }
+
+    #[test]
+    fn test_generate_content_expr_reactive() {
+        // Test that reactive ContentExpr (e.g., text { count }) generates callback
+        let blueprint = Blueprint {
+            name: "Counter".to_string(),
+            params: vec![],
+            body: vec![
+                BlueprintStmt::LocalDecl(LocalDecl {
+                    name: "count".to_string(),
+                    type_expr: TypeExpr::Named("u32".to_string()),
+                    init: Expr::Int(0),
+                    span: empty_span(),
+                }),
+                BlueprintStmt::FragmentCreation(FragmentCreation {
+                    name: "text".to_string(),
+                    args: vec![],
+                    body: Some(FragmentBody::Default(vec![BlueprintStmt::ContentExpr(
+                        Expr::Identifier("count".to_string()),
+                    )])),
+                    postfix: vec![],
+                }),
+            ],
+            span: empty_span(),
+        };
+
+        let ctx = test_ctx("myapp");
+        let output = generate_blueprint(&blueprint, &ctx);
+
+        // Should generate callback for reactive content
+        assert!(output.contains("Counter$0$content$callback"));
+        // Callback should get count using closure_id (defined as subscription.source_id)
+        assert!(output.contains("runtime.get(closure_id, 'count')"));
+        // Call site binding should use parent_id directly
+        assert!(output.contains("runtime.set(child_id, 'content', runtime.get(parent_id, 'count'))"));
+        // Should subscribe for changes
+        assert!(output.contains("runtime.subscribe(parent_id, child_id, Key('count'), Counter$0$content$callback)"));
+    }
+
+    #[test]
     fn test_generate_enum() {
         let enum_decl = Enum {
             name: "Status".to_string(),
@@ -1172,7 +1357,7 @@ mod tests {
             right: Box::new(Expr::Identifier("b".to_string())),
         };
 
-        let output = generate_expr(&expr);
+        let output = generate_expr(&expr, "closure_id");
 
         assert_eq!(
             output,
@@ -1188,7 +1373,7 @@ mod tests {
             else_expr: Box::new(Expr::Int(0)),
         };
 
-        let output = generate_expr(&expr);
+        let output = generate_expr(&expr, "closure_id");
 
         assert_eq!(output, "(runtime.get(closure_id, 'flag') ? 1 : 0)");
     }
@@ -1201,7 +1386,7 @@ mod tests {
             TemplateElement::Text("!".to_string()),
         ]);
 
-        let output = generate_expr(&expr);
+        let output = generate_expr(&expr, "closure_id");
 
         assert!(output.contains("'Hello, '"));
         assert!(output.contains("String(runtime.get(closure_id, 'name'))"));
